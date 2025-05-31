@@ -1,16 +1,16 @@
-const { buildQuestionFlex } = require('../utils/flexBuilder');
+const { MessageBuilder } = require('../utils/flexBuilder');
 
-module.exports = async (userId, client) => {
-  const flex = buildQuestionFlex({
-    title: 'Q1：風邪をひいた時、あなたに多いパターンはどれですか？',
-    body: `A：長引きやすい・微熱くらいでグズグズ\nB：高熱が出る・喉や鼻の炎症が強い\nC：その時々で違う／どちらでもない`,
-    questionId: 'Q1',
-    options: [
+module.exports = async function common_Q1() {
+  const flex = MessageBuilder({
+    altText: '【質問1】風邪をひいた時のパターン',
+    header: '【Q1】風邪をひいた時のパターン',
+    body: `Q1：風邪をひいた時、あなたに多いパターンはどれですか？\nA：長引きやすい・微熱くらいでグズグズ\nB：高熱が出る・喉や鼻の炎症が強い\nC：その時々で違う／どちらでもない`,
+    buttons: [
       { label: 'A', data: 'common_Q1_A' },
       { label: 'B', data: 'common_Q1_B' },
-      { label: 'C', data: 'common_Q1_C' }
-    ]
+      { label: 'C', data: 'common_Q1_C' },
+    ],
   });
 
-  await client.pushMessage(userId, flex);
+  return flex;
 };
