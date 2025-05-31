@@ -1,3 +1,5 @@
+// utils/flexBuilder.js
+
 function MessageBuilder({ altText, header, body, buttons }) {
   return {
     type: 'flex',
@@ -75,7 +77,23 @@ function buildCategorySelectionFlex() {
   });
 }
 
+// 質問用のFlexメッセージをビルド（Q1など）
+async function buildQuestionFlex(key) {
+  try {
+    const questionModule = require(`../diagnosis/${key}`);
+    const flex = await questionModule();
+    return flex;
+  } catch (error) {
+    console.error(`❌ 質問モジュールの読み込みエラー (${key})`, error);
+    return {
+      type: 'text',
+      text: 'ごめんなさい、質問の取得に失敗しました。もう一度試してください。',
+    };
+  }
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
+  buildQuestionFlex,
 };
