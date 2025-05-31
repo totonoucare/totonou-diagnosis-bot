@@ -1,16 +1,26 @@
-// diagnosis/index.js
-
 const { questionSets } = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 
-// 簡易セッション管理（今回はin-memory。実運用ではDBかRedis推奨）
+// 簡易セッション管理
 const userSessions = {};
 
 // 診断フロー本体
 function handleDiagnosis(userId, userMessage) {
   const session = userSessions[userId];
 
-  // 主訴が未選択 → 主訴選択メッセージ表示
+  // ✅ セッション自体がなければ何もしない
+  if (!session) {
+    return {
+      messages: [
+        {
+          type: 'text',
+          text: '「診断開始」と送ってから始めてくださいね。'
+        }
+      ]
+    };
+  }
+
+  // ✅ 主訴が未選択 → 主訴選択を促す
   if (!session.selectedCategory) {
     return {
       messages: [buildCategorySelectionFlex()],
@@ -22,22 +32,33 @@ function handleDiagnosis(userId, userMessage) {
     };
   }
 
-  // 回答を記録
+  // 回答記録
   session.answers.push(userMessage);
   session.currentStep += 1;
 
   const category = session.selectedCategory;
   const questionSet = questionSets[category];
 
+  // ✅ 質問セットが存在するかチェック
+  if (!questionSet) {
+    return {
+      messages: [
+        {
+          type: 'text',
+          text: '該当する質問が見つかりませんでした。'
+        }
+      ]
+    };
+  }
+
   if (session.currentStep <= questionSet.length) {
-    const nextQuestion = questionSet[session.currentStep - 1];
+    const nextQuestion = questionSet[`Q${session.currentStep}`];
     return {
       messages: [buildQuestionFlex(nextQuestion)],
     };
   } else {
-    // すべての質問が完了 → 結果出力
     const result = session.answers.join(' - ');
-    delete userSessions[userId]; // セッション終了
+    delete userSessions[userId];
 
     return {
       messages: [
@@ -50,16 +71,14 @@ function handleDiagnosis(userId, userMessage) {
   }
 }
 
-// 診断開始時のみセッションを新規作成
 function startSession(userId) {
   userSessions[userId] = {
-    currentStep: 1,
+    currentStep: 0,
     selectedCategory: null,
     answers: [],
   };
 }
 
-// セッションの有無をチェック
 function hasSession(userId) {
   return !!userSessions[userId];
 }
@@ -67,5 +86,5 @@ function hasSession(userId) {
 module.exports = {
   handleDiagnosis,
   startSession,
-  hasSession
+  hasSession,
 };
