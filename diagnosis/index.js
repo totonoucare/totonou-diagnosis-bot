@@ -6,40 +6,11 @@ const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flex
 // 簡易セッション管理（今回はin-memory。実運用ではDBかRedis推奨）
 const userSessions = {};
 
+// 診断フロー本体
 function handleDiagnosis(userId, userMessage) {
-  const msg = userMessage.toLowerCase();
-  const isStartTrigger = ['診断開始'].some(keyword =>
-    msg.includes(keyword)
-  );
-
-  // セッションが存在しない場合の初期化処理
-  if (!userSessions[userId]) {
-    if (isStartTrigger) {
-      return {
-        messages: [buildCategorySelectionFlex()],
-        sessionUpdate: (userMessage) => {
-          userSessions[userId] = {
-            currentStep: 1,
-            selectedCategory: userMessage,
-            answers: [],
-          };
-        }
-      };
-    } else {
-      return {
-        messages: [
-          {
-            type: 'text',
-            text: '診断を始めるには「診断」や「スタート」などと送ってくださいね！'
-          }
-        ]
-      };
-    }
-  }
-
   const session = userSessions[userId];
 
-  // 主訴が未選択 → 主訴名とセッション初期化
+  // 主訴が未選択 → 主訴選択メッセージ表示
   if (!session.selectedCategory) {
     return {
       messages: [buildCategorySelectionFlex()],
@@ -64,7 +35,7 @@ function handleDiagnosis(userId, userMessage) {
       messages: [buildQuestionFlex(nextQuestion)],
     };
   } else {
-    // すべての質問が完了 → 結果処理へ（仮の出力）
+    // すべての質問が完了 → 結果出力
     const result = session.answers.join(' - ');
     delete userSessions[userId]; // セッション終了
 
@@ -79,4 +50,22 @@ function handleDiagnosis(userId, userMessage) {
   }
 }
 
-module.exports = { handleDiagnosis };
+// 診断開始時のみセッションを新規作成
+function startSession(userId) {
+  userSessions[userId] = {
+    currentStep: 1,
+    selectedCategory: null,
+    answers: [],
+  };
+}
+
+// セッションの有無をチェック
+function hasSession(userId) {
+  return !!userSessions[userId];
+}
+
+module.exports = {
+  handleDiagnosis,
+  startSession,
+  hasSession
+};
