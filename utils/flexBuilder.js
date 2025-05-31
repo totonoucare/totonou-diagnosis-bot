@@ -70,7 +70,7 @@ function buildCategorySelectionFlex() {
       { label: '頭髪や肌の健康', data: 'skin' },
       { label: '花粉症・鼻炎', data: 'nose' },
       { label: '女性特有のお悩み', data: 'women' },
-      { label: 'なんとなく不調・不定愁訴”', data: 'vague' },
+      { label: 'なんとなく不調・不定愁訴', data: 'vague' },
     ],
   });
 }
