@@ -65,14 +65,14 @@ function buildCategorySelectionFlex() {
     body: 'どの不調をととのえたいですか？1つ選んでください。',
     buttons: [
       { label: '胃腸の調子', data: 'stomach' },
-      { label: '睡眠改善・集中力', data: 'sleep' },
+      { label: '睡眠改善・集中力', data: 'common' },
       { label: '肩こり・腰痛・関節', data: 'pain' },
-      { label: 'イライラや不安感', data: 'mental' },
-      { label: '冷え・のぼせ・むくみ', data: 'cold' },
+      { label: 'イライラや不安感', data: 'common' },
+      { label: '冷え・のぼせ・むくみ', data: 'common' },
       { label: '頭髪や肌の健康', data: 'skin' },
-      { label: '花粉症・鼻炎', data: 'nose' },
+      { label: '花粉症・鼻炎', data: 'pollen' },
       { label: '女性特有のお悩み', data: 'women' },
-      { label: 'なんとなく不調・不定愁訴', data: 'vague' },
+      { label: 'なんとなく不調・不定愁訴', data: 'common' },
     ],
   });
 }
