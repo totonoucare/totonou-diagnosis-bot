@@ -1,0 +1,35 @@
+{
+  "name": "totonou-diagnosis-bot",
+  "version": "1.0.0",
+  "description": "Eastern medicine diagnosis bot for LINE Messaging API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^7.5.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "LINE",
+    "bot",
+    "東洋医学",
+    "体質診断",
+    "鍼灸",
+    "ファシア"
+  ],
+  "author": "totonoucare",
+  "license": "MIT"
+}
