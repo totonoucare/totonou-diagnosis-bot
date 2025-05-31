@@ -1,14 +1,13 @@
 const { questionSets } = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 
-// 簡易セッション管理
+// セッション管理
 const userSessions = {};
 
-// 診断フロー本体
 function handleDiagnosis(userId, userMessage) {
   const session = userSessions[userId];
 
-  // ✅ セッション自体がなければ何もしない
+  // セッションがない場合
   if (!session) {
     return {
       messages: [
@@ -20,26 +19,31 @@ function handleDiagnosis(userId, userMessage) {
     };
   }
 
-  // ✅ 主訴が未選択 → 主訴選択を促す
+  // 主訴が未選択 → ここで選択処理をする
   if (!session.selectedCategory) {
-    return {
-      messages: [buildCategorySelectionFlex()],
-      sessionUpdate: (userMessage) => {
-        session.selectedCategory = userMessage;
-        session.currentStep = 1;
-        session.answers = [];
-      }
-    };
+    if (questionSets[userMessage]) {
+      session.selectedCategory = userMessage;
+      session.currentStep = 1;
+      session.answers = [];
+
+      const questionKey = questionSets[userMessage][`Q${session.currentStep}`];
+      return {
+        messages: [buildQuestionFlex(questionKey)],
+      };
+    } else {
+      return {
+        messages: [buildCategorySelectionFlex()],
+      };
+    }
   }
 
-  // 回答記録
+  // 回答を記録
   session.answers.push(userMessage);
   session.currentStep += 1;
 
   const category = session.selectedCategory;
   const questionSet = questionSets[category];
 
-  // ✅ 質問セットが存在するかチェック
   if (!questionSet) {
     return {
       messages: [
@@ -51,8 +55,8 @@ function handleDiagnosis(userId, userMessage) {
     };
   }
 
-  if (session.currentStep <= questionSet.length) {
-    const nextQuestion = questionSet[`Q${session.currentStep}`];
+  const nextQuestion = questionSet[`Q${session.currentStep}`];
+  if (nextQuestion) {
     return {
       messages: [buildQuestionFlex(nextQuestion)],
     };
