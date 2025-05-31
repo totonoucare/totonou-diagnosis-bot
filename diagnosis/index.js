@@ -8,7 +8,7 @@ const userSessions = {};
 
 function handleDiagnosis(userId, userMessage) {
   const msg = userMessage.toLowerCase();
-  const isStartTrigger = ['診断', 'スタート', '開始', 'はじめ', 'こんにちは'].some(keyword =>
+  const isStartTrigger = ['診断開始'].some(keyword =>
     msg.includes(keyword)
   );
 
