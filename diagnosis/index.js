@@ -1,7 +1,7 @@
 // diagnosis/index.js
 
 const { questionSets } = require('./questionSets');
-const { buildQuestionFlex, buildCategorySelectionFlex } = require('../flex/templates');
+const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 
 // 簡易セッション管理（今回はin-memory。実運用ではDBかRedis推奨）
 const userSessions = {};
