@@ -62,7 +62,7 @@ function buildCategorySelectionFlex() {
     header: '診断スタート',
     body: 'どの不調が気になりますか？1つ選んでください。',
     buttons: [
-      { label: '胃腸の調子を整えたい', data: '胃腸の調子を整えたい' },
+      { label: '胃腸の調子を整えたい', data: 'stomach' },
       { label: '睡眠改善・集中力を取り戻したい', data: '睡眠改善・集中力を取り戻したい' },
       { label: '肩こり・腰痛・関節の症状を整えたい', data: '肩こり・腰痛・関節の症状を整えたい' },
       { label: 'イライラや不安感から解放されたい', data: 'イライラや不安感から解放されたい' },
