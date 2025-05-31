@@ -1,16 +1,16 @@
 const { MessageBuilder } = require('../utils/flexBuilder');
 
-module.exports = async function stomach_Q3() {
+module.exports = async (userId, client) => {
   const flex = MessageBuilder({
-    altText: '【質問3】お腹の働きについて当てはまるのは？',
-    header: '【Q3】お腹の働きについて当てはまるのは？',
-    body: '次のうち、あなたに当てはまるものを選んでください。',
+    altText: '【Q3】お腹の働きについて',
+    header: 'Q3：お腹の働きについて当てはまるのは？',
+    body: `以下のうち、最も当てはまるものを選んでください。\n\nA：口が渇く／唇が荒れる／便が硬い\nB：食欲なし／軟便・下痢ぎみ\nC：どちらもない`,
     buttons: [
-      { label: 'A：口が渇く／唇が荒れる／便が硬い', data: 'stomach_Q3_A' },
-      { label: 'B：食欲なし／軟便・下痢ぎみ', data: 'stomach_Q3_B' },
-      { label: 'C：どちらもない', data: 'stomach_Q3_C' },
+      { label: 'A', data: 'stomach_Q3_A' },
+      { label: 'B', data: 'stomach_Q3_B' },
+      { label: 'C', data: 'stomach_Q3_C' },
     ],
   });
 
-  return flex;
+  await client.pushMessage(userId, flex);
 };
