@@ -2,7 +2,7 @@
 require("dotenv").config();
 const express = require("express");
 const line = require("@line/bot-sdk");
-const { handleDiagnosis } = require("./diagnosis/index");
+const diagnosis = require("./diagnosis/index");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 
 const app = express();
@@ -30,25 +30,26 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
     // 「診断開始」だけを診断フローの扉にする
     if (userMessage === "診断開始") {
+      diagnosis.startSession(userId);
       const flex = buildCategorySelectionFlex();
       await client.replyMessage(event.replyToken, [flex]);
       return;
     }
 
-    // それ以外のメッセージではセッションが存在しないなら何もしない
-    if (!handleDiagnosis.hasSession(userId)) {
+    // セッションがない場合は無視
+    if (!diagnosis.hasSession(userId)) {
       return null;
     }
 
-    // セッション中であれば診断を続行
-    const result = handleDiagnosis(userId, userMessage);
+    // セッションがあれば診断処理を進める
+    const result = diagnosis.handleDiagnosis(userId, userMessage);
 
-    // セッションの状態を更新（主訴選択時など）
+    // セッション状態を更新（主訴選択直後など）
     if (result.sessionUpdate) {
       result.sessionUpdate(userMessage);
     }
 
-    // 結果 or 次の質問を返す
+    // 結果または次の質問を返す
     await client.replyMessage(event.replyToken, result.messages);
   }));
 
