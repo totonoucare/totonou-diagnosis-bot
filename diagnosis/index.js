@@ -7,18 +7,34 @@ const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flex
 const userSessions = {};
 
 function handleDiagnosis(userId, userMessage) {
-  // ユーザーのセッションがなければ初期化
+  const msg = userMessage.toLowerCase();
+  const isStartTrigger = ['診断', 'スタート', '開始', 'はじめ', 'こんにちは'].some(keyword =>
+    msg.includes(keyword)
+  );
+
+  // セッションが存在しない場合の初期化処理
   if (!userSessions[userId]) {
-    return {
-      messages: [buildCategorySelectionFlex()],
-      sessionUpdate: (userMessage) => {
-        userSessions[userId] = {
-          currentStep: 1,
-          selectedCategory: userMessage,
-          answers: [],
-        };
-      }
-    };
+    if (isStartTrigger) {
+      return {
+        messages: [buildCategorySelectionFlex()],
+        sessionUpdate: (userMessage) => {
+          userSessions[userId] = {
+            currentStep: 1,
+            selectedCategory: userMessage,
+            answers: [],
+          };
+        }
+      };
+    } else {
+      return {
+        messages: [
+          {
+            type: 'text',
+            text: '診断を始めるには「診断」や「スタート」などと送ってくださいね！'
+          }
+        ]
+      };
+    }
   }
 
   const session = userSessions[userId];
@@ -48,7 +64,7 @@ function handleDiagnosis(userId, userMessage) {
       messages: [buildQuestionFlex(nextQuestion)],
     };
   } else {
-    // すべての質問が完了 → 結果処理へ（仮：そのまま表示）
+    // すべての質問が完了 → 結果処理へ（仮の出力）
     const result = session.answers.join(' - ');
     delete userSessions[userId]; // セッション終了
 
