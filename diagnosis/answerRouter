@@ -1,0 +1,38 @@
+// answerRouter.js
+
+const { generateDiagnosis } = require("./resultGenerator");
+
+function handleAnswers(userAnswers) {
+  // Q1〜Q3のスコア変換
+  const scoreMap = { A: -1, B: 1, C: 0 };
+  const q1to3 = userAnswers.slice(0, 3); // Q1, Q2, Q3
+  const scoreArray = q1to3.map(answer => scoreMap[answer] ?? 0);
+
+  // Q4 → flow病理
+  let flow = "";
+  switch (userAnswers[3]) {
+    case "A": flow = "気滞"; break;
+    case "B": flow = "痰湿"; break;
+    case "C": flow = "瘀血"; break;
+    case "D": flow = "巡りは良好"; break;
+    default: flow = "不明"; break;
+  }
+
+  // Q5 → 臓腑影響
+  let organ = "";
+  switch (userAnswers[4]) {
+    case "A": organ = "肺・大腸"; break;
+    case "B": organ = "心・小腸"; break;
+    case "C": organ = "腎・膀胱"; break;
+    case "D": organ = "肝・胆"; break;
+    case "E": organ = "脾・胃"; break;
+    default: organ = "不明"; break;
+  }
+
+  // ととのう診断ロジック呼び出し
+  const result = generateDiagnosis(scoreArray, flow, organ, userAnswers);
+
+  return result;
+}
+
+module.exports = { handleAnswers };
