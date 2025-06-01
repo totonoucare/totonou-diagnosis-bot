@@ -1,4 +1,4 @@
-const { questionSets } = require('./questionSets');
+const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
 
