@@ -1,4 +1,3 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
 const line = require("@line/bot-sdk");
@@ -23,7 +22,6 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       const userId = event.source?.userId;
       let userMessage = null;
 
-      // ユーザーからの入力取得
       if (event.type === "message" && event.message.type === "text") {
         userMessage = event.message.text.trim();
       } else if (event.type === "postback") {
@@ -32,20 +30,21 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return null;
       }
 
+      console.log("🔵 event.type:", event.type);
+      console.log("🟢 userMessage:", userMessage);
+
       // 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(userId);
         const flex = buildCategorySelectionFlex();
-        await client.replyMessage(event.replyToken, [flex]);
+        await client.replyMessage(event.replyToken, flex); // ✅ ← [] 外した！
         return;
       }
 
-      // セッションが存在しない場合は無視
       if (!diagnosis.hasSession(userId)) {
         return null;
       }
 
-      // 🟡 await を追加（ここが重要！）
       const result = await diagnosis.handleDiagnosis(userId, userMessage);
 
       if (result.sessionUpdate) {
