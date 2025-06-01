@@ -20,9 +20,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
   const results = await Promise.all(
     events.map(async (event) => {
-      const userId = event.source.userId;
+      const userId = event.source?.userId;
       let userMessage = null;
 
+      // ユーザーからの入力取得
       if (event.type === "message" && event.message.type === "text") {
         userMessage = event.message.text.trim();
       } else if (event.type === "postback") {
@@ -31,6 +32,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return null;
       }
 
+      // 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(userId);
         const flex = buildCategorySelectionFlex();
@@ -38,11 +40,13 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
+      // セッションが存在しない場合は無視
       if (!diagnosis.hasSession(userId)) {
         return null;
       }
 
-      const result = diagnosis.handleDiagnosis(userId, userMessage);
+      // 🟡 await を追加（ここが重要！）
+      const result = await diagnosis.handleDiagnosis(userId, userMessage);
 
       if (result.sessionUpdate) {
         result.sessionUpdate(userMessage);
