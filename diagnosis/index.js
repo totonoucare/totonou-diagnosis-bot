@@ -76,15 +76,14 @@ async function handleDiagnosis(userId, userMessage) {
     delete userSessions[userId];
 
     return {
-      messages: [
-        { type: 'text', text: `【診断結果】\n${result.type}` },
-        { type: 'text', text: `【お体の傾向】\n${result.traits}` },
-        { type: 'text', text: `【巡りの偏り】\n${result.flowIssue}` },
-        { type: 'text', text: `【負担のかかりやすい臓腑】\n${result.organBurden}` },
-        { type: 'text', text: `【ととのえるヒント】\n${result.advice}` },
-        { type: 'text', text: `【おすすめ漢方薬】\n${result.link}` },
-      ],
-    };
+     messages: [
+       { type: 'text', text: `【診断結果】\n${result.type}` },
+       { type: 'text', text: `【体の傾向】\n${result.traits}\n\n【流れの滞り】\n${result.flowIssue}` },
+       { type: 'text', text: `【臓腑の影響】\n${result.organBurden}` },
+       { type: 'text', text: `【ととのうアドバイス】\n${result.advice}` },
+       { type: 'text', text: `【おすすめ漢方薬（市販）】\n${result.link}` },
+     ]
+   };
   }
 }
 
