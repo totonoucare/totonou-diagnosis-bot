@@ -1,10 +1,11 @@
-const questionSets = require('./questionSets');
+const { questionSets } = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
+const { handleAnswers } = require('./answerRouter'); // ← 回答処理の追加
 
-// セッション管理
+// セッション管理オブジェクト
 const userSessions = {};
 
-function handleDiagnosis(userId, userMessage) {
+async function handleDiagnosis(userId, userMessage) {
   const session = userSessions[userId];
 
   // セッションがない場合
@@ -19,16 +20,17 @@ function handleDiagnosis(userId, userMessage) {
     };
   }
 
-  // 主訴が未選択 → ここで選択処理をする
+  // 主訴が未選択 → 主訴選択フェーズ
   if (!session.selectedCategory) {
     if (questionSets[userMessage]) {
       session.selectedCategory = userMessage;
       session.currentStep = 1;
       session.answers = [];
 
-      const questionKey = questionSets[userMessage][`Q${session.currentStep}`];
+      const questionKey = questionSets[userMessage][`Q1`];
+      const flex = await buildQuestionFlex(questionKey);
       return {
-        messages: [buildQuestionFlex(questionKey)],
+        messages: [flex],
       };
     } else {
       return {
@@ -37,9 +39,10 @@ function handleDiagnosis(userId, userMessage) {
     }
   }
 
-  // 回答を記録
-  session.answers.push(userMessage);
-  session.currentStep += 1;
+  // 回答を記録（postback.dataなどの "xxx_Q3_A" → "A" を抽出）
+  const choice = userMessage.split('_').pop();
+  session.answers.push(choice);
+  session.currentStep++;
 
   const category = session.selectedCategory;
   const questionSet = questionSets[category];
@@ -57,20 +60,42 @@ function handleDiagnosis(userId, userMessage) {
 
   const nextQuestion = questionSet[`Q${session.currentStep}`];
   if (nextQuestion) {
+    const flex = await buildQuestionFlex(nextQuestion);
     return {
-      messages: [buildQuestionFlex(nextQuestion)],
+      messages: [flex],
     };
   } else {
-    const result = session.answers.join(' - ');
+    // すべての質問完了 → 診断結果生成
+    const result = handleAnswers(session.answers);
     delete userSessions[userId];
 
     return {
       messages: [
         {
           type: 'text',
-          text: `診断完了です！あなたの回答：${result}`
-        }
-      ]
+          text: `診断結果：「${result.type}」`,
+        },
+        {
+          type: 'text',
+          text: `傾向：${result.traits}`,
+        },
+        {
+          type: 'text',
+          text: `流れ：${result.flowIssue}`,
+        },
+        {
+          type: 'text',
+          text: `臓腑：${result.organBurden}`,
+        },
+        {
+          type: 'text',
+          text: `アドバイス：${result.advice}`,
+        },
+        {
+          type: 'text',
+          text: result.link,
+        },
+      ],
     };
   }
 }
