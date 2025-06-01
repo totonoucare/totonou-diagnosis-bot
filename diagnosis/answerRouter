@@ -1,6 +1,6 @@
 // answerRouter.js
 
-const { generateDiagnosis } = require("./resultGenerator");
+const generateDiagnosis = require("./resultGenerator");
 
 function handleAnswers(userAnswers) {
   // Q1〜Q3のスコア変換
