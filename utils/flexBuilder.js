@@ -57,7 +57,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
   };
 }
 
-// 主訴選択のFlexメッセージを作成（修正版）
+// 主訴選択のFlexメッセージを作成
 function buildCategorySelectionFlex() {
   return MessageBuilder({
     altText: '診断を開始します。どの不調が気になりますか？',
@@ -77,14 +77,13 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// 質問用のFlexメッセージをビルド（Q1〜Q5）
-async function buildQuestionFlex(key) {
+// ✅修正ポイント：関数を直接受け取る方式に変更
+async function buildQuestionFlex(questionFunction) {
   try {
-    const questionModule = require(`../diagnosis/${key}`);
-    const flex = await questionModule();
+    const flex = await questionFunction();
     return flex;
   } catch (error) {
-    console.error(`❌ 質問モジュールの読み込みエラー (${key})`, error);
+    console.error('❌ 質問関数の実行エラー', error);
     return {
       type: 'text',
       text: 'ごめんなさい、質問の取得に失敗しました。もう一度試してください。',
