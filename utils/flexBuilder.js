@@ -44,7 +44,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
               type: 'postback',
               label: btn.label,
               data: btn.data,
-              displayText: btn.label,
+              // ✅ displayText を削除（これが userMessage に干渉する原因だった）
             },
             style: 'primary',
             height: 'sm',
@@ -77,7 +77,7 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// ✅修正ポイント：関数を直接受け取る方式に変更
+// 質問用のFlexメッセージをビルド（Q1〜Q5）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
