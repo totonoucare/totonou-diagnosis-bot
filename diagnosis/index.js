@@ -1,6 +1,6 @@
 const { questionSets } = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
-const { handleAnswers } = require('./answerRouter'); // ← 回答処理の追加
+const { handleAnswers } = require('./answerRouter');
 
 // セッション管理オブジェクト
 const userSessions = {};
@@ -22,19 +22,25 @@ async function handleDiagnosis(userId, userMessage) {
 
   // 主訴が未選択 → 主訴選択フェーズ
   if (!session.selectedCategory) {
-    if (questionSets[userMessage]) {
+    if (typeof userMessage === 'string' && questionSets[userMessage]) {
       session.selectedCategory = userMessage;
       session.currentStep = 1;
       session.answers = [];
 
-      const questionKey = questionSets[userMessage][`Q1`];
+      const questionKey = questionSets[userMessage]['Q1'];
       const flex = await buildQuestionFlex(questionKey);
       return {
         messages: [flex],
       };
     } else {
       return {
-        messages: [buildCategorySelectionFlex()],
+        messages: [
+          {
+            type: 'text',
+            text: '主訴の選択が正しくありませんでした。もう一度お試しください。',
+          },
+          buildCategorySelectionFlex(),
+        ],
       };
     }
   }
