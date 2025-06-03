@@ -1,12 +1,34 @@
-// answerRouter.js
-
 const generateDiagnosis = require("./resultGenerator");
 
 function handleAnswers(userAnswers) {
   // Q1〜Q3のスコア変換
   const scoreMap = { A: -1, B: 1, C: 0 };
   const q1to3 = userAnswers.slice(0, 3); // Q1, Q2, Q3
-  const scoreArray = q1to3.map(answer => scoreMap[answer] ?? 0);
+
+  const scoreArray = q1to3.map(answer => {
+    if (!(answer in scoreMap)) {
+      console.warn(`無効な選択肢が含まれています: ${answer}`);
+      return null;
+    }
+    return scoreMap[answer];
+  });
+
+  // バリデーション：nullが含まれていたら処理中止
+  if (scoreArray.includes(null)) {
+    console.error("スコア変換に失敗しました。無効な回答が含まれています:", q1to3);
+    return {
+      type: "不明な体質タイプ",
+      traits: "",
+      flowIssue: "",
+      organBurden: "",
+      advice: "診断に必要な回答が不足または無効でした。",
+      link: ""
+    };
+  }
+
+  // デバッグ用ログ出力（Renderログで追えるように）
+  console.log("scoreArray:", scoreArray);
+  console.log("scoreKey:", `${scoreArray[0]},${scoreArray[1]},${scoreArray[2]}`);
 
   // Q4 → flow病理
   let flow = "";
@@ -29,7 +51,7 @@ function handleAnswers(userAnswers) {
     default: organ = "不明"; break;
   }
 
-  // ととのう診断ロジック呼び出し
+  // 診断ロジック呼び出し
   const result = generateDiagnosis(scoreArray, flow, organ, userAnswers);
 
   return result;
