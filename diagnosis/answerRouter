@@ -7,15 +7,15 @@ function handleAnswers(userAnswers) {
 
   const scoreArray = q1to3.map(answer => {
     if (!(answer in scoreMap)) {
-      console.warn(`無効な選択肢が含まれています: ${answer}`);
+      console.warn(`⚠️ 無効な選択肢が含まれています: ${answer}`);
       return null;
     }
-    return scoreMap[answer];
+    return Number(scoreMap[answer]); // ← 明示的に数値へ変換
   });
 
-  // バリデーション：nullが含まれていたら処理中止
+  // バリデーション：nullが含まれていたら診断中止
   if (scoreArray.includes(null)) {
-    console.error("スコア変換に失敗しました。無効な回答が含まれています:", q1to3);
+    console.error("❌ スコア変換に失敗しました。無効な回答が含まれています:", q1to3);
     return {
       type: "不明な体質タイプ",
       traits: "",
@@ -26,9 +26,9 @@ function handleAnswers(userAnswers) {
     };
   }
 
-  // デバッグ用ログ出力（Renderログで追えるように）
-  console.log("scoreArray:", scoreArray);
-  console.log("scoreKey:", `${scoreArray[0]},${scoreArray[1]},${scoreArray[2]}`);
+  // デバッグ用ログ出力
+  console.log("📊 scoreArray:", scoreArray);
+  console.log("🔑 scoreKey:", `${scoreArray[0]},${scoreArray[1]},${scoreArray[2]}`);
 
   // Q4 → flow病理
   let flow = "";
