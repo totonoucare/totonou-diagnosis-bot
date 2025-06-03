@@ -28,8 +28,18 @@ const typeMapper = {
   "1,1,1": "鬱熱タイプ",
 };
 
+// ← ここで読み込まれたことを確認するログを出力
+console.log("🧠 typeMapper.js is ALIVE");
+
 function getTypeName(score1, score2, score3) {
-  return typeMapper[`${score1},${score2},${score3}`];
+  const key = `${score1},${score2},${score3}`;
+  const result = typeMapper[key];
+  if (!result) {
+    console.warn("🔍 getTypeName: 該当なし", key);
+  } else {
+    console.log("✅ getTypeName:", key, "→", result);
+  }
+  return result;
 }
 
 module.exports = getTypeName;
