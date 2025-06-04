@@ -30,7 +30,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             text: body,
             wrap: true,
             color: '#333333',
-            size: 'sm',
+            size: 'md',
           },
           {
             type: 'separator',
