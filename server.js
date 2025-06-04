@@ -45,7 +45,8 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return null;
       }
 
-      const result = await diagnosis.handleDiagnosis(userId, userMessage);
+      // ✅ rawEvent を渡すよう変更（displayText表示のため）
+      const result = await diagnosis.handleDiagnosis(userId, userMessage, event);
 
       if (result.sessionUpdate) {
         result.sessionUpdate(userMessage);
