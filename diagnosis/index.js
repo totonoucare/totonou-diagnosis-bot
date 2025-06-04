@@ -5,7 +5,7 @@ const { handleAnswers } = require('./answerRouter');
 // セッション管理オブジェクト
 const userSessions = {};
 
-async function handleDiagnosis(userId, userMessage) {
+async function handleDiagnosis(userId, userMessage, rawEvent = null) {
   const session = userSessions[userId];
 
   // セッションがない場合
@@ -45,7 +45,7 @@ async function handleDiagnosis(userId, userMessage) {
     }
   }
 
-  // 回答を記録（postback.dataなどの "xxx_Q3_A" → "A" を抽出）
+  // 回答を記録（postback.data から "xxx_Q3_A" → "A" を抽出）
   const choice = userMessage.split('_').pop();
   session.answers.push(choice);
   session.currentStep++;
@@ -67,8 +67,15 @@ async function handleDiagnosis(userId, userMessage) {
   const nextQuestion = questionSet[`Q${session.currentStep}`];
   if (nextQuestion) {
     const flex = await buildQuestionFlex(nextQuestion);
+
+    // displayTextがある場合はそれを表示（なければchoiceのA〜Eを出す）
+    const displayText = rawEvent?.postback?.displayText || `あなたの選択：${choice}`;
+
     return {
-      messages: [flex],
+      messages: [
+        { type: 'text', text: displayText },
+        flex,
+      ],
     };
   } else {
     // すべての質問完了 → 診断結果生成
@@ -76,14 +83,14 @@ async function handleDiagnosis(userId, userMessage) {
     delete userSessions[userId];
 
     return {
-     messages: [
-       { type: 'text', text: `【診断結果】\n${result.type}` },
-       { type: 'text', text: `【お体の傾向】\n${result.traits}\n\n【巡りの傾向】\n${result.flowIssue}` },
-       { type: 'text', text: `【負担がかかりやすい臓腑】\n${result.organBurden}` },
-       { type: 'text', text: `【ととのうアドバイス】\n${result.advice}` },
-       { type: 'text', text: `【おすすめ漢方薬（市販）】\n${result.link}` },
-     ]
-   };
+      messages: [
+        { type: 'text', text: `【診断結果】\n${result.type}` },
+        { type: 'text', text: `【お体の傾向】\n${result.traits}\n\n【巡りの傾向】\n${result.flowIssue}` },
+        { type: 'text', text: `【負担がかかりやすい臓腑】\n${result.organBurden}` },
+        { type: 'text', text: `【ととのうアドバイス】\n${result.advice}` },
+        { type: 'text', text: `【おすすめ漢方薬（市販）】\n${result.link}` },
+      ]
+    };
   }
 }
 
