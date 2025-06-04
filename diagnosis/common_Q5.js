@@ -4,7 +4,7 @@ module.exports = async function common_Q5() {
   const flex = MessageBuilder({
     altText: '【質問5】体の違和感・張り感がある動き',
     header: '【Q5】体の違和感・張り感がある動き',
-    body: `Q5：次の動作の中で、体の違和感や張り感を最も感じるのはどれですか？\nA：首を左右に回す → 肺・大腸\nB：腕をバンザイする → 心・小腸\nC：前屈する → 腎・膀胱\nD：腰を左右にねじる → 肝・胆\nE：上体をそらす → 脾・胃`,
+    body: `Q5：次の動作の中で、体の違和感や張り感を最も感じるのはどれですか？\nA：首を左右に回す\nB：腕をバンザイする\nC：前屈する\nD：腰を左右にねじる\nE：上体をそらす`,
     buttons: [
       { label: 'A', data: 'common_Q5_A' },
       { label: 'B', data: 'common_Q5_B' },
