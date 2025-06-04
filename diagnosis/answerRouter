@@ -52,7 +52,7 @@ function handleAnswers(userAnswers) {
   }
 
   // 診断ロジック呼び出し
-  const result = generateDiagnosis(scoreArray, flow, organ, userAnswers);
+  const result = generateDiagnosis(scoreArray[0], scoreArray[1], scoreArray[2], flow, organ);
 
   return result;
 }
