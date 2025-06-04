@@ -78,8 +78,8 @@ async function handleDiagnosis(userId, userMessage) {
     return {
      messages: [
        { type: 'text', text: `【診断結果】\n${result.type}` },
-       { type: 'text', text: `【体の傾向】\n${result.traits}\n\n【流れの滞り】\n${result.flowIssue}` },
-       { type: 'text', text: `【臓腑の影響】\n${result.organBurden}` },
+       { type: 'text', text: `【お体の傾向】\n${result.traits}\n\n【巡りの傾向】\n${result.flowIssue}` },
+       { type: 'text', text: `【負担がかかりやすい臓腑】\n${result.organBurden}` },
        { type: 'text', text: `【ととのうアドバイス】\n${result.advice}` },
        { type: 'text', text: `【おすすめ漢方薬（市販）】\n${result.link}` },
      ]
