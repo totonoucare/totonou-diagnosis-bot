@@ -59,6 +59,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
   res.json(results);
 });
 
+app.get("/", (req, res) => {
+  res.send("Totonou Diagnosis Bot is running.");
+});
+
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
 });
