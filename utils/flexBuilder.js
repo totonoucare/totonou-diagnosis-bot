@@ -66,7 +66,7 @@ function buildCategorySelectionFlex() {
       { label: '睡眠改善・集中力', data: 'sleep', displayText: '睡眠改善・集中力' },
       { label: '肩こり・腰痛・関節', data: 'pain', displayText: '肩こり・腰痛・関節' },
       { label: 'イライラや不安感', data: 'mental', displayText: 'イライラや不安感' },
-      { label: '冷え・のぼせ・むくみ', data: 'cold', displayText: '冷え・のぼせ・むくみ' },
+      { label: '体温バランス・むくみ', data: 'cold', displayText: '体温バランス・むくみ' },
       { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
       { label: '花粉症・鼻炎', data: 'pollen', displayText: '花粉症・鼻炎' },
       { label: '女性特有のお悩み', data: 'women', displayText: '女性特有のお悩み' },
