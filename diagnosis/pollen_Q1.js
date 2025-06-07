@@ -2,10 +2,9 @@ const { MessageBuilder } = require('../utils/flexBuilder');
 
 module.exports = async function pollen_Q1() {
   const flex = MessageBuilder({
-    altText: '【質問1】風邪をひいた時のパターン',
-    header: '【Q1】風邪のときの傾向',
-    body: `Q1：風邪（インフルエンザ等強い感染症除く）をひいた時、あなたに多いパターンは？\n\nA：長引きやすい・軽い症状でグズグズ\nB：治りが早い・あまり風邪をひかない\nC：その時々で違う`,
-    buttons: [
+    altText: '【質問1】ここ数年間の体力傾向',
+    header: '【Q1】ここ数年間の体力傾向',
+    body: `Q1：風邪（インフルエンザ等強い感染症除く）をひいた時、あなたに多いパターンは？\n\nA：軽い症状で長引く／ダラダラ治りきらない\nB：ガッと発症してもすぐ治る／滅多に風邪はひかない（特別な対策なし）\nC：時と場合による／特に傾向はない`,    buttons: [
       { label: 'A', data: 'pollen_Q1_A' },
       { label: 'B', data: 'pollen_Q1_B' },
       { label: 'C', data: 'pollen_Q1_C' },
