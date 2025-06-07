@@ -1,5 +1,6 @@
 const resultDictionary = require("./resultDictionary");
 const flowDictionary = require("./flowDictionary");
+const flowlabelDictionary = require("./flowlabelDictionary"); // 追加
 const organDictionary = require("./organDictionary");
 const adviceDictionary = require("./adviceDictionary");
 const linkDictionary = require("./linkDictionary");
@@ -8,7 +9,6 @@ const getTypeName = require("./typeMapper");
 function generateResult(score1, score2, score3, flowType, organType) {
   const typeName = getTypeName(score1, score2, score3);
 
-  // ログ出力でトラブル時の原因追跡が可能に
   console.log("📊 generateResult:");
   console.log(" score1,2,3:", score1, score2, score3);
   console.log(" typeName:", typeName);
@@ -29,7 +29,11 @@ function generateResult(score1, score2, score3, flowType, organType) {
   const flowInfo = flowDictionary[flowType] || "";
   const organInfo = organDictionary[organType] || "";
   const advice = adviceDictionary[typeName] || "";
-  const link = linkDictionary[typeName] || "";
+
+  // flowlabelを埋め込む（fallbackは空文字）
+  const flowLabel = flowlabelDictionary[flowType] || "";
+  const rawLinkText = linkDictionary[typeName] || "";
+  const link = rawLinkText.replace("{{flowlabel}}", flowLabel);
 
   return {
     type: typeName,
