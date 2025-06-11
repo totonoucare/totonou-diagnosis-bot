@@ -2,16 +2,12 @@
 
 const handleFollowupAnswers = require("./followupRouter");
 const memoryManager = require("./memoryManager");
-const sendGPTResponse = require("./responseSender");
 
 async function handleFollowup(event, client, userId) {
   try {
     const message = event.message.text;
 
-    // ユーザーのメモリー（主訴や前回動作）を取得
     const userMemory = memoryManager.getUserMemory(userId) || {};
-
-    // メッセージ内容から5問の回答配列を取得（仮：カンマ区切り "A,B,C,D,E"）
     const answers = message.split(",").map(a => a.trim().toUpperCase());
 
     if (answers.length !== 5) {
@@ -21,17 +17,12 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // 回答と文脈から診断構造を生成
     const result = await handleFollowupAnswers(userId, answers);
 
-    // GPTで返答メッセージを作成
-    const gptReply = await sendGPTResponse(result.promptForGPT);
-
-    // GPTのコメントを含んだ返信をLINEメッセージ形式で返す
     return [
       {
         type: "text",
-        text: "📋【今回の再診結果】\n" + gptReply
+        text: "📋【今回の再診結果】\n" + result.gptComment
       }
     ];
   } catch (err) {
