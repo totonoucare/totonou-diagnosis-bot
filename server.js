@@ -37,18 +37,23 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
+      // ✅ 「ととのう計画」 or followupセッション中の場合
+      if (
+        userMessage === "ととのう計画" ||
+        require("./followup/index").hasSession?.(userId)
+      ) {
+        const messages = await handleFollowup(event, client, userId);
+        if (messages?.length > 0) {
+          await client.replyMessage(event.replyToken, messages);
+        }
+        return;
+      }
+
       // 通常診断のスタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(userId);
         const flex = buildCategorySelectionFlex();
         await client.replyMessage(event.replyToken, flex);
-        return;
-      }
-
-      // ✅ 再診 followup スタート（「ととのう計画」）
-      if (userMessage === "ととのう計画") {
-        const messages = await handleFollowup(event, client, userId, userMemory[userId] || {});
-        await client.replyMessage(event.replyToken, messages);
         return;
       }
 
