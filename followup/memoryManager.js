@@ -21,11 +21,11 @@ function saveUserData(userId, data) {
  * @param {string} userId - LINEのuserId
  * @returns {object|null} - 記録があれば返す、なければnull
  */
-function getUserData(userId) {
+function getUserMemory(userId) {
   return userMemory[userId] || null;
 }
 
 module.exports = {
   saveUserData,
-  getUserData
+  getUserMemory
 };
