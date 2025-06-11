@@ -12,6 +12,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "openai": "^4.26.0", // ← この行を追加
     "@line/bot-sdk": "^7.5.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
