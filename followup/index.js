@@ -44,6 +44,9 @@ async function handleFollowup(event, client, userId) {
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
+    console.log("📍 現在のステップ:", session.step);
+    console.log("📝 現在の質問:", question);
+
     // Q3の特別処理：複数選択肢の回答をまとめて記録
     if (question.id === 'Q3' && question.isMulti && message.includes(':')) {
       const parts = message.split(':');
