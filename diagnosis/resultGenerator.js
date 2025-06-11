@@ -1,9 +1,11 @@
 const resultDictionary = require("./resultDictionary");
 const flowDictionary = require("./flowDictionary");
-const flowlabelDictionary = require("./flowlabelDictionary"); // 追加
+const flowlabelDictionary = require("./flowlabelDictionary");
 const organDictionary = require("./organDictionary");
 const adviceDictionary = require("./adviceDictionary");
 const linkDictionary = require("./linkDictionary");
+const stretchPointDictionary = require("./stretchPointDictionary"); // 🆕 ツボ＆ストレッチ辞書
+const flowAdviceDictionary = require("./flowAdviceDictionary");     // 🆕 巡りアドバイス辞書
 const getTypeName = require("./typeMapper");
 
 function generateResult(score1, score2, score3, flowType, organType) {
@@ -25,12 +27,18 @@ function generateResult(score1, score2, score3, flowType, organType) {
     };
   }
 
+  // 各種情報の取得
   const baseInfo = resultDictionary[typeName] || {};
   const flowInfo = flowDictionary[flowType] || "";
   const organInfo = organDictionary[organType] || "";
-  const advice = adviceDictionary[typeName] || "";
+  const baseAdvice = adviceDictionary[typeName] || "";
+  const stretchData = stretchPointDictionary[organType] || { stretch: "", points: [] };
+  const flowCareAdvice = flowAdviceDictionary[flowType] || "";
 
-  // flowlabelを埋め込む（fallbackは空文字）
+  // 💡ととのう習慣アドバイスの統合生成
+  const combinedAdvice = `【日々の習慣ヒント】\n${baseAdvice}\n\n【今日のストレッチ】\n${stretchData.stretch}\n\n【今日のツボ】\n${stretchData.points.join("・")}\n\n【巡りへのセルフケア】\n${flowCareAdvice}`;
+
+  // flowlabel → リンク内に埋め込み処理
   const flowLabel = flowlabelDictionary[flowType] || "";
   const rawLinkText = linkDictionary[typeName] || "";
   const link = rawLinkText.replace("{{flowlabel}}", flowLabel);
@@ -40,7 +48,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
     traits: baseInfo.traits || "",
     flowIssue: flowInfo,
     organBurden: organInfo,
-    advice: advice,
+    advice: combinedAdvice,
     link: link
   };
 }
