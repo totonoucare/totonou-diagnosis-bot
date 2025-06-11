@@ -143,4 +143,6 @@ function buildFlexMessage(question) {
   });
 }
 
-module.exports = handleFollowup;
+module.exports = Object.assign(handleFollowup, {
+  hasSession: (userId) => !!userSession[userId]
+});
