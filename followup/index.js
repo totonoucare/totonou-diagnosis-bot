@@ -1,68 +1,121 @@
 // followup/index.js
 
-const questions = require("./questionSets"); // Q1〜Q5を含む配列
-const handleFollowupAnswers = require("./followupRouter");
-const memory = require("./memoryManager");
+const questionSets = require('./questionSets');
+const handleFollowupAnswers = require('./followupRouter');
+const memoryManager = require('./memoryManager');
+const sendGPTResponse = require('./responseSender');
+const { MessageBuilder } = require('../utils/flexBuilder');
 
-/**
- * 再診用の診断フローを管理する関数（B案：1問ずつ進行）
- */
+// ユーザーの進行状態を記録
+const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
+
 async function handleFollowup(event, client, userId) {
   try {
-    const message = event.message.text.trim().toUpperCase();
-    let session = memory.getFollowupMemory(userId);
+    let message = "";
 
-    // ① 最初の起動メッセージだった場合（「ととのう計画」など）
-    if (!session) {
-      memory.initializeFollowup(userId);
-      return [buildQuestionMessage(0)];
-    }
-
-    // ② A〜Eの回答かどうかチェック（不正な場合はやり直し）
-    if (!["A", "B", "C", "D", "E"].includes(message)) {
+    if (event.type === 'message' && event.message.type === 'text') {
+      message = event.message.text.trim();
+    } else if (event.type === 'postback' && event.postback.data) {
+      message = event.postback.data.trim();
+    } else {
       return [{
-        type: "text",
-        text: "A〜Eの中から1つ選んで返信してください。"
+        type: 'text',
+        text: '形式が不正です。A〜Eのボタンで回答してください。'
       }];
     }
 
-    // ③ 回答を記録し、次のステップへ
-    memory.recordAnswer(userId, message);
-    session = memory.getFollowupMemory(userId); // 更新後を再取得
+    // セッション開始トリガー
+    if (message === 'ととのう計画') {
+      userSession[userId] = { step: 1, answers: [] };
 
-    // ④ 全5問が終わったら診断ロジックへ
-    if (session.step === 5) {
-      const result = await handleFollowupAnswers(userId, session.answers);
-      memory.clearFollowup(userId);
+      const q1 = questionSets[0];
+      return [buildFlexMessage(q1)];
+    }
 
+    // セッションが存在しない
+    if (!userSession[userId]) {
       return [{
-        type: "text",
-        text: "📋【今回の再診結果】\n" + result.gptComment
+        type: 'text',
+        text: '再診を始めるには「ととのう計画」と送ってください。'
       }];
     }
 
-    // ⑤ 次の質問を表示
-    return [buildQuestionMessage(session.step)];
+    const session = userSession[userId];
+    const currentStep = session.step;
+    const question = questionSets[currentStep - 1];
+
+    // 回答の検証（A〜E）
+    const answer = message.charAt(0).toUpperCase();
+    const isValid = question.options.some(opt => opt.startsWith(answer));
+
+    if (!isValid) {
+      return [{
+        type: 'text',
+        text: 'A〜Eの中からボタンで選んでください。'
+      }];
+    }
+
+    // 回答記録（Q3が特殊形式のときだけ拡張）
+    if (question.id === 'Q3') {
+      session.answers.push({
+        habits: answer,
+        stretch: answer,
+        breathing: answer,
+        kampo: answer,
+        other: answer
+      });
+    } else {
+      session.answers.push(answer);
+    }
+
+    session.step++;
+
+    // 質問終了 → 診断結果生成
+    if (session.step > questionSets.length) {
+      const answers = session.answers;
+      const memory = memoryManager.getUserMemory(userId) || {};
+
+      const context = {
+        symptom: memory.symptom || '体の不調',
+        motion: memory.motion || '特定の動作'
+      };
+
+      const result = await handleFollowupAnswers(userId, answers);
+      const gptReply = await sendGPTResponse(result.promptForGPT);
+
+      delete userSession[userId];
+
+      return [{
+        type: 'text',
+        text: '📋【今回の再診結果】\n' + gptReply
+      }];
+    }
+
+    // 次の質問を出力
+    const nextQuestion = questionSets[session.step - 1];
+    return [buildFlexMessage(nextQuestion)];
 
   } catch (err) {
-    console.error("❌ followup/index.js エラー:", err);
+    console.error('❌ followup/index.js エラー:', err);
     return [{
-      type: "text",
-      text: "診断処理中にエラーが発生しました。しばらくしてからもう一度お試しください。"
+      type: 'text',
+      text: '診断中にエラーが発生しました。もう一度「ととのう計画」と送って再開してください。'
     }];
   }
 }
 
-/**
- * 指定ステップのFlex質問を構築
- */
-function buildQuestionMessage(step) {
-  const question = questions[step];
-  return {
-    type: "flex",
-    altText: `【Q${step + 1}】${question.header}`,
-    contents: question.flex
-  };
+// Flexメッセージを生成（共通部品利用）
+function buildFlexMessage(question) {
+  return MessageBuilder({
+    altText: question.header,
+    header: question.header,
+    body: question.body,
+    buttons: question.options.map(opt => ({
+      label: opt,
+      data: opt.charAt(0),
+      displayText: opt
+    }))
+  });
 }
 
 module.exports = handleFollowup;
