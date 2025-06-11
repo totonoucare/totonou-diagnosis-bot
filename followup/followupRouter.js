@@ -1,27 +1,34 @@
-const generateResult = require("./resultGenerator");
-const questionSets = require("./questionSets");
+// followup/followupRouter.js
+
+const generateFollowupResult = require("./resultGenerator");
 const memoryManager = require("./memoryManager");
+const sendFollowupPromptToGPT = require("./responseSender");
 
-function handleFollowupAnswers(userId, answers) {
-  // answers: [Q1, Q2, Q3, Q4, Q5, Q6]
-  // Q1: 前回主訴に対する変化
-  // Q2: 全体の体調変化
-  // Q3: 実施したセルフケア内容（複数選択）
-  // Q4: セルフケアの実施頻度
-  // Q5: 睡眠/食事/ストレスなどの生活変化
-  // Q6: 経絡テストの変化（前回動作に対して）
-
+/**
+ * フォローアップ回答を処理し、GPTコメント付き結果を返す
+ * @param {string} userId - ユーザーID
+ * @param {Array} answers - ユーザーの回答（Q1〜Q5）
+ * @returns {Promise<Object>} - GPTコメント付きの再診結果
+ */
+async function handleFollowupAnswers(userId, answers) {
+  // ユーザーごとの前回の主訴・動作テスト記憶を取得
   const memory = memoryManager.getUserMemory(userId) || {};
-  const { mainSymptom = "体の不調", motionTest = "どこかの動作" } = memory;
+  const context = {
+    symptom: memory.symptom || "体の不調",
+    motion: memory.motion || "特定の動作",
+  };
 
-  const result = generateResult({
-    userId,
-    mainSymptom,
-    motionTest,
-    answers
-  });
+  // GPTプロンプト含むデータ構成
+  const result = generateFollowupResult(answers, context);
 
-  return result;
+  // GPTでコメント生成
+  const gptComment = await sendFollowupPromptToGPT(result.promptForGPT);
+
+  // 結果にGPTコメントを添付
+  return {
+    ...result,
+    gptComment,
+  };
 }
 
 module.exports = handleFollowupAnswers;
