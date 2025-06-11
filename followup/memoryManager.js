@@ -1,31 +1,46 @@
 // followup/memoryManager.js
 
-// ユーザーごとの情報を記憶（実運用時はDBに置き換え推奨）
+// ユーザーごとの再診情報（本番ではDB推奨）
 const userMemory = {};
 
 /**
- * 特定ユーザーの主訴・Mテスト結果を保存
- * @param {string} userId - LINEのuserId
- * @param {object} data - 保存するデータ（symptom, motion）
+ * 再診用データを初期化（Q1から開始）
  */
-function saveUserData(userId, data) {
+function initializeFollowup(userId) {
   userMemory[userId] = {
-    symptom: data.symptom || "",
-    motion: data.motion || "",
+    step: 0,
+    answers: [],
     updatedAt: new Date()
   };
 }
 
 /**
- * ユーザーの保存済みデータを取得
- * @param {string} userId - LINEのuserId
- * @returns {object|null} - 記録があれば返す、なければnull
+ * 現在の再診データを取得
  */
-function getUserMemory(userId) {
+function getFollowupMemory(userId) {
   return userMemory[userId] || null;
 }
 
+/**
+ * 回答を追加し、次のステップに進める
+ */
+function recordAnswer(userId, answer) {
+  if (!userMemory[userId]) initializeFollowup(userId);
+  userMemory[userId].answers.push(answer);
+  userMemory[userId].step += 1;
+  userMemory[userId].updatedAt = new Date();
+}
+
+/**
+ * 再診データを全消去（使い終わったら呼ぶ）
+ */
+function clearFollowup(userId) {
+  delete userMemory[userId];
+}
+
 module.exports = {
-  saveUserData,
-  getUserMemory
+  initializeFollowup,
+  getFollowupMemory,
+  recordAnswer,
+  clearFollowup
 };
