@@ -17,7 +17,7 @@ function initializeFollowup(userId) {
 /**
  * 現在の再診データを取得
  */
-function getFollowupMemory(userId) {
+function getUserMemory(userId) {
   return userMemory[userId] || null;
 }
 
@@ -40,7 +40,7 @@ function clearFollowup(userId) {
 
 module.exports = {
   initializeFollowup,
-  getFollowupMemory,
+  getUserMemory,
   recordAnswer,
   clearFollowup
 };
