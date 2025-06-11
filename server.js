@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const line = require("@line/bot-sdk");
 const diagnosis = require("./diagnosis/index");
+const handleFollowup = require("./followup/index");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 
 const app = express();
@@ -13,6 +14,9 @@ const config = {
 };
 
 const client = new line.Client(config);
+
+// ユーザーごとのセッション記録（簡易的にメモリに保持）
+const userMemory = {};
 
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
@@ -33,26 +37,30 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // 診断スタート
+      // 通常診断のスタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(userId);
         const flex = buildCategorySelectionFlex();
-        await client.replyMessage(event.replyToken, flex); // ✅ ← [] 外した！
+        await client.replyMessage(event.replyToken, flex);
         return;
       }
 
-      if (!diagnosis.hasSession(userId)) {
-        return null;
+      // ✅ 再診 followup スタート（「ととのう計画」）
+      if (userMessage === "ととのう計画") {
+        const messages = await handleFollowup(event, client, userId, userMemory[userId] || {});
+        await client.replyMessage(event.replyToken, messages);
+        return;
       }
 
-      // ✅ rawEvent を渡すよう変更（displayText表示のため）
-      const result = await diagnosis.handleDiagnosis(userId, userMessage, event);
-
-      if (result.sessionUpdate) {
-        result.sessionUpdate(userMessage);
+      // 通常診断セッション中の処理
+      if (diagnosis.hasSession(userId)) {
+        const result = await diagnosis.handleDiagnosis(userId, userMessage, event);
+        if (result.sessionUpdate) result.sessionUpdate(userMessage);
+        await client.replyMessage(event.replyToken, result.messages);
+        return;
       }
 
-      await client.replyMessage(event.replyToken, result.messages);
+      return null;
     })
   );
 
