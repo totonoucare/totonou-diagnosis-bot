@@ -42,7 +42,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
               type: 'postback',
               label: btn.label,
               data: btn.data,
-              displayText: btn.displayText ?? btn.label, // ✅ 追加された行
+              displayText: btn.displayText ?? btn.label,
             },
             style: 'primary',
             height: 'sm',
@@ -75,7 +75,7 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// 質問用のFlexメッセージをビルド（Q1〜Q5）
+// Q1〜Q5など通常の単一質問をFlexで出力
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
@@ -89,8 +89,71 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
+// フォローアップ診断Q3のような複数小問×選択肢形式に対応
+function buildMultiQuestionFlex({ altText, header, questions }) {
+  const contents = questions.flatMap((q) => [
+    {
+      type: 'text',
+      text: `🔸 ${q.title}`,
+      weight: 'bold',
+      size: 'sm',
+      margin: 'md',
+      color: '#444444',
+    },
+    {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'sm',
+      margin: 'sm',
+      contents: ['A', 'B', 'C', 'D'].map((choice) => ({
+        type: 'button',
+        action: {
+          type: 'postback',
+          label: choice,
+          data: `${q.key}:${choice}`,
+          displayText: `${q.title} → ${choice}`,
+        },
+        height: 'sm',
+        style: 'primary',
+        color: '#828E7B',
+        flex: 1,
+      })),
+    },
+  ]);
+
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: header,
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#788972',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents,
+      },
+    },
+  };
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
   buildQuestionFlex,
+  buildMultiQuestionFlex,
 };
