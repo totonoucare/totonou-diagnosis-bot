@@ -1,72 +1,44 @@
-const progressDictionary = require("./progressDictionary");
-const memoryManager = require("./memoryManager");
+function generateFollowupResult(answers, context = {}) {
+  const [q1, q2, q3, q4, q5] = answers;
 
-function generateResult({ userId, mainSymptom, motionTest, answers }) {
-  const [q1, q2, q3, q4, q5, q6] = answers;
+  // セルフケア実施内容（q3）は、各項目に対して A〜D を返してくる前提
+  // context.symptom や context.motion は memoryManager.js から取得されると想定
 
-  // 🔍 1. 前回主訴の改善傾向コメント
-  const progress = progressDictionary[q1] || "今回の変化に合わせて、次の仮説を立てていきましょう。";
+  const rawData = {
+    symptomChange: q1,        // Q1：主訴の変化
+    overallCondition: q2,     // Q2：全体の体調
+    careDetails: q3,          // Q3：セルフケア各項目と頻度
+    motionTestChange: q4,     // Q4：前回動作テストの変化
+    lifestyleChange: q5       // Q5：生活習慣の変化
+  };
 
-  // 🧘‍♂️ 2. 実施セルフケアの評価
-  const careComment = generateCareComment(q3, q4);
+  // GPTに送るプロンプト（仮）：改善 or 悪化傾向とセルフケアの相関性を考察して再提案
+  const promptForGPT = `
+あなたは東洋医学・セルフケアの専門家です。
+以下の情報をもとに、患者の改善傾向と現在のセルフケアの関連を考察し、
+必要であれば別の視点から新たな仮説とセルフケア提案をしてください。
 
-  // 🔄 3. 経絡動作テストの再チェック
-  const motionFeedback = motionTest
-    ? `前回「${motionTest}」で違和感を感じていたとのことですが、今回の体感はいかがでしたか？`
-    : "今回も、違和感を感じやすい動作があれば教えてください。";
+【前回主訴】${context.symptom || "未登録"}
+【主訴の変化】${q1}
+【体調全体】${q2}
+【セルフケア実施内容】
+- 習慣改善：${q3.habits || "未回答"}
+- ストレッチ：${q3.stretch || "未回答"}
+- 呼吸法：${q3.breathing || "未回答"}
+- 漢方薬：${q3.kampo || "未回答"}
+- その他：${q3.other || "未回答"}
+【前回の動作テスト】${context.motion || "未登録"}
+【動作変化】${q4}
+【生活習慣の変化】${q5}
 
-  // 🌱 4. 生活リズムの変化からの一言
-  const lifeChange = generateLifeComment(q5);
+この内容から、今後1週間で見直すべきポイントや継続すべき点をシンプルに教えてください。
+`;
 
-  // 🔁 5. 今後の仮説（今は固定文、後ほどGPT連携）
-  const hypothesis = "この1週間の変化をふまえて、次は「今の生活習慣」に焦点を当ててみましょう。";
-
-  // 💾 記録更新
-  memoryManager.updateUserMemory(userId, {
-    lastCheckin: new Date().toISOString(),
-    mainSymptom,
-    motionTest,
-    lastAnswers: answers
-  });
-
-  // 📦 結果返却
   return {
-    progress,
-    careComment,
-    motionFeedback,
-    lifeChange,
-    hypothesis
+    summary: "再診結果を受けて、仮説の再構築を行います。",
+    rawData,
+    promptForGPT
   };
 }
 
-// 🧩 セルフケア実施に対するコメント生成
-function generateCareComment(careArray, frequency) {
-  const careLabels = {
-    habit: "生活習慣の改善",
-    stretch: "ストレッチ",
-    breathing: "巡り改善呼吸法",
-    kampo: "漢方薬の服用",
-    original: "独自のセルフケア"
-  };
-
-  if (!Array.isArray(careArray) || careArray.length === 0) {
-    return "今回はセルフケアの実践が少なかったようです。次回は1つだけでも試してみると変化が出やすくなります。";
-  }
-
-  const tried = careArray.map(key => careLabels[key] || key).join("・");
-  const freqComment = {
-    "毎日": "とても良い習慣が身についています！",
-    "週2〜3": "無理なく続けられていて良いペースです。",
-    "あまりしていない": "次回は1つに絞って取り組むのもおすすめです。"
-  };
-
-  return `今週は【${tried}】に取り組まれていましたね。\n${freqComment[frequency] || ""}`;
-}
-
-// 🌙 生活リズムに関するコメント
-function generateLifeComment(answer) {
-  if (!answer) return "";
-  return `この1週間の生活の変化として「${answer}」が挙げられました。体調とのつながりを意識してみましょう。`;
-}
-
-module.exports = generateResult;
+module.exports = generateFollowupResult;
