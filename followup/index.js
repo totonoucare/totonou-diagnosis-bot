@@ -4,7 +4,7 @@ const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
 const memoryManager = require('./memoryManager');
 const sendGPTResponse = require('./responseSender');
-const { MessageBuilder } = require('../utils/flexBuilder');
+const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
 // ユーザーの進行状態を記録
 const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
@@ -44,33 +44,47 @@ async function handleFollowup(event, client, userId) {
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    // 回答の検証（A〜E）
-    const answer = message.charAt(0).toUpperCase();
-    const isValid = question.options.some(opt => opt.startsWith(answer));
+    // Q3の特別処理：複数選択肢の回答をまとめて記録
+    if (question.id === 'Q3' && question.isMulti && message.includes(':')) {
+      const parts = message.split(':');
+      if (parts.length !== 2) {
+        return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
+      }
 
-    if (!isValid) {
-      return [{
-        type: 'text',
-        text: 'A〜Eの中からボタンで選んでください。'
-      }];
-    }
+      const [key, answer] = parts;
+      if (!['A', 'B', 'C', 'D'].includes(answer)) {
+        return [{ type: 'text', text: 'A〜Dのボタンで選んでください。' }];
+      }
 
-    // 回答記録（Q3が特殊形式のときだけ拡張）
-    if (question.id === 'Q3') {
-      session.answers.push({
-        habits: answer,
-        stretch: answer,
-        breathing: answer,
-        kampo: answer,
-        other: answer
-      });
+      if (!session.partialAnswers) session.partialAnswers = {};
+      session.partialAnswers[key] = answer;
+
+      // すべての subQuestions に回答済みかチェック
+      if (Object.keys(session.partialAnswers).length < question.subQuestions.length) {
+        return []; // 次のボタン回答を待つ（何も返さない）
+      }
+
+      session.answers.push({ ...session.partialAnswers });
+      delete session.partialAnswers;
+      session.step++;
+
     } else {
+      // 通常の質問に対する処理
+      const answer = message.charAt(0).toUpperCase();
+      const isValid = question.options.some(opt => opt.startsWith(answer));
+
+      if (!isValid) {
+        return [{
+          type: 'text',
+          text: 'A〜Eの中からボタンで選んでください。'
+        }];
+      }
+
       session.answers.push(answer);
+      session.step++;
     }
 
-    session.step++;
-
-    // 質問終了 → 診断結果生成
+    // 全質問完了 → GPT連携
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const memory = memoryManager.getUserMemory(userId) || {};
@@ -91,7 +105,6 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // 次の質問を出力
     const nextQuestion = questionSets[session.step - 1];
     return [buildFlexMessage(nextQuestion)];
 
@@ -104,8 +117,16 @@ async function handleFollowup(event, client, userId) {
   }
 }
 
-// Flexメッセージを生成（共通部品利用）
+// Q1〜Q5の形式に応じてFlexを出し分け
 function buildFlexMessage(question) {
+  if (question.isMulti && question.subQuestions) {
+    return buildMultiQuestionFlex({
+      altText: question.header,
+      header: question.header,
+      questions: question.subQuestions
+    });
+  }
+
   return MessageBuilder({
     altText: question.header,
     header: question.header,
