@@ -1,7 +1,7 @@
 const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
-const { setInitialContext } = require('../memoryManager'); // ← 追加
+const { setInitialContext } = require('../memoryManager'); // ← 再診用context保存
 
 // セッション管理オブジェクト
 const userSessions = {};
@@ -78,12 +78,13 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     };
   } else {
     // すべての質問完了 → 診断結果生成
-    const result = handleAnswers(session.answers);
+    const result = await handleAnswers(session.answers); // ← await 忘れずに
     delete userSessions[userId];
 
-    // 🔽🔽🔽 memoryManager に前回診断データを記録（再診用）
+    // 🔽 再診用の初回診断文脈を保存（motion追加！）
     setInitialContext(userId, {
       symptom: category,
+      motion: session.answers[4],              // ← Q5：動作検査の答え
       typeName: result.type,
       traits: result.traits,
       flowIssue: result.flowIssue,
