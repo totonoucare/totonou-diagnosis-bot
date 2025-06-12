@@ -11,9 +11,8 @@ const sendFollowupPromptToGPT = require("./responseSender");
  * @returns {Promise<Object>} - GPTコメント付きの再診結果
  */
 async function handleFollowupAnswers(userId, answers) {
-  // 🔽 初回診断の全情報を取得（symptom, typeName, flowIssue, etc...）
-  const memory = memoryManager.getUserMemory(userId);
-  const context = memory?.context || {};
+  // ✅ 初回診断の文脈だけ取得（contextだけでOK）
+  const context = memoryManager.getContext(userId);  // ←ここだけ変更でOK
 
   // GPTプロンプト含むデータ構成
   const result = generateFollowupResult(answers, context);
@@ -21,7 +20,6 @@ async function handleFollowupAnswers(userId, answers) {
   // GPTでコメント生成
   const gptComment = await sendFollowupPromptToGPT(result.promptParts);
 
-  // 結果にGPTコメントを添付
   return {
     ...result,
     gptComment,
