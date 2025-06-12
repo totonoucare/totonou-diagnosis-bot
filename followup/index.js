@@ -2,7 +2,7 @@
 
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
-const memoryManager = require('./memoryManager');
+const memoryManager = require('../memoryManager');
 const sendGPTResponse = require('./responseSender');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
