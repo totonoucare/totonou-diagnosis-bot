@@ -11,12 +11,9 @@ const sendFollowupPromptToGPT = require("./responseSender");
  * @returns {Promise<Object>} - GPTコメント付きの再診結果
  */
 async function handleFollowupAnswers(userId, answers) {
-  // ユーザーごとの前回の主訴・動作テスト記憶を取得
-  const memory = memoryManager.getUserMemory(userId) || {};
-  const context = {
-    symptom: memory.symptom || "体の不調",
-    motion: memory.motion || "特定の動作",
-  };
+  // 🔽 初回診断の全情報を取得
+  const memory = memoryManager.getUserMemory(userId);
+  const context = memory?.context || {};
 
   // GPTプロンプト含むデータ構成
   const result = generateFollowupResult(answers, context);
