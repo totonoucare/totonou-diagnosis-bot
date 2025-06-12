@@ -77,14 +77,13 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       ],
     };
   } else {
-    // すべての質問完了 → 診断結果生成
+    // ✅ すべての質問完了 → 診断結果生成
     const result = await handleAnswers(session.answers); // ← await 忘れずに
-    delete userSessions[userId];
 
-    // 🔽 再診用の初回診断文脈を保存（motion追加！）
+    // ✅ 初回診断の記録を保存（delete より先に！）
     setInitialContext(userId, {
       symptom: category,
-      motion: session.answers[4],              // ← Q5：動作検査の答え
+      motion: session.answers[4], // Q5：動作テスト
       typeName: result.type,
       traits: result.traits,
       flowIssue: result.flowIssue,
@@ -92,6 +91,9 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       planAdvice: result.advice,
       link: result.link
     });
+
+    // ✅ セッション削除は保存の後
+    delete userSessions[userId];
 
     return {
       messages: [
