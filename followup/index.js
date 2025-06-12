@@ -30,7 +30,8 @@ const motionLabels = {
 const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
 
 // 置換関数：質問テンプレート内の{{symptom}}や{{motion}}を日本語に置き換える
-function replacePlaceholders(template, context) {
+function replacePlaceholders(template, context = {}) {
+  if (!template || typeof template !== 'string') return '';
   return template
     .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
     .replace(/\{\{motion\}\}/g, motionLabels[context.motion] || '特定の動作');
