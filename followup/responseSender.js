@@ -6,41 +6,49 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-function buildPrompt(parts) {
+/**
+ * 🔧 修正ポイント①
+ * 未定義の `parts` を受け取ってもエラーを起こさないようにする。
+ * fallback値（空文字列）を設定しておくことで GPT送信エラーを回避。
+ */
+function buildPrompt(parts = {}) {
   return `
 患者の初回診断結果と、今回の再診内容を以下にまとめます。
 あなたは東洋医学の専門家として、改善点や継続すべき点を優しく、具体的にコメントしてください。
 
 【前回診断結果】
-- 体質タイプ：${parts.typeName}
-- お体の傾向：${parts.traits}
-- 巡りの傾向：${parts.flowIssue}
-- 内臓の負担傾向：${parts.organBurden}
-- ととのう計画：${parts.planAdvice}
-- 推奨漢方リンク：${parts.link}
+- 体質タイプ：${parts.typeName || "不明"}
+- お体の傾向：${parts.traits || "不明"}
+- 巡りの傾向：${parts.flowIssue || "不明"}
+- 内臓の負担傾向：${parts.organBurden || "不明"}
+- ととのう計画：${parts.planAdvice || "不明"}
+- 推奨漢方リンク：${parts.link || "なし"}
 
-【主訴】${parts.symptom}
-【主訴の変化】${parts.symptomChange}
-【体調全体】${parts.overall}
+【主訴】${parts.symptom || "不明"}
+【主訴の変化】${parts.symptomChange || "不明"}
+【体調全体】${parts.overall || "不明"}
 
 【セルフケア実施状況】
-- 習慣改善：${parts.habits}
-- ストレッチ：${parts.stretch}
-- 呼吸法：${parts.breathing}
-- 漢方薬：${parts.kampo}
-- その他：${parts.otherCare}
+- 習慣改善：${parts.habits || "未回答"}
+- ストレッチ：${parts.stretch || "未回答"}
+- 呼吸法：${parts.breathing || "未回答"}
+- 漢方薬：${parts.kampo || "未回答"}
+- その他：${parts.otherCare || "未回答"}
 
 【動作テスト】
-- 前回の動作：${parts.motion}
-- 今回の動作変化：${parts.motionChange}
+- 前回の動作：${parts.motion || "不明"}
+- 今回の動作変化：${parts.motionChange || "不明"}
 
-【生活習慣の変化】${parts.lifestyle}
+【生活習慣の変化】${parts.lifestyle || "未記入"}
 
 以上を踏まえて、患者さんの体の変化と今後の“ととのう習慣”について、
 温かい言葉と共にアドバイスをお願いします。
 `;
 }
 
+/**
+ * 🧠 GPTへプロンプトを送信し、コメントを取得
+ */
 async function sendFollowupPromptToGPT(promptParts) {
   const prompt = buildPrompt(promptParts);
 
@@ -69,4 +77,8 @@ async function sendFollowupPromptToGPT(promptParts) {
   }
 }
 
-module.exports = sendFollowupPromptToGPT;
+// ✅ 拡張しやすいよう両方 export（任意）
+module.exports = {
+  sendFollowupPromptToGPT,
+  buildPrompt
+};
