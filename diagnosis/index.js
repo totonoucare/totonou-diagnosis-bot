@@ -95,9 +95,9 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     return {
       messages: [
         { type: 'text', text: `【📝診断結果】\n\n${result.type}` },
-        { type: 'text', text: `【🔍お体の傾向】\n\n${result.traits}\n\n【🌀巡りの傾向】\n${result.flowIssue}` },
+        { type: 'text', text: `【🔍お体の傾向】\n\n${result.traits}\n\n【🌀巡りの傾向】\n\n${result.flowIssue}` },
         { type: 'text', text: `【🫁内臓への負担傾向】\n\n${result.organBurden}` },
-        { type: 'text', text: `【📘あなた専用ととのう計画】\n\n${result.advice}` },
+        { type: 'text', text: `【🤖📘あなた専用ととのう計画】\n${result.advice}` },
         { type: 'text', text: `【🌿おすすめ漢方薬】\n${result.link}` },
       ]
     };
