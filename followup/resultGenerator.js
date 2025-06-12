@@ -2,18 +2,24 @@ function generateFollowupResult(answers, context = {}) {
   const [q1, q2, q3, q4, q5] = answers;
 
   const rawData = {
-    symptomChange: q1,        // Q1：主訴の変化
-    overallCondition: q2,     // Q2：全体の体調
-    careDetails: q3,          // Q3：セルフケア実施内容（各項目）
-    motionTestChange: q4,     // Q4：動作テストの変化
-    lifestyleChange: q5       // Q5：生活習慣の変化
+    symptomChange: q1,
+    overallCondition: q2,
+    careDetails: q3,
+    motionTestChange: q4,
+    lifestyleChange: q5
   };
 
   const promptParts = {
     symptom: context.symptom || "未登録",
     motion: context.motion || "未登録",
+
     typeName: context.typeName || "未登録",
-    planAdvice: context.planAdvice || "（前回のアドバイス未登録）",
+    traits: context.traits || "未登録",
+    flowIssue: context.flowIssue || "未登録",
+    organBurden: context.organBurden || "未登録",
+    planAdvice: context.advice || "（前回アドバイス未登録）",
+    link: context.link || "（未登録）",
+
     symptomChange: q1,
     overall: q2,
     habits: q3.habits || "未実施",
