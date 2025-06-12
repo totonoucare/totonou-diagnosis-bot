@@ -89,12 +89,12 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
-// フォローアップ診断Q3のような複数小問×選択肢形式に対応
+// Q3など複数小問×選択肢形式に対応
 function buildMultiQuestionFlex({ altText, header, questions }) {
   const contents = questions.flatMap((q) => [
     {
       type: 'text',
-      text: `🔸 ${q.title}`,
+      text: `🔸 ${q.header}`, // ← title → header に修正
       weight: 'bold',
       size: 'sm',
       margin: 'md',
@@ -111,7 +111,7 @@ function buildMultiQuestionFlex({ altText, header, questions }) {
           type: 'postback',
           label: choice,
           data: `${q.key}:${choice}`,
-          displayText: `${q.title} → ${choice}`,
+          displayText: `${q.header} → ${choice}`, // ← title → header に修正
         },
         height: 'sm',
         style: 'primary',
