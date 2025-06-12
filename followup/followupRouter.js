@@ -12,7 +12,7 @@ const sendFollowupPromptToGPT = require("./responseSender");
  */
 async function handleFollowupAnswers(userId, answers) {
   // ✅ 初回診断の文脈だけ取得（contextだけでOK）
-  const context = memoryManager.getContext(userId);  // ←ここだけ変更でOK
+  const context = memoryManager.getContext(userId) || {};  // ←ここだけ変更でOK
 
   // GPTプロンプト含むデータ構成
   const result = generateFollowupResult(answers, context);
