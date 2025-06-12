@@ -22,11 +22,11 @@ function generateFollowupResult(answers, context = {}) {
 
     symptomChange: q1,
     overall: q2,
-    habits: q3.habits || "未実施",
-    stretch: q3.stretch || "未実施",
-    breathing: q3.breathing || "未実施",
-    kampo: q3.kampo || "未使用",
-    otherCare: q3.other || "なし",
+    habits: q3?.habits || "未実施",
+    stretch: q3?.stretch || "未実施",
+    breathing: q3?.breathing || "未実施",
+    kampo: q3?.kampo || "未使用",
+    otherCare: q3?.other || "なし",
     motionChange: q4,
     lifestyle: q5
   };
