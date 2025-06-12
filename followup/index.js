@@ -5,14 +5,35 @@ const handleFollowupAnswers = require('./followupRouter');
 const memoryManager = require('../memoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
+// 主訴と動作の日本語変換マップ
+const symptomLabels = {
+  stomach: '胃腸の調子',
+  sleep: '睡眠改善・集中力',
+  pain: '肩こり・腰痛・関節',
+  mental: 'イライラや不安感',
+  cold: '体温バランス・むくみ',
+  skin: '頭髪や肌の健康',
+  pollen: '花粉症・鼻炎',
+  women: '女性特有のお悩み',
+  unknown: 'なんとなく不調・不定愁訴',
+};
+
+const motionLabels = {
+  A: '首を後ろに倒すor左右に回す',
+  B: '腕をバンザイする',
+  C: '前屈する',
+  D: '腰を左右にねじるor側屈',
+  E: '上体をそらす',
+};
+
 // ユーザーの進行状態を記録
 const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
 
-// ✅ symptom / motion を埋め込むプレースホルダー置換関数
-function replacePlaceholders(text, context) {
-  return text
-    .replace(/{{symptom}}/g, context?.symptom || '不明な主訴')
-    .replace(/{{motion}}/g, context?.motion || '不明な動作');
+// 置換関数：質問テンプレート内の{{symptom}}や{{motion}}を日本語に置き換える
+function replacePlaceholders(template, context) {
+  return template
+    .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
+    .replace(/\{\{motion\}\}/g, motionLabels[context.motion] || '特定の動作');
 }
 
 async function handleFollowup(event, client, userId) {
@@ -35,7 +56,8 @@ async function handleFollowup(event, client, userId) {
       userSession[userId] = { step: 1, answers: [] };
 
       const q1 = questionSets[0];
-      return [buildFlexMessage(q1, memoryManager.getContext(userId))];
+      const context = memoryManager.getContext(userId) || {};
+      return [buildFlexMessage(q1, context)];
     }
 
     // ✅ セッションが存在しない
@@ -114,9 +136,9 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
-    return [buildFlexMessage(nextQuestion, memoryManager.getContext(userId))];
+    const context = memoryManager.getContext(userId) || {};
+    return [buildFlexMessage(nextQuestion, context)];
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
@@ -127,18 +149,18 @@ async function handleFollowup(event, client, userId) {
   }
 }
 
-// Q1〜Q5の形式に応じてFlexを出し分け（プレースホルダー処理あり）
+// Q1〜Q5の形式に応じてFlexを出し分け（contextを引数に追加）
 function buildFlexMessage(question, context = {}) {
   if (question.isMulti && question.subQuestions) {
-    const replacedSubs = question.subQuestions.map(q => ({
-      ...q,
-      body: replacePlaceholders(q.body, context),
+    const updatedSubs = question.subQuestions.map(sub => ({
+      ...sub,
+      header: replacePlaceholders(sub.header, context),
+      body: replacePlaceholders(sub.body, context)
     }));
-
     return buildMultiQuestionFlex({
       altText: replacePlaceholders(question.header, context),
       header: replacePlaceholders(question.header, context),
-      questions: replacedSubs
+      questions: updatedSubs
     });
   }
 
