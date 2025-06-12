@@ -1,7 +1,7 @@
 // followup/followupRouter.js
 
 const generateFollowupResult = require("./resultGenerator");
-const memoryManager = require("./memoryManager");
+const memoryManager = require("../memoryManager");
 const sendFollowupPromptToGPT = require("./responseSender");
 
 /**
