@@ -8,6 +8,13 @@ const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder
 // ユーザーの進行状態を記録
 const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
 
+// ✅ symptom / motion を埋め込むプレースホルダー置換関数
+function replacePlaceholders(text, context) {
+  return text
+    .replace(/{{symptom}}/g, context?.symptom || '不明な主訴')
+    .replace(/{{motion}}/g, context?.motion || '不明な動作');
+}
+
 async function handleFollowup(event, client, userId) {
   try {
     let message = "";
@@ -28,7 +35,7 @@ async function handleFollowup(event, client, userId) {
       userSession[userId] = { step: 1, answers: [] };
 
       const q1 = questionSets[0];
-      return [buildFlexMessage(q1)];
+      return [buildFlexMessage(q1, memoryManager.getContext(userId))];
     }
 
     // ✅ セッションが存在しない
@@ -89,12 +96,9 @@ async function handleFollowup(event, client, userId) {
     // ✅ 全質問完了 → GPT処理
     if (session.step > questionSets.length) {
       const answers = session.answers;
-
-      // 🔍 初回診断文脈を memoryManager から取得
       const context = memoryManager.getContext(userId) || {};
       console.log("📤 フォローアップ用 context:", context);
 
-      // 🔒 安全ガード（null/undefined回避）
       if (!context.symptom || !context.typeName) {
         console.warn("⚠️ context 情報が不完全。symptom/typeNameが未定義です");
       }
@@ -112,7 +116,7 @@ async function handleFollowup(event, client, userId) {
 
     // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
-    return [buildFlexMessage(nextQuestion)];
+    return [buildFlexMessage(nextQuestion, memoryManager.getContext(userId))];
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
@@ -123,20 +127,25 @@ async function handleFollowup(event, client, userId) {
   }
 }
 
-// Q1〜Q5の形式に応じてFlexを出し分け
-function buildFlexMessage(question) {
+// Q1〜Q5の形式に応じてFlexを出し分け（プレースホルダー処理あり）
+function buildFlexMessage(question, context = {}) {
   if (question.isMulti && question.subQuestions) {
+    const replacedSubs = question.subQuestions.map(q => ({
+      ...q,
+      body: replacePlaceholders(q.body, context),
+    }));
+
     return buildMultiQuestionFlex({
-      altText: question.header,
-      header: question.header,
-      questions: question.subQuestions
+      altText: replacePlaceholders(question.header, context),
+      header: replacePlaceholders(question.header, context),
+      questions: replacedSubs
     });
   }
 
   return MessageBuilder({
-    altText: question.header,
-    header: question.header,
-    body: question.body,
+    altText: replacePlaceholders(question.header, context),
+    header: replacePlaceholders(question.header, context),
+    body: replacePlaceholders(question.body, context),
     buttons: question.options.map(opt => ({
       label: opt,
       data: opt.includes(':') ? opt : opt.charAt(0),
