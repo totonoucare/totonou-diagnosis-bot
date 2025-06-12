@@ -1,4 +1,4 @@
-// ユーザーごとの再診情報（本番ではDB推奨）
+// ユーザーごとの診断・再診情報（本番ではDB推奨）
 const userMemory = {};
 
 /**
@@ -8,12 +8,13 @@ function initializeFollowup(userId) {
   userMemory[userId] = {
     step: 0,
     answers: [],
+    context: {}, // 初回診断情報などを格納
     updatedAt: new Date()
   };
 }
 
 /**
- * 現在の再診データを取得
+ * 現在のユーザーデータ（再診含む）を取得
  */
 function getUserMemory(userId) {
   return userMemory[userId] || null;
@@ -30,7 +31,27 @@ function recordAnswer(userId, answer) {
 }
 
 /**
- * 再診データを全消去（使い終わったら呼ぶ）
+ * 初回診断データなどの文脈情報を保存（主訴や体質タイプなど）
+ * 例：{ symptom: "肩こり", typeName: "気虚タイプ", traits: "...", ... }
+ */
+function setInitialContext(userId, contextObj) {
+  if (!userMemory[userId]) initializeFollowup(userId);
+  userMemory[userId].context = {
+    ...userMemory[userId].context,
+    ...contextObj
+  };
+  userMemory[userId].updatedAt = new Date();
+}
+
+/**
+ * 現在の文脈情報（初回診断の記録）だけ取得
+ */
+function getContext(userId) {
+  return userMemory[userId]?.context || {};
+}
+
+/**
+ * 再診データと診断文脈を全削除（リセット時）
  */
 function clearFollowup(userId) {
   delete userMemory[userId];
@@ -39,6 +60,8 @@ function clearFollowup(userId) {
 module.exports = {
   initializeFollowup,
   getUserMemory,
+  getContext,
   recordAnswer,
+  setInitialContext,
   clearFollowup
 };
