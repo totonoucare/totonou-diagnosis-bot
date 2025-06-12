@@ -36,7 +36,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
   const flowCareAdvice = flowAdviceDictionary[flowType] || "";
 
   // ととのう習慣アドバイスの統合生成
-  const combinedAdvice = `\n【💡習慣改善ヒント】\n\n${baseAdvice}\n\n【🤸不調解放ストレッチ】\n\n${stretchData.stretch}\n\n🎯あなたピッタリのツボ】\n\n${stretchData.points.join("・")}\n\n【🧘巡りへのセルフケア】\n\n${flowCareAdvice}`;
+  const combinedAdvice = `\n【習慣改善ヒント💡】\n${baseAdvice}\n\n【不調解放ストレッチ🤸】\n${stretchData.stretch}\n\n【あなたの不調改善ツボ🎯】\n${stretchData.points.join("・")}\n\n【巡りへのセルフケア🧘】\n${flowCareAdvice}`;
 
   // flowlabel → リンク内に埋め込み処理
   const flowLabel = flowlabelDictionary[flowType] || "";
