@@ -1,7 +1,7 @@
 const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
-const { setInitialContext } = require('../followup/memoryManager'); // ← 追加
+const { setInitialContext } = require('../memoryManager'); // ← 追加
 
 // セッション管理オブジェクト
 const userSessions = {};
