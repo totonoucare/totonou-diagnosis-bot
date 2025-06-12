@@ -1,5 +1,3 @@
-// followup/memoryManager.js
-
 // ユーザーごとの再診情報（本番ではDB推奨）
 const userMemory = {};
 
