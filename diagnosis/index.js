@@ -1,6 +1,7 @@
 const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
+const { setInitialContext } = require('../followup/memoryManager'); // ← 追加
 
 // セッション管理オブジェクト
 const userSessions = {};
@@ -67,8 +68,6 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
   const nextQuestion = questionSet[`Q${session.currentStep}`];
   if (nextQuestion) {
     const flex = await buildQuestionFlex(nextQuestion);
-
-    // displayTextがある場合はそれを表示（なければchoiceのA〜Eを出す）
     const displayText = rawEvent?.postback?.displayText || `あなたの選択：${choice}`;
 
     return {
@@ -81,6 +80,17 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     // すべての質問完了 → 診断結果生成
     const result = handleAnswers(session.answers);
     delete userSessions[userId];
+
+    // 🔽🔽🔽 memoryManager に前回診断データを記録（再診用）
+    setInitialContext(userId, {
+      symptom: category,
+      typeName: result.type,
+      traits: result.traits,
+      flowIssue: result.flowIssue,
+      organBurden: result.organBurden,
+      planAdvice: result.advice,
+      link: result.link
+    });
 
     return {
       messages: [
