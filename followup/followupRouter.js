@@ -2,7 +2,7 @@
 
 const generateFollowupResult = require("./resultGenerator");
 const memoryManager = require("../memoryManager");
-const sendFollowupPromptToGPT = require("./responseSender");
+const { sendFollowupPromptToGPT } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
