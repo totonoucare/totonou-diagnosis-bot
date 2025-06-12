@@ -1,3 +1,5 @@
+// memoryManager.js
+
 // ユーザーごとの診断・再診情報（本番ではDB推奨）
 const userMemory = {};
 
@@ -41,13 +43,17 @@ function setInitialContext(userId, contextObj) {
     ...contextObj
   };
   userMemory[userId].updatedAt = new Date();
+
+  console.log("💾 setInitialContext:", userId, userMemory[userId].context); // ←ログ追加
 }
 
 /**
  * 現在の文脈情報（初回診断の記録）だけ取得
  */
 function getContext(userId) {
-  return userMemory[userId]?.context || {};
+  const context = userMemory[userId]?.context || null;
+  console.log("📤 getContext:", userId, context); // ←ログ追加
+  return context;
 }
 
 /**
