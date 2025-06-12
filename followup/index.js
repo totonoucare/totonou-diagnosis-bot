@@ -3,7 +3,6 @@
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
 const memoryManager = require('../memoryManager');
-const sendGPTResponse = require('./responseSender');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
 // ユーザーの進行状態を記録
@@ -24,7 +23,7 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // セッション開始トリガー
+    // ✅ セッション開始トリガー
     if (message === 'ととのう計画') {
       userSession[userId] = { step: 1, answers: [] };
 
@@ -32,7 +31,7 @@ async function handleFollowup(event, client, userId) {
       return [buildFlexMessage(q1)];
     }
 
-    // セッションが存在しない
+    // ✅ セッションが存在しない
     if (!userSession[userId]) {
       return [{
         type: 'text',
@@ -48,7 +47,7 @@ async function handleFollowup(event, client, userId) {
     console.log("📝 現在の質問 ID:", question?.id);
     console.log("📝 options:", question?.options);
 
-    // Q3の特別処理：複数選択肢の回答をまとめて記録
+    // ✅ Q3：複数選択肢をまとめて処理
     if (question.id === 'Q3' && question.isMulti && message.includes(':')) {
       const parts = message.split(':');
       if (parts.length !== 2) {
@@ -63,9 +62,8 @@ async function handleFollowup(event, client, userId) {
       if (!session.partialAnswers) session.partialAnswers = {};
       session.partialAnswers[key] = answer;
 
-      // すべての subQuestions に回答済みかチェック
       if (Object.keys(session.partialAnswers).length < question.subQuestions.length) {
-        return []; // 次のボタン回答を待つ（何も返さない）
+        return []; // 続く選択を待機
       }
 
       session.answers.push({ ...session.partialAnswers });
@@ -73,7 +71,7 @@ async function handleFollowup(event, client, userId) {
       session.step++;
 
     } else {
-      // 通常の質問に対する処理
+      // ✅ 通常の単一回答処理
       const answer = message.charAt(0).toUpperCase();
       const isValid = question.options.some(opt => opt.startsWith(answer));
 
@@ -88,27 +86,31 @@ async function handleFollowup(event, client, userId) {
       session.step++;
     }
 
-    // 全質問完了 → GPT連携
+    // ✅ 全質問完了 → GPT処理
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const memory = memoryManager.getUserMemory(userId) || {};
 
-      const context = {
-        symptom: memory.symptom || '体の不調',
-        motion: memory.motion || '特定の動作'
-      };
+      // 🔍 初回診断文脈を memoryManager から取得
+      const context = memoryManager.getContext(userId) || {};
+      console.log("📤 フォローアップ用 context:", context);
+
+      // 🔒 安全ガード（null/undefined回避）
+      if (!context.symptom || !context.typeName) {
+        console.warn("⚠️ context 情報が不完全。symptom/typeNameが未定義です");
+      }
 
       const result = await handleFollowupAnswers(userId, answers);
-      const gptReply = await sendGPTResponse(result.promptForGPT);
+      console.log("💬 GPTコメント:", result.gptComment);
 
       delete userSession[userId];
 
       return [{
         type: 'text',
-        text: '📋【今回の再診結果】\n' + gptReply
+        text: '📋【今回の再診結果】\n' + result.gptComment
       }];
     }
 
+    // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
     return [buildFlexMessage(nextQuestion)];
 
@@ -137,7 +139,7 @@ function buildFlexMessage(question) {
     body: question.body,
     buttons: question.options.map(opt => ({
       label: opt,
-      data: opt.charAt(0),
+      data: opt.includes(':') ? opt : opt.charAt(0),
       displayText: opt
     }))
   });
