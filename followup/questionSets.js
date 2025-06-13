@@ -23,25 +23,19 @@ const questionSets = [
       "E：かなり不調"
     ]
   },
-  {
-    id: "Q3",
-    header: "【Q3】各種セルフケアの実施状況",
-    body: `以下の各項目について、この1週間の実施頻度を教えてください。\n\nA：毎日実施\nB：週2〜3回実施\nC：ほとんどできていない\nD：やっていない／取り組んでいない`,
-    isMulti: true,  // ← 特殊なレンダリング指定
-    subQuestions: [
-      { key: "habits", title: "習慣改善（睡眠・食事・行動）" },
-      { key: "stretch", title: "経絡（けいらく）ストレッチ" },
-      { key: "breathing", title: "巡りととのえ呼吸法" },
-      { key: "kampo", title: "漢方薬の服用" },
-      { key: "other", title: "その他独自のセルフケア" }
-    ],
-    options: [
-      "A：毎日実施", 
-      "B：週2〜3回実施", 
-      "C：ほとんどできていない",
-      "D：やっていない／取り組んでいない"
-    ]
-  },
+{
+  id: "Q3",
+  header: "【Q3】セルフケアの実施状況",
+  body: "この1週間、それぞれのセルフケアについてどの程度取り組めましたか？\n\nA：毎日実施\nB：週2〜3回実施\nC：ほとんどできていない\nD：やっていない／取り組んでいない",
+  isMulti: true,
+  subQuestions: [
+    { key: "habits", title: "習慣改善（睡眠・食事・行動の見直し）" },
+    { key: "stretch", title: "経絡ストレッチ" },
+    { key: "breathing", title: "巡りととのえ呼吸法" },
+    { key: "kampo", title: "漢方薬の服用" },
+    { key: "other", title: "その他独自のセルフケア" }
+  ]
+},
   {
     id: "Q4",
     header: "【Q4】前回の動作テストについて",
