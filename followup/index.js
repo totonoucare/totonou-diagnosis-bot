@@ -158,11 +158,12 @@ function buildFlexMessage(question, context = {}) {
       header: replacePlaceholders(sub.header, context),
       body: replacePlaceholders(sub.body, context)
     }));
-    return buildMultiQuestionFlex({
-      altText: replacePlaceholders(question.header, context),
-      header: replacePlaceholders(question.header, context),
-      questions: updatedSubs
-    });
+ return buildMultiQuestionFlex({
+   altText: replacePlaceholders(question.header, context),
+   header: replacePlaceholders(question.header, context),
+   body: replacePlaceholders(question.body, context), // ←これを追加！
+   questions: updatedSubs
+ });
   }
 
   return MessageBuilder({
