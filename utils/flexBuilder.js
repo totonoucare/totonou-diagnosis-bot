@@ -94,7 +94,7 @@ function buildMultiQuestionFlex({ altText, header, questions }) {
   const contents = questions.flatMap((q) => [
     {
       type: 'text',
-      text: `🔸 ${q.header}`, // ← title → header に修正
+      text: `🔸 ${q.title}`, // ← title → header に修正
       weight: 'bold',
       size: 'sm',
       margin: 'md',
