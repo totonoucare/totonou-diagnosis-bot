@@ -111,7 +111,7 @@ function buildMultiQuestionFlex({ altText, header, questions }) {
           type: 'postback',
           label: choice,
           data: `${q.key}:${choice}`,
-          displayText: `${q.header} → ${choice}`, // ← title → header に修正
+          displayText: `${q.title} → ${choice}`, // ← title → header に修正
         },
         height: 'sm',
         style: 'primary',
