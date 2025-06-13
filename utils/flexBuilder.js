@@ -151,7 +151,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
             type: 'text',
             text: body, // ← ここが質問文（選択肢A〜Dの意味など）
             wrap: true,
-            size: 'sm',
+            size: 'md',
             color: '#333333',
           },
           {
