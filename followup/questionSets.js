@@ -13,7 +13,7 @@ const questionSets = [
   },
   {
     id: "Q2",
-    header: "【Q2】体調全体としての調子は？",
+    header: "【Q2】体調全体としての調子",
     body: "この1週間、全体としての体調はどうでしたか？",
     options: [
       "A：とても良い",
@@ -25,13 +25,13 @@ const questionSets = [
   },
   {
     id: "Q3",
-    header: "【Q3】セルフケアの実施状況を教えてください",
+    header: "【Q3】各種セルフケアの実施状況",
     body: `以下の各項目について、この1週間の実施頻度を教えてください。\n\nA：毎日実施\nB：週2〜3回実施\nC：ほとんどできていない\nD：やっていない／取り組んでいない`,
     isMulti: true,  // ← 特殊なレンダリング指定
     subQuestions: [
-      { key: "habits", title: "習慣改善（睡眠・食事・行動の見直し）" },
-      { key: "stretch", title: "ストレッチ" },
-      { key: "breathing", title: "巡り改善呼吸法（中脘呼吸など）" },
+      { key: "habits", title: "習慣改善（睡眠・食事・行動）" },
+      { key: "stretch", title: "経絡（けいらく）ストレッチ" },
+      { key: "breathing", title: "巡りととのえ呼吸法" },
       { key: "kampo", title: "漢方薬の服用" },
       { key: "other", title: "その他独自のセルフケア" }
     ],
