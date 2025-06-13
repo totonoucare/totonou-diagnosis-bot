@@ -90,11 +90,11 @@ async function buildQuestionFlex(questionFunction) {
 }
 
 // Q3など複数小問×選択肢形式に対応
-function buildMultiQuestionFlex({ altText, header, questions }) {
-  const contents = questions.flatMap((q) => [
+function buildMultiQuestionFlex({ altText, header, body, questions }) {
+  const questionContents = questions.flatMap((q) => [
     {
       type: 'text',
-      text: `🔸 ${q.title}`, // ← title → header に修正
+      text: `🔸 ${q.title}`,
       weight: 'bold',
       size: 'sm',
       margin: 'md',
@@ -111,7 +111,7 @@ function buildMultiQuestionFlex({ altText, header, questions }) {
           type: 'postback',
           label: choice,
           data: `${q.key}:${choice}`,
-          displayText: `${q.title} → ${choice}`, // ← title → header に修正
+          displayText: `${q.title} → ${choice}`,
         },
         height: 'sm',
         style: 'primary',
@@ -145,7 +145,21 @@ function buildMultiQuestionFlex({ altText, header, questions }) {
       body: {
         type: 'box',
         layout: 'vertical',
-        contents,
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: body, // ← ここが質問文（選択肢A〜Dの意味など）
+            wrap: true,
+            size: 'sm',
+            color: '#333333',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          ...questionContents
+        ]
       },
     },
   };
