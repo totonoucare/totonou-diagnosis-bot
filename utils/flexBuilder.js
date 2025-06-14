@@ -1,4 +1,3 @@
-// 通常のFlexバブルを生成するユーティリティ
 function MessageBuilder({ altText, header, body, buttons }) {
   return {
     type: 'flex',
@@ -159,8 +158,8 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
             type: 'separator',
             margin: 'md',
           },
-          ...questionContents
-        ]
+          ...questionContents,
+        ],
       },
     },
   };
@@ -212,10 +211,16 @@ function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計
   };
 }
 
+// 通常のカルーセル（別名）
+function buildCarouselFlex(cards, altText = '診断結果とセルフケア提案') {
+  return buildAdviceCarouselFlex(cards, altText); // 実装は同じものを流用
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
   buildQuestionFlex,
   buildMultiQuestionFlex,
-  buildAdviceCarouselFlex, // ← 新たに追加
+  buildAdviceCarouselFlex,
+  buildCarouselFlex, // ← 忘れずに追加！
 };
