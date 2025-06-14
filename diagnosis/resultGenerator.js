@@ -32,7 +32,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
   const flowInfo = flowDictionary[flowType] || "";
   const organInfo = organDictionary[organType] || "";
   const baseAdvice = adviceDictionary[typeName] || "";
-  const stretchData = stretchPointDictionary[organType] || { stretch: "", points: [] };
+  const stretchData = stretchPointDictionary[organType] || { stretch: "", points: "" };
   const flowCareAdvice = flowAdviceDictionary[flowType] || "";
 
   // ととのう習慣アドバイスの統合生成
