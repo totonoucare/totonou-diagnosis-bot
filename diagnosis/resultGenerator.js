@@ -47,7 +47,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
   // 📦 カルーセル用アドバイス構造化（漢方も含む）
   const adviceCards = [
     {
-      header: "💡ここから始める体質改善習慣",
+      header: "💡ここから始める体質改善習慣！",
       body: baseAdvice
     },
     {
@@ -63,7 +63,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
       body: stretchData.points
     },
     {
-      header: "🌿おすすめ漢方薬",
+      header: "🌿体質で選ぶ漢方薬",
       body: resolvedLink
     }
   ];
