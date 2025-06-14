@@ -15,7 +15,7 @@ const config = {
 
 const client = new line.Client(config);
 
-// ユーザーごとのセッション記録（簡易的にメモリに保持）
+// 🔧 ユーザーごとのセッション記録（簡易的にメモリに保持）
 const userMemory = {};
 
 app.post("/webhook", line.middleware(config), async (req, res) => {
@@ -37,10 +37,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ 「ととのう計画」 or followupセッション中の場合
+      // ✅ フォローアップ処理（ととのう計画 or 再診断セッション中）
       if (
         userMessage === "ととのう計画" ||
-        require("./followup/index").hasSession?.(userId)
+        handleFollowup.hasSession?.(userId)
       ) {
         const messages = await handleFollowup(event, client, userId);
         if (messages?.length > 0) {
@@ -49,7 +49,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 通常診断のスタート
+      // ✅ 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(userId);
         const flex = buildCategorySelectionFlex();
@@ -57,7 +57,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 通常診断セッション中の処理
+      // ✅ 診断セッション中
       if (diagnosis.hasSession(userId)) {
         const result = await diagnosis.handleDiagnosis(userId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -65,7 +65,19 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      return null;
+      // ✅ その他の追加キーワード対応（「ととのう計画書」など）
+      const extraResult = await diagnosis.handleExtraCommands(userId, userMessage);
+      if (extraResult) {
+        await client.replyMessage(event.replyToken, extraResult.messages);
+        return;
+      }
+
+      // ❓何も該当しない場合（オプション）
+      await client.replyMessage(event.replyToken, {
+        type: "text",
+        text: "メニューから「診断開始」を選んで始めてください。",
+      });
+      return;
     })
   );
 
