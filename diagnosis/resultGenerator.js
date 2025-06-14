@@ -27,8 +27,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
           header: "診断エラー",
           body: "スコアの組み合わせが未定義か、内部エラーが発生しています。",
         }
-      ],
-      link: ""
+      ]
     };
   }
 
@@ -43,9 +42,9 @@ function generateResult(score1, score2, score3, flowType, organType) {
   // flowlabel → 漢方リンク内に埋め込み
   const flowLabel = flowlabelDictionary[flowType] || "";
   const rawLinkText = linkDictionary[typeName] || "";
-  const link = rawLinkText.replace("{{flowlabel}}", flowLabel);
+  const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
 
-  // 📦 カルーセル用アドバイス構造化
+  // 📦 カルーセル用アドバイス構造化（漢方も含む）
   const adviceCards = [
     {
       header: "💡ここから始める体質改善習慣",
@@ -62,6 +61,10 @@ function generateResult(score1, score2, score3, flowType, organType) {
     {
       header: "🎯ツボで不調の根本アプローチ！",
       body: stretchData.points
+    },
+    {
+      header: "🌿おすすめ漢方薬",
+      body: resolvedLink
     }
   ];
 
@@ -70,8 +73,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
     traits: baseInfo.traits || "",
     flowIssue: flowInfo,
     organBurden: organInfo,
-    adviceCards: adviceCards,
-    link: link
+    adviceCards: adviceCards
   };
 }
 
