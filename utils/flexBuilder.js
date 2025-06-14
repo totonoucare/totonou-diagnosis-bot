@@ -24,7 +24,6 @@ function MessageBuilder({ altText, header, body, buttons }) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        paddingAll: '14px',
         contents: [
           {
             type: 'text',
@@ -76,7 +75,7 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// 通常の質問カード（Flex）
+// 通常の質問カードをビルド（Flex）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
@@ -147,7 +146,6 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        paddingAll: '14px',
         contents: [
           {
             type: 'text',
@@ -190,8 +188,6 @@ function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計
     body: {
       type: 'box',
       layout: 'vertical',
-      spacing: 'none',
-      paddingAll: '14px',
       contents: [
         {
           type: 'text',
@@ -199,9 +195,9 @@ function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計
           wrap: true,
           color: '#333333',
           size: 'md',
-          maxLines: 8, // 高さ揃え
         },
       ],
+      spacing: 'md',
     },
   }));
 
@@ -217,7 +213,7 @@ function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計
 
 // 通常のカルーセル（別名）
 function buildCarouselFlex(cards, altText = '診断結果とセルフケア提案') {
-  return buildAdviceCarouselFlex(cards, altText);
+  return buildAdviceCarouselFlex(cards, altText); // 実装は同じものを流用
 }
 
 module.exports = {
@@ -226,5 +222,5 @@ module.exports = {
   buildQuestionFlex,
   buildMultiQuestionFlex,
   buildAdviceCarouselFlex,
-  buildCarouselFlex,
+  buildCarouselFlex, // ← 忘れずに追加！
 };
