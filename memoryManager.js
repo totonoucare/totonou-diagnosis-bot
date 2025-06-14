@@ -44,16 +44,24 @@ function setInitialContext(userId, contextObj) {
   };
   userMemory[userId].updatedAt = new Date();
 
-  console.log("💾 setInitialContext:", userId, userMemory[userId].context); // ←ログ追加
+  console.log("💾 setInitialContext:", userId, userMemory[userId].context);
 }
 
 /**
- * 現在の文脈情報（初回診断の記録）だけ取得
+ * 現在の文脈情報（初回診断の記録）を取得
+ * 再診・初診共通で利用される
  */
 function getContext(userId) {
   const context = userMemory[userId]?.context || null;
-  console.log("📤 getContext:", userId, context); // ←ログ追加
+  console.log("📤 getContext:", userId, context);
   return context;
+}
+
+/**
+ * 初回診断データのみ取得（計画書用）
+ */
+function getInitialContext(userId) {
+  return getContext(userId); // エイリアスとして提供
 }
 
 /**
@@ -67,6 +75,7 @@ module.exports = {
   initializeFollowup,
   getUserMemory,
   getContext,
+  getInitialContext, // ←これが必要！
   recordAnswer,
   setInitialContext,
   clearFollowup
