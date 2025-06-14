@@ -1,5 +1,5 @@
 const questionSets = require('./questionSets');
-const { buildQuestionFlex, buildCategorySelectionFlex } = require('../utils/flexBuilder');
+const { buildQuestionFlex, buildCategorySelectionFlex, buildCarouselFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
 const { setInitialContext } = require('../memoryManager'); // ← 再診用context保存
 
@@ -78,7 +78,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     };
   } else {
     // ✅ すべての質問完了 → 診断結果生成
-    const result = await handleAnswers(session.answers); // ← await 忘れずに
+    const result = await handleAnswers(session.answers);
 
     // ✅ 初回診断の記録を保存（delete より先に！）
     setInitialContext(userId, {
@@ -88,20 +88,29 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       traits: result.traits,
       flowIssue: result.flowIssue,
       organBurden: result.organBurden,
-      planAdvice: result.advice,
+      planAdvice: result.adviceCards,
       link: result.link
     });
 
     // ✅ セッション削除は保存の後
     delete userSessions[userId];
 
+    // ✅ カルーセル用カードを結合（アドバイス4つ＋漢方薬1つ）
+    const carouselCards = [...result.adviceCards];
+    carouselCards.push({
+      header: "🌿おすすめ漢方薬",
+      body: result.link
+    });
+
+    const carousel = buildCarouselFlex(carouselCards);
+
     return {
       messages: [
         { type: 'text', text: `【📝あなたのベース体質】\n\n${result.type}` },
-        { type: 'text', text: `【🧭体質解説と改善ナビ】\n\n${result.traits}\n\n【🌀巡りの傾向】\n\n${result.flowIssue}` },
+        { type: 'text', text: `【🧭体質解説と改善ナビ】\n\n${result.traits}` },
+        { type: 'text', text: `【🌀巡りの傾向】\n\n${result.flowIssue}` },
         { type: 'text', text: `【🫁内臓への負担傾向】\n\n${result.organBurden}` },
-        { type: 'text', text: `【🤖AIが提案！📗ととのう計画】\n${result.advice}` },
-        { type: 'text', text: `【🌿おすすめ漢方薬】\n${result.link}` },
+        carousel
       ]
     };
   }
