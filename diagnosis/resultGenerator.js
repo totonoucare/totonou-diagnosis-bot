@@ -4,8 +4,8 @@ const flowlabelDictionary = require("./flowlabelDictionary");
 const organDictionary = require("./organDictionary");
 const adviceDictionary = require("./adviceDictionary");
 const linkDictionary = require("./linkDictionary");
-const stretchPointDictionary = require("./stretchPointDictionary"); // 🆕 ツボ＆ストレッチ辞書
-const flowAdviceDictionary = require("./flowAdviceDictionary");     // 🆕 巡りアドバイス辞書
+const stretchPointDictionary = require("./stretchPointDictionary");
+const flowAdviceDictionary = require("./flowAdviceDictionary");
 const getTypeName = require("./typeMapper");
 
 function generateResult(score1, score2, score3, flowType, organType) {
@@ -22,7 +22,12 @@ function generateResult(score1, score2, score3, flowType, organType) {
       traits: "",
       flowIssue: flowDictionary[flowType] || "",
       organBurden: organDictionary[organType] || "",
-      advice: "スコアの組み合わせが未定義か、内部エラーが発生しています。",
+      adviceCards: [
+        {
+          header: "診断エラー",
+          body: "スコアの組み合わせが未定義か、内部エラーが発生しています。",
+        }
+      ],
       link: ""
     };
   }
@@ -35,20 +40,37 @@ function generateResult(score1, score2, score3, flowType, organType) {
   const stretchData = stretchPointDictionary[organType] || { stretch: "", points: "" };
   const flowCareAdvice = flowAdviceDictionary[flowType] || "";
 
-  // ととのう習慣アドバイスの統合生成
-  const combinedAdvice = `\n【💡ここから始める体質改善習慣】\n\n${baseAdvice}\n\n\n【🧘巡りととのえ呼吸法】\n\n${flowCareAdvice}\n\n\n【🤸内臓ととのう経絡ストレッチ】\n\n${stretchData.stretch}\n\n\n【🎯ツボで不調の根本アプローチ！】\n\n${stretchData.points}`;
-
-  // flowlabel → リンク内に埋め込み処理
+  // flowlabel → 漢方リンク内に埋め込み
   const flowLabel = flowlabelDictionary[flowType] || "";
   const rawLinkText = linkDictionary[typeName] || "";
   const link = rawLinkText.replace("{{flowlabel}}", flowLabel);
+
+  // 📦 カルーセル用アドバイス構造化
+  const adviceCards = [
+    {
+      header: "💡ここから始める体質改善習慣",
+      body: baseAdvice
+    },
+    {
+      header: "🧘巡りととのえ呼吸法",
+      body: flowCareAdvice
+    },
+    {
+      header: "🤸内臓ととのう経絡ストレッチ",
+      body: stretchData.stretch
+    },
+    {
+      header: "🎯ツボで不調の根本アプローチ！",
+      body: stretchData.points
+    }
+  ];
 
   return {
     type: typeName,
     traits: baseInfo.traits || "",
     flowIssue: flowInfo,
     organBurden: organInfo,
-    advice: combinedAdvice,
+    adviceCards: adviceCards,
     link: link
   };
 }
