@@ -65,7 +65,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ その他の追加キーワード対応（「ととのう計画書」など）
+      // ✅ その他の追加キーワード対応（「ととのうガイド」など）
       const extraResult = await diagnosis.handleExtraCommands(userId, userMessage);
       if (extraResult) {
         await client.replyMessage(event.replyToken, extraResult.messages);
