@@ -104,13 +104,22 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
     const carousel = buildCarouselFlex(carouselCards);
 
-    return {
-      messages: [
-        { type: 'text', text: 【📝あなたのベース体質】\n\n${result.type}\n\n【🧭体質解説と改善ナビ】\n\n${result.traits} },
-        { type: 'text', text: 【🌀巡りの傾向】\n\n${result.flowIssue}\n\n【🫁内臓への負担傾向】\n\n${result.organBurden} },
-        carousel
-      ]
-    };
+return {
+  messages: [
+    {
+      type: 'text',
+      text: `【📝あなたのベース体質】\n\n${result.type}\n\n【🧭体質解説と改善ナビ】\n\n${result.traits}`
+    },
+    {
+      type: 'text',
+      text: `【🌀巡りの傾向】\n\n${result.flowIssue}\n\n【🫁内臓への負担傾向】\n\n${result.organBurden}`
+    },
+    {
+      type: 'text',
+      text: `【🤖AIが提案！📗あなた専用ととのう計画書】の特典を受け取りたい方は「ととのう計画書」とご入力ください。`
+    }
+  ]
+};
   }
 }
 
