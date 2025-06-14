@@ -114,9 +114,9 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
   }
 }
 
-// ✅ 新規追加：キーワード応答用（ととのう計画書）
+// ✅ 新規追加：キーワード応答用（ととのうガイド）
 async function handleExtraCommands(userId, messageText) {
-  if (messageText.includes("ととのう計画書")) {
+  if (messageText.includes("ととのうガイド")) {
     const context = await getInitialContext(userId);
     if (!context || !context.planAdvice) {
       return {
