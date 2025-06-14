@@ -1,3 +1,4 @@
+// 通常のFlexバブルを生成するユーティリティ
 function MessageBuilder({ altText, header, body, buttons }) {
   return {
     type: 'flex',
@@ -36,7 +37,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             type: 'separator',
             margin: 'md',
           },
-          ...buttons.map((btn) => ({
+          ...(buttons || []).map((btn) => ({
             type: 'button',
             action: {
               type: 'postback',
@@ -55,7 +56,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
   };
 }
 
-// 主訴選択のFlexメッセージを作成
+// カテゴリー選択用のバブル
 function buildCategorySelectionFlex() {
   return MessageBuilder({
     altText: '診断を開始します。どの不調が気になりますか？',
@@ -75,7 +76,7 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// Q1〜Q5など通常の単一質問をFlexで出力
+// 通常の質問カードをビルド（Flex）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
@@ -89,7 +90,7 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
-// Q3など複数小問×選択肢形式に対応
+// 複数小問対応の質問カード
 function buildMultiQuestionFlex({ altText, header, body, questions }) {
   const questionContents = questions.flatMap((q) => [
     {
@@ -149,7 +150,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
         contents: [
           {
             type: 'text',
-            text: body, // ← ここが質問文（選択肢A〜Dの意味など）
+            text: body,
             wrap: true,
             size: 'md',
             color: '#333333',
@@ -165,9 +166,56 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
   };
 }
 
+// アドバイスカード（カルーセル）作成
+function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計画') {
+  const bubbles = cards.map((card) => ({
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: card.header,
+          weight: 'bold',
+          size: 'md',
+          color: '#ffffff',
+        },
+      ],
+      backgroundColor: '#788972',
+      paddingAll: '12px',
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: card.body,
+          wrap: true,
+          color: '#333333',
+          size: 'md',
+        },
+      ],
+      spacing: 'md',
+    },
+  }));
+
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'carousel',
+      contents: bubbles,
+    },
+  };
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
   buildQuestionFlex,
   buildMultiQuestionFlex,
+  buildAdviceCarouselFlex, // ← 新たに追加
 };
