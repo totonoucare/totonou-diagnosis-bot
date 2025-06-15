@@ -2,7 +2,7 @@
 
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
-const memoryManager = require('../memoryManager');
+const memoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
 // 主訴と動作の日本語変換マップ
