@@ -22,6 +22,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
       traits: "",
       flowIssue: flowDictionary[flowType] || "",
       organBurden: organDictionary[organType] || "",
+      scores: [score1, score2, score3],
       adviceCards: [
         {
           header: "診断エラー",
@@ -73,7 +74,8 @@ function generateResult(score1, score2, score3, flowType, organType) {
     traits: baseInfo.traits || "",
     flowIssue: flowInfo,
     organBurden: organInfo,
-    adviceCards: adviceCards
+    adviceCards: adviceCards,
+    scores: [score1, score2, score3] // ← ⭐これがGPT活用のカギ！
   };
 }
 
