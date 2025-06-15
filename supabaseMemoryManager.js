@@ -1,10 +1,13 @@
 // supabaseMemoryManager.js
 const supabase = require('./supabaseClient');
+
 const getTypeName = require('../diagnosis/typeMapper');
 const resultDictionary = require('../diagnosis/resultDictionary');
 const adviceDictionary = require('../diagnosis/adviceDictionary');
 const flowAdviceDictionary = require('../diagnosis/flowAdviceDictionary');
 const organDictionary = require('../diagnosis/organDictionary');
+const stretchPointDictionary = require('../diagnosis/stretchPointDictionary');
+const flowlabelDictionary = require('../diagnosis/flowlabelDictionary');
 const linkDictionary = require('../diagnosis/linkDictionary');
 
 const TABLE_NAME = 'users';
@@ -61,15 +64,28 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType) 
   const type = getTypeName(score1, score2, score3);
   const trait = resultDictionary[type]?.traits || "";
 
-  const advice = {
-    habit: adviceDictionary[type] || "",
-    breathing: flowAdviceDictionary[flowType] || "",
-    stretch: organDictionary[organType] || "",
-    acupoint: "",  // あれば別途ファイルから取得して追記OK
-    kampo: "",     // あれば別途ファイルから取得して追記OK
-  };
+  const baseAdvice = adviceDictionary[type] || "";
+  const breathing = flowAdviceDictionary[flowType] || "";
 
-  const context = { type, trait, advice };
+  const stretchData = stretchPointDictionary[organType] || { stretch: "", points: "" };
+  const stretch = stretchData.stretch || "";
+  const acupoint = stretchData.points || "";
+
+  const flowLabel = flowlabelDictionary[flowType] || "";
+  const rawLinkText = linkDictionary[type] || "";
+  const kampo = rawLinkText.replace("{{flowlabel}}", flowLabel);
+
+  const context = {
+    type,
+    trait,
+    advice: {
+      habit: baseAdvice,
+      breathing,
+      stretch,
+      acupoint,
+      kampo
+    }
+  };
 
   const { error } = await supabase
     .from(TABLE_NAME)
