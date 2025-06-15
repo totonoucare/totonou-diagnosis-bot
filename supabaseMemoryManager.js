@@ -51,10 +51,40 @@ async function getDiagnosis(lineId) {
   return data;
 }
 
+async function getContext(lineId) {
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select('context')
+    .eq('line_id', lineId)
+    .single();
+
+  if (error) throw error;
+  try {
+    return data.context ? JSON.parse(data.context) : {};
+  } catch (e) {
+    console.warn('⚠️ contextのパースに失敗:', e);
+    return {};
+  }
+}
+
+async function updateContext(lineId, newPartialContext) {
+  const current = await getContext(lineId);
+  const updatedContext = { ...current, ...newPartialContext };
+
+  const { error } = await supabase
+    .from(TABLE_NAME)
+    .update({ context: JSON.stringify(updatedContext) })
+    .eq('line_id', lineId);
+
+  if (error) throw error;
+}
+
 module.exports = {
   getUser,
   upsertUser,
   markSubscribed,
   saveDiagnosis,
   getDiagnosis,
+  getContext,
+  updateContext,
 };
