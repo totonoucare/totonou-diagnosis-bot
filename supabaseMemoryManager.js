@@ -78,6 +78,7 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType) 
   const context = {
     type,
     trait,
+    scores: [score1, score2, score3], // 🔧 スコア保存を追加
     advice: {
       habit: baseAdvice,
       breathing,
