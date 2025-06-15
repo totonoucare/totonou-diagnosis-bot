@@ -53,7 +53,7 @@ async function handleFollowup(event, client, userId) {
     }
 
     // ✅ セッション開始トリガー
-    if (message === 'ととのう計画') {
+    if (message === 'ケア状況分析&見直し') {
       userSession[userId] = { step: 1, answers: [] };
 
       const q1 = questionSets[0];
@@ -65,7 +65,7 @@ async function handleFollowup(event, client, userId) {
     if (!userSession[userId]) {
       return [{
         type: 'text',
-        text: '再診を始めるには「ととのう計画」と送ってください。'
+        text: '再診を始めるには「ケア状況分析&見直し」と送ってください。'
       }];
     }
 
