@@ -1,7 +1,11 @@
 const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex, buildCarouselFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
-const { saveContext, getContext } = require('../supabaseMemoryManager');
+const {
+  saveContext,
+  getContext,
+  initializeUser
+} = require('../supabaseMemoryManager');
 
 const userSessions = {};
 
@@ -160,6 +164,11 @@ function startSession(userId) {
     selectedCategory: null,
     answers: [],
   };
+
+  // ✅ ユーザー初期化（DBに行がない場合でも）
+  initializeUser(userId).catch(err => {
+    console.error("❌ ユーザー初期化エラー:", err);
+  });
 }
 
 function hasSession(userId) {
