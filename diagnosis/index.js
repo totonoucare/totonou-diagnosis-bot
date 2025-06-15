@@ -1,7 +1,7 @@
 const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex, buildCarouselFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
-const { setInitialContext, getInitialContext } = require('../memoryManager');
+const { setInitialContext, getInitialContext } = require('../supabaseMemoryManager');
 
 // セッション管理オブジェクト
 const userSessions = {};
