@@ -11,32 +11,38 @@ const linkDictionary = require('./diagnosis/linkDictionary');
 
 const TABLE_NAME = 'users';
 
+// ✅ ユーザー初期化（診断開始時に呼ぶ）
+async function initializeUser(lineId) {
+  const { error } = await supabase
+    .from(TABLE_NAME)
+    .upsert({ line_id: lineId }, { onConflict: ['line_id'] });
+
+  if (error) throw error;
+}
+
+// ✅ ユーザー情報取得
 async function getUser(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
     .select('*')
     .eq('line_id', lineId)
-    .single();
+    .maybeSingle(); // ← 0件でもOKにする
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
   return data;
 }
 
-async function upsertUser(user) {
-  const { error } = await supabase
-    .from(TABLE_NAME)
-    .upsert(user, { onConflict: ['line_id'] });
-  if (error) throw error;
-}
-
+// ✅ サブスク登録フラグ
 async function markSubscribed(lineId) {
   const { error } = await supabase
     .from(TABLE_NAME)
     .update({ subscribed: true })
     .eq('line_id', lineId);
+
   if (error) throw error;
 }
 
+// ✅ 診断データ保存
 async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
   const { error } = await supabase
     .from(TABLE_NAME)
@@ -45,49 +51,51 @@ async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
       totonou_guide: totonouGuide,
     })
     .eq('line_id', lineId);
+
   if (error) throw error;
 }
 
+// ✅ 診断データ取得
 async function getDiagnosis(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
     .select('diagnosis_result, totonou_guide')
     .eq('line_id', lineId)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
 }
 
+// ✅ context構造保存（体質・スコア・アドバイス）
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards) {
-  try {
-    const context = {
-      type,
-      trait: traits,
-      scores: [score1, score2, score3],
-      advice: adviceCards
-    };
+  const context = {
+    type,
+    trait: traits,
+    scores: [score1, score2, score3],
+    advice: adviceCards
+  };
 
-    const { error } = await supabase
-      .from(TABLE_NAME)
-      .update({
-        context: JSON.stringify(context)
-      })
-      .eq('line_id', lineId);
+  const { error } = await supabase
+    .from(TABLE_NAME)
+    .upsert(
+      { line_id: lineId, context },
+      { onConflict: ['line_id'] }
+    );
 
-    if (error) throw error;
-  } catch (err) {
-    console.error('❌ Supabase context保存エラー:', err);
-    throw err;
+  if (error) {
+    console.error('❌ Supabase context保存エラー:', error);
+    throw error;
   }
 }
 
+// ✅ context構造取得
 async function getContext(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
     .select('context')
     .eq('line_id', lineId)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
 
@@ -104,12 +112,13 @@ async function getContext(lineId) {
 }
 
 module.exports = {
+  initializeUser, // ← startSession()から呼べる
   getUser,
-  upsertUser,
+  upsertUser: initializeUser, // 互換性維持
   markSubscribed,
   saveDiagnosis,
   getDiagnosis,
   saveContext,
   getContext,
-  setInitialContext: saveContext
+  setInitialContext: saveContext // 別名互換
 };
