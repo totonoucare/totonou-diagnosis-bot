@@ -114,4 +114,5 @@ module.exports = {
   getDiagnosis,
   saveContext,
   getContext,
+  setInitialContext: saveContext
 };
