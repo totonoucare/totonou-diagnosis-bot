@@ -1,14 +1,13 @@
-// supabaseMemoryManager.js
 const supabase = require('./supabaseClient');
 
-const getTypeName = require('../diagnosis/typeMapper');
-const resultDictionary = require('../diagnosis/resultDictionary');
-const adviceDictionary = require('../diagnosis/adviceDictionary');
-const flowAdviceDictionary = require('../diagnosis/flowAdviceDictionary');
-const organDictionary = require('../diagnosis/organDictionary');
-const stretchPointDictionary = require('../diagnosis/stretchPointDictionary');
-const flowlabelDictionary = require('../diagnosis/flowlabelDictionary');
-const linkDictionary = require('../diagnosis/linkDictionary');
+const getTypeName = require('./diagnosis/typeMapper');
+const resultDictionary = require('./diagnosis/resultDictionary');
+const adviceDictionary = require('./diagnosis/adviceDictionary');
+const flowAdviceDictionary = require('./diagnosis/flowAdviceDictionary');
+const organDictionary = require('./diagnosis/organDictionary');
+const stretchPointDictionary = require('./diagnosis/stretchPointDictionary');
+const flowlabelDictionary = require('./diagnosis/flowlabelDictionary');
+const linkDictionary = require('./diagnosis/linkDictionary');
 
 const TABLE_NAME = 'users';
 
@@ -78,7 +77,7 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType) 
   const context = {
     type,
     trait,
-    scores: [score1, score2, score3], // 🔧 スコア保存を追加
+    scores: [score1, score2, score3], // 保存用スコア
     advice: {
       habit: baseAdvice,
       breathing,
