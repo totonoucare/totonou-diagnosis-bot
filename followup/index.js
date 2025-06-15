@@ -1,5 +1,4 @@
 // followup/index.js
-
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
 const memoryManager = require('../supabaseMemoryManager');
@@ -50,7 +49,7 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ セッション開始トリガー：まずsubscribedチェック
+    // ✅ セッション開始トリガー
     if (message === 'ケア状況分析&見直し') {
       const userRecord = await memoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
@@ -62,11 +61,10 @@ async function handleFollowup(event, client, userId) {
 
       userSession[userId] = { step: 1, answers: [] };
       const q1 = questionSets[0];
-      const context = memoryManager.getContext(userId) || {};
+      const context = await memoryManager.getContext(userId);
       return [buildFlexMessage(q1, context)];
     }
 
-    // ✅ セッション未開始のとき
     if (!userSession[userId]) {
       return [{
         type: 'text',
@@ -102,7 +100,7 @@ async function handleFollowup(event, client, userId) {
       session.step++;
 
     } else {
-      // ✅ 単一選択肢の通常処理
+      // ✅ 単一選択処理
       const answer = message.charAt(0).toUpperCase();
       const isValid = question.options.some(opt => opt.startsWith(answer));
 
@@ -117,13 +115,13 @@ async function handleFollowup(event, client, userId) {
       session.step++;
     }
 
-    // ✅ 最終ステップ終了後、GPTコメント出力
+    // ✅ 終了判定：全質問が終わったらGPTコメントを出力
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const context = memoryManager.getContext(userId) || {};
+      const context = await memoryManager.getContext(userId);
 
-      if (!context.symptom || !context.typeName) {
-        console.warn("⚠️ context 情報が不完全。symptom/typeNameが未定義です");
+      if (!context?.symptom || !context?.type) {
+        console.warn("⚠️ context 情報が不完全。symptom/type が未定義です");
       }
 
       const result = await handleFollowupAnswers(userId, answers);
@@ -136,7 +134,7 @@ async function handleFollowup(event, client, userId) {
     }
 
     const nextQuestion = questionSets[session.step - 1];
-    const context = memoryManager.getContext(userId) || {};
+    const context = await memoryManager.getContext(userId);
     return [buildFlexMessage(nextQuestion, context)];
 
   } catch (err) {
