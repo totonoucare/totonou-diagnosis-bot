@@ -105,22 +105,23 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうガイド")) {
-    const context = await getContext(userId);
-    if (!context || !context.advice) {
+    try {
+      const context = await getContext(userId);
+      if (!context || !context.advice) {
+        return {
+          messages: [
+            { type: 'text', text: '診断データが見つかりませんでした。もう一度診断をお願いします。' }
+          ]
+        };
+      }
+
+      const carousel = buildCarouselFlex(context.advice);
       return {
         messages: [
-          { type: 'text', text: '診断データが見つかりませんでした。もう一度診断をお願いします。' }
-        ]
-      };
-    }
-
-    const carousel = buildCarouselFlex(context.advice);
-    return {
-      messages: [
-        carousel,
-        {
-          type: 'text',
-          text: `📅 整えるセルフケア、今週からひとつ試してみませんか？
+          carousel,
+          {
+            type: 'text',
+            text: `📅 整えるセルフケア、今週からひとつ試してみませんか？
 
 体質に合わせた“ととのうガイド”をもとに、まずはできそうなことから1つだけで大丈夫。
 小さな一歩が、未来のあなたを整えていきます🌱
@@ -137,9 +138,17 @@ async function handleExtraCommands(userId, messageText) {
 あなたの“整える力”を、ひとりにしません。
 
 「サブスク希望」と入力すると、案内が届きます♪`
-        }
-      ]
-    };
+          }
+        ]
+      };
+    } catch (err) {
+      console.error("❌ context取得エラー:", err);
+      return {
+        messages: [
+          { type: 'text', text: '診断データ取得時にエラーが発生しました。もう一度お試しください。' }
+        ]
+      };
+    }
   }
 
   return null;
