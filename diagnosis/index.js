@@ -1,9 +1,8 @@
 const questionSets = require('./questionSets');
 const { buildQuestionFlex, buildCategorySelectionFlex, buildCarouselFlex } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
-const { setInitialContext, getInitialContext } = require('../supabaseMemoryManager');
+const { saveContext, getContext } = require('../supabaseMemoryManager');
 
-// セッション管理オブジェクト
 const userSessions = {};
 
 async function handleDiagnosis(userId, userMessage, rawEvent = null) {
@@ -20,7 +19,6 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     };
   }
 
-  // 主訴が未選択 → 主訴選択フェーズ
   if (!session.selectedCategory) {
     if (typeof userMessage === 'string' && questionSets[userMessage]) {
       session.selectedCategory = userMessage;
@@ -45,7 +43,6 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     }
   }
 
-  // 回答を記録
   const choice = userMessage.split('_').pop();
   session.answers.push(choice);
   session.currentStep++;
@@ -75,17 +72,19 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     // ✅ 全質問完了 → 診断結果生成
     const result = await handleAnswers(session.answers);
 
-    // ✅ 記録保存（再診用）
-    setInitialContext(userId, {
-      symptom: category,
-      motion: session.answers[4],
-      typeName: result.type,
-      traits: result.traits,
-      flowIssue: result.flowIssue,
-      organBurden: result.organBurden,
-      planAdvice: result.adviceCards,
-      link: result.link
-    });
+    // ✅ Supabaseに保存
+    const [score1, score2, score3] = result.scores || [];
+    await saveContext(
+      userId,
+      score1,
+      score2,
+      score3,
+      result.flowIssue,
+      result.organBurden,
+      result.type,
+      result.traits,
+      result.adviceCards
+    );
 
     delete userSessions[userId];
 
@@ -114,11 +113,10 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
   }
 }
 
-// ✅ 新規追加：キーワード応答用（ととのうガイド）
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうガイド")) {
-    const context = await getInitialContext(userId);
-    if (!context || !context.planAdvice) {
+    const context = await getContext(userId);
+    if (!context || !context.advice) {
       return {
         messages: [
           { type: 'text', text: '診断データが見つかりませんでした。もう一度診断をお願いします。' }
@@ -126,7 +124,8 @@ async function handleExtraCommands(userId, messageText) {
       };
     }
 
-    const carousel = buildCarouselFlex(context.planAdvice);
+    const carousel = buildCarouselFlex(context.advice);
+
     return {
       messages: [
         carousel,
