@@ -10,12 +10,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
   if (!session) {
     return {
-      messages: [
-        {
-          type: 'text',
-          text: '「診断開始」と送ってから始めてくださいね。'
-        }
-      ]
+      messages: [{ type: 'text', text: '「診断開始」と送ってから始めてくださいね。' }]
     };
   }
 
@@ -27,18 +22,13 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
       const questionKey = questionSets[userMessage]['Q1'];
       const flex = await buildQuestionFlex(questionKey);
-      return {
-        messages: [flex],
-      };
+      return { messages: [flex] };
     } else {
       return {
         messages: [
-          {
-            type: 'text',
-            text: '主訴の選択が正しくありませんでした。もう一度お試しください。',
-          },
+          { type: 'text', text: '主訴の選択が正しくありませんでした。もう一度お試しください。' },
           buildCategorySelectionFlex(),
-        ],
+        ]
       };
     }
   }
@@ -52,9 +42,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
   if (!questionSet) {
     return {
-      messages: [
-        { type: 'text', text: '該当する質問が見つかりませんでした。' }
-      ]
+      messages: [{ type: 'text', text: '該当する質問が見つかりませんでした。' }]
     };
   }
 
@@ -66,25 +54,27 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       messages: [
         { type: 'text', text: displayText },
         flex,
-      ],
+      ]
     };
   } else {
-    // ✅ 全質問完了 → 診断結果生成
     const result = await handleAnswers(session.answers);
-
-    // ✅ Supabaseに保存
     const [score1, score2, score3] = result.scores || [];
-    await saveContext(
-      userId,
-      score1,
-      score2,
-      score3,
-      result.flowIssue,
-      result.organBurden,
-      result.type,
-      result.traits,
-      result.adviceCards
-    );
+
+    try {
+      await saveContext(
+        userId,
+        score1,
+        score2,
+        score3,
+        result.flowIssue,
+        result.organBurden,
+        result.type,
+        result.traits,
+        result.adviceCards
+      );
+    } catch (err) {
+      console.error("❌ Supabase保存失敗:", err);
+    }
 
     delete userSessions[userId];
 
@@ -125,7 +115,6 @@ async function handleExtraCommands(userId, messageText) {
     }
 
     const carousel = buildCarouselFlex(context.advice);
-
     return {
       messages: [
         carousel,
