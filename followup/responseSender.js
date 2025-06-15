@@ -6,12 +6,30 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/**
- * 🔧 修正ポイント①
- * 未定義の `parts` を受け取ってもエラーを起こさないようにする。
- * fallback値（空文字列）を設定しておくことで GPT送信エラーを回避。
- */
 function buildPrompt(parts = {}) {
+  const { scores = [], adviceCards = [] } = parts;
+
+  const [score1, score2, score3] = scores;
+  const scoreExplanation =
+    scores.length === 3
+      ? `
+【前回の体質スコア】
+- 虚実（体力の絶対量）: ${score1}
+- 寒熱（体内の熱状態）: ${score2}
+- 気血バランス（+1:気虚, -1:血虚）: ${score3}
+
+※ スコア定義：
+  - 虚実： -1 = 虚（体力少ない）／+1 = 実（体力あり）
+  - 寒熱： -1 = 寒（冷え体質）／+1 = 熱（熱がこもる体質）
+  - 陰陽： -1 = 血虚（栄養・潤い不足）／+1 = 気虚（エネルギー不足）
+`
+      : "（体質スコアの記録はありません）";
+
+  const planAdviceCard = adviceCards.find((card) =>
+    card.header?.includes("体質改善習慣")
+  );
+  const planAdvice = planAdviceCard?.body || "不明";
+
   return `
 患者の初回診断結果と、今回の再診内容を以下にまとめます。
 あなたは東洋医学の専門家として、改善点や継続すべき点を優しく、具体的にコメントしてください。
@@ -21,8 +39,10 @@ function buildPrompt(parts = {}) {
 - お体の傾向：${parts.traits || "不明"}
 - 巡りの傾向：${parts.flowIssue || "不明"}
 - 内臓の負担傾向：${parts.organBurden || "不明"}
-- ととのう計画：${parts.planAdvice || "不明"}
+- ととのう計画：${planAdvice}
 - 推奨漢方リンク：${parts.link || "なし"}
+
+${scoreExplanation}
 
 【主訴】${parts.symptom || "不明"}
 【主訴の変化】${parts.symptomChange || "不明"}
@@ -46,9 +66,6 @@ function buildPrompt(parts = {}) {
 `;
 }
 
-/**
- * 🧠 GPTへプロンプトを送信し、コメントを取得
- */
 async function sendFollowupPromptToGPT(promptParts) {
   const prompt = buildPrompt(promptParts);
 
@@ -77,8 +94,7 @@ async function sendFollowupPromptToGPT(promptParts) {
   }
 }
 
-// ✅ 拡張しやすいよう両方 export（任意）
 module.exports = {
   sendFollowupPromptToGPT,
-  buildPrompt
+  buildPrompt,
 };
