@@ -59,40 +59,27 @@ async function getDiagnosis(lineId) {
   return data;
 }
 
-async function saveContext(lineId, score1, score2, score3, flowType, organType) {
-  const type = getTypeName(score1, score2, score3);
-  const trait = resultDictionary[type]?.traits || "";
+async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards) {
+  try {
+    const context = {
+      type,
+      trait: traits,
+      scores: [score1, score2, score3],
+      advice: adviceCards
+    };
 
-  const baseAdvice = adviceDictionary[type] || "";
-  const breathing = flowAdviceDictionary[flowType] || "";
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .update({
+        context: JSON.stringify(context)
+      })
+      .eq('line_id', lineId);
 
-  const stretchData = stretchPointDictionary[organType] || { stretch: "", points: "" };
-  const stretch = stretchData.stretch || "";
-  const acupoint = stretchData.points || "";
-
-  const flowLabel = flowlabelDictionary[flowType] || "";
-  const rawLinkText = linkDictionary[type] || "";
-  const kampo = rawLinkText.replace("{{flowlabel}}", flowLabel);
-
-  const context = {
-    type,
-    trait,
-    scores: [score1, score2, score3], // 保存用スコア
-    advice: {
-      habit: baseAdvice,
-      breathing,
-      stretch,
-      acupoint,
-      kampo
-    }
-  };
-
-  const { error } = await supabase
-    .from(TABLE_NAME)
-    .update({ context })
-    .eq('line_id', lineId);
-
-  if (error) throw error;
+    if (error) throw error;
+  } catch (err) {
+    console.error('❌ Supabase context保存エラー:', err);
+    throw err;
+  }
 }
 
 async function getContext(lineId) {
@@ -103,7 +90,17 @@ async function getContext(lineId) {
     .single();
 
   if (error) throw error;
-  return data?.context || null;
+
+  if (!data?.context) return null;
+
+  try {
+    return typeof data.context === 'string'
+      ? JSON.parse(data.context)
+      : data.context;
+  } catch (err) {
+    console.error('❌ contextのJSON parseに失敗:', err);
+    return null;
+  }
 }
 
 module.exports = {
