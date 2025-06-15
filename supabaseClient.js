@@ -1,10 +1,10 @@
 // supabaseClient.js
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-// ここはSupabaseのダッシュボードから取得してください
-const supabaseUrl = 'https://YOUR_PROJECT_ID.supabase.co';
-const supabaseKey = 'YOUR_SUPABASE_SERVICE_ROLE_KEY';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 module.exports = supabase;
