@@ -1,5 +1,11 @@
 // supabaseMemoryManager.js
 const supabase = require('./supabaseClient');
+const getTypeName = require('../diagnosis/typeMapper');
+const resultDictionary = require('../diagnosis/resultDictionary');
+const adviceDictionary = require('../diagnosis/adviceDictionary');
+const flowAdviceDictionary = require('../diagnosis/flowAdviceDictionary');
+const organDictionary = require('../diagnosis/organDictionary');
+const linkDictionary = require('../diagnosis/linkDictionary');
 
 const TABLE_NAME = 'users';
 
@@ -51,6 +57,28 @@ async function getDiagnosis(lineId) {
   return data;
 }
 
+async function saveContext(lineId, score1, score2, score3, flowType, organType) {
+  const type = getTypeName(score1, score2, score3);
+  const trait = resultDictionary[type]?.traits || "";
+
+  const advice = {
+    habit: adviceDictionary[type] || "",
+    breathing: flowAdviceDictionary[flowType] || "",
+    stretch: organDictionary[organType] || "",
+    acupoint: "",  // あれば別途ファイルから取得して追記OK
+    kampo: "",     // あれば別途ファイルから取得して追記OK
+  };
+
+  const context = { type, trait, advice };
+
+  const { error } = await supabase
+    .from(TABLE_NAME)
+    .update({ context })
+    .eq('line_id', lineId);
+
+  if (error) throw error;
+}
+
 async function getContext(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -59,24 +87,7 @@ async function getContext(lineId) {
     .single();
 
   if (error) throw error;
-  try {
-    return data.context ? JSON.parse(data.context) : {};
-  } catch (e) {
-    console.warn('⚠️ contextのパースに失敗:', e);
-    return {};
-  }
-}
-
-async function updateContext(lineId, newPartialContext) {
-  const current = await getContext(lineId);
-  const updatedContext = { ...current, ...newPartialContext };
-
-  const { error } = await supabase
-    .from(TABLE_NAME)
-    .update({ context: JSON.stringify(updatedContext) })
-    .eq('line_id', lineId);
-
-  if (error) throw error;
+  return data?.context || null;
 }
 
 module.exports = {
@@ -85,6 +96,6 @@ module.exports = {
   markSubscribed,
   saveDiagnosis,
   getDiagnosis,
+  saveContext,
   getContext,
-  updateContext,
 };
