@@ -50,7 +50,7 @@ async function handleFollowup(event, client, userId) {
     }
 
     // ✅ セッション開始トリガー（subscribed 限定）
-    if (message === 'ケア状況分析&見直し') {
+    if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
         return [{
@@ -69,7 +69,7 @@ async function handleFollowup(event, client, userId) {
     if (!userSession[userId]) {
       return [{
         type: 'text',
-        text: '再診を始めるには「ケア状況分析＆見直し」と送ってください。'
+        text: '再診を始めるには「定期チェック診断」と送ってください。'
       }];
     }
 
@@ -130,7 +130,7 @@ async function handleFollowup(event, client, userId) {
 
       return [{
         type: 'text',
-        text: '📋【今回の再診結果】\n' + result.gptComment
+        text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
       }];
     }
 
@@ -143,7 +143,7 @@ async function handleFollowup(event, client, userId) {
     console.error('❌ followup/index.js エラー:', err);
     return [{
       type: 'text',
-      text: '診断中にエラーが発生しました。もう一度「ケア状況分析＆見直し」と送って再開してください。'
+      text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。'
     }];
   }
 }
