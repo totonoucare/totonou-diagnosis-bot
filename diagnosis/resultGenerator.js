@@ -20,6 +20,8 @@ function generateResult(score1, score2, score3, flowType, organType) {
     return {
       type: "不明な体質タイプ",
       traits: "",
+      flowType,
+      organType,
       flowIssue: flowDictionary[flowType] || "",
       organBurden: organDictionary[organType] || "",
       scores: [score1, score2, score3],
@@ -72,10 +74,12 @@ function generateResult(score1, score2, score3, flowType, organType) {
   return {
     type: typeName,
     traits: baseInfo.traits || "",
-    flowIssue: flowInfo,
-    organBurden: organInfo,
+    flowType,                     // ⭐ 追加（名称コード）
+    organType,                    // ⭐ 追加（名称コード）
+    flowIssue: flowInfo,          // 表示用テキスト
+    organBurden: organInfo,       // 表示用テキスト
     adviceCards: adviceCards,
-    scores: [score1, score2, score3] // ← ⭐これがGPT活用のカギ！
+    scores: [score1, score2, score3]
   };
 }
 
