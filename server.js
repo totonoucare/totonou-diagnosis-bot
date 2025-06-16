@@ -3,6 +3,7 @@ const express = require("express");
 const line = require("@line/bot-sdk");
 const diagnosis = require("./diagnosis/index");
 const handleFollowup = require("./followup/index");
+const supabaseMemoryManager = require("./supabaseMemoryManager");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 
 const app = express();
@@ -14,9 +15,6 @@ const config = {
 };
 
 const client = new line.Client(config);
-
-// 🔧 ユーザーごとのセッション記録（簡易的にメモリに保持）
-const userMemory = {};
 
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
@@ -37,12 +35,26 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ フォローアップ処理（サブスク希望 or ケア状況分析 or 再診セッション中）
-      if (
-        userMessage === "サブスク希望" ||
-        userMessage === "ケア状況分析&見直し" ||
-        handleFollowup.hasSession?.(userId)
-      ) {
+      // ✅ サブスク登録リクエスト
+      if (userMessage === "サブスク希望") {
+        try {
+          await supabaseMemoryManager.markSubscribed(userId);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "サブスク登録ありがとうございます！\n\n次回から「ケア状況分析＆見直し」で再診が可能です✨",
+          });
+        } catch (err) {
+          console.error("❌ markSubscribed エラー:", err);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "サブスク登録時にエラーが発生しました。もう一度お試しください。",
+          });
+        }
+        return;
+      }
+
+      // ✅ フォローアップ診断（再診スタート or セッション中）
+      if (userMessage === "ケア状況分析&見直し" || handleFollowup.hasSession?.(userId)) {
         const messages = await handleFollowup(event, client, userId);
         if (messages?.length > 0) {
           await client.replyMessage(event.replyToken, messages);
@@ -66,19 +78,18 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ その他の追加キーワード対応（「ととのうガイド」など）
+      // ✅ その他の追加コマンド（ととのうガイドなど）
       const extraResult = await diagnosis.handleExtraCommands(userId, userMessage);
       if (extraResult) {
         await client.replyMessage(event.replyToken, extraResult.messages);
         return;
       }
 
-      // ❓何も該当しない場合
+      // ❓どの条件にも該当しない入力
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: "メニューから「診断開始」を選んで始めてください。",
       });
-      return;
     })
   );
 
