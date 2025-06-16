@@ -41,7 +41,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           await supabaseMemoryManager.markSubscribed(userId);
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: "サブスク登録ありがとうございます！\n\n次回から「ケア状況分析＆見直し」で再診が可能です✨",
+            text: "サブスク登録ありがとうございます！\n\n次回から「定期チェック診断」で再診が可能です✨",
           });
         } catch (err) {
           console.error("❌ markSubscribed エラー:", err);
@@ -54,7 +54,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
       // ✅ フォローアップ診断（再診スタート or セッション中）
-      if (userMessage === "ケア状況分析&見直し" || handleFollowup.hasSession?.(userId)) {
+      if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(userId)) {
         try {
           const messages = await handleFollowup(event, client, userId);
 
@@ -64,7 +64,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             // 念のためfallback応答
             await client.replyMessage(event.replyToken, {
               type: "text",
-              text: "再診を始めるには「ケア状況分析＆見直し」と送ってください。",
+              text: "再診を始めるには「定期チェック診断」と送ってください。",
             });
           }
         } catch (err) {
