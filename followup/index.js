@@ -49,7 +49,24 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ セッション開始トリガー
+    // ✅ 「サブスク希望」で subscribed: true に登録
+    if (message === 'サブスク希望') {
+      try {
+        await supabaseMemoryManager.markSubscribed(userId);
+        return [{
+          type: 'text',
+          text: '✅ サブスク登録が完了しました！\n再診を始めるには「ケア状況分析＆見直し」と送ってください。'
+        }];
+      } catch (err) {
+        console.error('❌ サブスク登録エラー:', err);
+        return [{
+          type: 'text',
+          text: 'サブスク登録中にエラーが発生しました。もう一度お試しください。'
+        }];
+      }
+    }
+
+    // ✅ セッション開始トリガー（subscribed限定）
     if (message === 'ケア状況分析&見直し') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
@@ -65,10 +82,11 @@ async function handleFollowup(event, client, userId) {
       return [buildFlexMessage(q1, context)];
     }
 
+    // ✅ セッションがない場合のリジェクト
     if (!userSession[userId]) {
       return [{
         type: 'text',
-        text: '再診を始めるには「ケア状況分析&見直し」と送ってください。'
+        text: '再診を始めるには「ケア状況分析＆見直し」と送ってください。'
       }];
     }
 
@@ -92,7 +110,7 @@ async function handleFollowup(event, client, userId) {
       session.partialAnswers[key] = answer;
 
       if (Object.keys(session.partialAnswers).length < question.subQuestions.length) {
-        return []; // 続く選択を待機
+        return []; // 続きの回答を待機
       }
 
       session.answers.push({ ...session.partialAnswers });
@@ -115,13 +133,13 @@ async function handleFollowup(event, client, userId) {
       session.step++;
     }
 
-    // ✅ 終了判定：全質問が終わったらGPTコメントを出力
+    // ✅ 終了判定：全質問終了後に再診結果出力
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(userId);
 
       if (!context?.symptom || !context?.type) {
-        console.warn("⚠️ context 情報が不完全。symptom/type が未定義です");
+        console.warn("⚠️ context 情報が不完全です");
       }
 
       const result = await handleFollowupAnswers(userId, answers);
@@ -133,6 +151,7 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
+    // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(userId);
     return [buildFlexMessage(nextQuestion, context)];
@@ -141,7 +160,7 @@ async function handleFollowup(event, client, userId) {
     console.error('❌ followup/index.js エラー:', err);
     return [{
       type: 'text',
-      text: '診断中にエラーが発生しました。もう一度「ケア状況分析&見直し」と送って再開してください。'
+      text: '診断中にエラーが発生しました。もう一度「ケア状況分析＆見直し」と送って再開してください。'
     }];
   }
 }
