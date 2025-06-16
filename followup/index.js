@@ -1,7 +1,7 @@
 // followup/index.js
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
-const memoryManager = require('../supabaseMemoryManager');
+const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
 // 主訴と動作の日本語変換マップ
@@ -51,7 +51,7 @@ async function handleFollowup(event, client, userId) {
 
     // ✅ セッション開始トリガー
     if (message === 'ケア状況分析&見直し') {
-      const userRecord = await memoryManager.getUser(userId);
+      const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
         return [{
           type: 'text',
@@ -61,7 +61,7 @@ async function handleFollowup(event, client, userId) {
 
       userSession[userId] = { step: 1, answers: [] };
       const q1 = questionSets[0];
-      const context = await memoryManager.getContext(userId);
+      const context = await supabaseMemoryManager.getContext(userId);
       return [buildFlexMessage(q1, context)];
     }
 
@@ -118,7 +118,7 @@ async function handleFollowup(event, client, userId) {
     // ✅ 終了判定：全質問が終わったらGPTコメントを出力
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const context = await memoryManager.getContext(userId);
+      const context = await supabaseMemoryManager.getContext(userId);
 
       if (!context?.symptom || !context?.type) {
         console.warn("⚠️ context 情報が不完全。symptom/type が未定義です");
@@ -134,7 +134,7 @@ async function handleFollowup(event, client, userId) {
     }
 
     const nextQuestion = questionSets[session.step - 1];
-    const context = await memoryManager.getContext(userId);
+    const context = await supabaseMemoryManager.getContext(userId);
     return [buildFlexMessage(nextQuestion, context)];
 
   } catch (err) {
