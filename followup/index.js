@@ -49,24 +49,7 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ 「サブスク希望」で subscribed: true に登録
-    if (message === 'サブスク希望') {
-      try {
-        await supabaseMemoryManager.markSubscribed(userId);
-        return [{
-          type: 'text',
-          text: '✅ サブスク登録が完了しました！\n再診を始めるには「ケア状況分析＆見直し」と送ってください。'
-        }];
-      } catch (err) {
-        console.error('❌ サブスク登録エラー:', err);
-        return [{
-          type: 'text',
-          text: 'サブスク登録中にエラーが発生しました。もう一度お試しください。'
-        }];
-      }
-    }
-
-    // ✅ セッション開始トリガー（subscribed限定）
+    // ✅ セッション開始トリガー（subscribed 限定）
     if (message === 'ケア状況分析&見直し') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
@@ -82,7 +65,7 @@ async function handleFollowup(event, client, userId) {
       return [buildFlexMessage(q1, context)];
     }
 
-    // ✅ セッションがない場合のリジェクト
+    // ✅ セッションがない状態で応答が来た場合
     if (!userSession[userId]) {
       return [{
         type: 'text',
