@@ -37,9 +37,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ フォローアップ処理（ととのう計画 or 再診断セッション中）
+      // ✅ フォローアップ処理（サブスク希望 or ケア状況分析 or 再診セッション中）
       if (
-        userMessage === "ととのう計画" ||
+        userMessage === "サブスク希望" ||
+        userMessage === "ケア状況分析&見直し" ||
         handleFollowup.hasSession?.(userId)
       ) {
         const messages = await handleFollowup(event, client, userId);
@@ -72,7 +73,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ❓何も該当しない場合（オプション）
+      // ❓何も該当しない場合
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: "メニューから「診断開始」を選んで始めてください。",
