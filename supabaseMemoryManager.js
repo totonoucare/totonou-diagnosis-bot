@@ -26,7 +26,7 @@ async function getUser(lineId) {
     .from(TABLE_NAME)
     .select('*')
     .eq('line_id', lineId)
-    .maybeSingle(); // ← 0件でもOKにする
+    .maybeSingle(); // 0件でもOK
 
   if (error) throw error;
   return data;
@@ -42,7 +42,7 @@ async function markSubscribed(lineId) {
   if (error) throw error;
 }
 
-// ✅ 診断データ保存
+// ✅ 診断データ保存（任意形式）
 async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
   const { error } = await supabase
     .from(TABLE_NAME)
@@ -55,7 +55,7 @@ async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
   if (error) throw error;
 }
 
-// ✅ 診断データ取得
+// ✅ 診断データ取得（未使用なら保留でもOK）
 async function getDiagnosis(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -67,13 +67,15 @@ async function getDiagnosis(lineId) {
   return data;
 }
 
-// ✅ context構造保存（体質・スコア・アドバイス）
+// ✅ context構造保存（体質・スコア・流れ・臓腑・アドバイス）
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards) {
   const context = {
-    type,
-    trait: traits,
+    type,                        // 表示用体質名
+    trait: traits,               // 説明文
     scores: [score1, score2, score3],
-    advice: adviceCards
+    flowType,                    // 気滞・瘀血など
+    organType,                   // 肝・脾など
+    advice: adviceCards          // カルーセルアドバイス配列
   };
 
   const { error } = await supabase
@@ -89,7 +91,7 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
   }
 }
 
-// ✅ context構造取得
+// ✅ context構造取得（parseも含む）
 async function getContext(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -112,13 +114,13 @@ async function getContext(lineId) {
 }
 
 module.exports = {
-  initializeUser, // ← startSession()から呼べる
+  initializeUser,
   getUser,
-  upsertUser: initializeUser, // 互換性維持
+  upsertUser: initializeUser,
   markSubscribed,
   saveDiagnosis,
   getDiagnosis,
   saveContext,
   getContext,
-  setInitialContext: saveContext // 別名互換
+  setInitialContext: saveContext
 };
