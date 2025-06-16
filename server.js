@@ -55,9 +55,24 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
       // ✅ フォローアップ診断（再診スタート or セッション中）
       if (userMessage === "ケア状況分析&見直し" || handleFollowup.hasSession?.(userId)) {
-        const messages = await handleFollowup(event, client, userId);
-        if (messages?.length > 0) {
-          await client.replyMessage(event.replyToken, messages);
+        try {
+          const messages = await handleFollowup(event, client, userId);
+
+          if (Array.isArray(messages) && messages.length > 0) {
+            await client.replyMessage(event.replyToken, messages);
+          } else {
+            // 念のためfallback応答
+            await client.replyMessage(event.replyToken, {
+              type: "text",
+              text: "再診を始めるには「ケア状況分析＆見直し」と送ってください。",
+            });
+          }
+        } catch (err) {
+          console.error("❌ handleFollowup エラー:", err);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "再診処理中にエラーが発生しました。もう一度お試しください。",
+          });
         }
         return;
       }
