@@ -41,7 +41,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           await supabaseMemoryManager.markSubscribed(userId);
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: "サブスク登録ありがとうございます！\n\n次回から「定期チェック診断」で再診が可能です✨",
+            text: "サブスク登録ありがとうございます！\n\n次回からメニューバーの【定期チェック診断】が可能です✨",
           });
         } catch (err) {
           console.error("❌ markSubscribed エラー:", err);
@@ -64,7 +64,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             // 念のためfallback応答
             await client.replyMessage(event.replyToken, {
               type: "text",
-              text: "再診を始めるには「定期チェック診断」と送ってください。",
+              text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
             });
           }
         } catch (err) {
