@@ -1,7 +1,7 @@
 // followup/followupRouter.js
 
 const generateFollowupResult = require("./resultGenerator");
-const memoryManager = require("../supabaseMemoryManager");
+const supabaseMemoryManager = require("../supabaseMemoryManager");
 const { sendFollowupPromptToGPT } = require("./responseSender");
 
 /**
@@ -13,7 +13,7 @@ const { sendFollowupPromptToGPT } = require("./responseSender");
 async function handleFollowupAnswers(userId, answers) {
   try {
     // 🔍 Supabaseから該当ユーザー情報を取得
-    const user = await memoryManager.getUser(userId);
+    const user = await supabaseMemoryManager.getUser(userId);
 
     // ❌ サブスク登録されていない場合は再診不可
     if (!user || !user.subscribed) {
@@ -22,7 +22,7 @@ async function handleFollowupAnswers(userId, answers) {
     }
 
     // ✅ context（初回診断結果）を取得
-    const context = await memoryManager.getContext(userId);
+    const context = await supabaseMemoryManager.getContext(userId);
 
     // 🎯 再診結果（回答5問＋前回データからプロンプト用partsを生成）
     const result = generateFollowupResult(answers, context);
