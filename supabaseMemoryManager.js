@@ -75,6 +75,9 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
     scores: [score1, score2, score3],
     flowType,                    // 気滞・瘀血など
     organType,                   // 肝・脾など
+    symptom,  // ← 追加
+    motion,   // ← 追加
+    advice: adviceCards
     advice: adviceCards          // カルーセルアドバイス配列
   };
 
