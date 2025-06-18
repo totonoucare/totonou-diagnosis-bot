@@ -1,5 +1,3 @@
-// followup/responseSender.js
-
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
@@ -25,40 +23,75 @@ function buildPrompt(parts = {}) {
 `
       : "（体質スコアの記録はありません）";
 
-  const planAdviceCard = adviceCards.find((card) =>
-    card.header?.includes("体質改善習慣")
-  );
-  const planAdvice = planAdviceCard?.body || "不明";
+  const planAdvice = adviceCards.find((c) =>
+    c.header?.includes("体質改善習慣")
+  )?.body || "（初回のアドバイスが取得できませんでした）";
+
+  const stretchAdvice = adviceCards.find((c) =>
+    c.header?.includes("ストレッチ")
+  )?.body || "（ストレッチのアドバイス未登録）";
+
+  const breathingAdvice = adviceCards.find((c) =>
+    c.header?.includes("呼吸法")
+  )?.body || "（呼吸法のアドバイス未登録）";
+
+  const kampoAdvice = adviceCards.find((c) =>
+    c.header?.includes("漢方薬")
+  )?.body || "（漢方薬のアドバイス未登録）";
+
+  const tsuboAdvice = adviceCards.find((c) =>
+    c.header?.includes("ツボ")
+  )?.body || "（ツボのアドバイス未登録）";
 
   return `
-患者の初回診断結果と、今回の再診内容を以下にまとめます。
+あなたは東洋医学とセルフケアに精通したAIパートナー「ととのうAI」です。
+以下の診断データに基づき、患者さんの努力と体の変化をねぎらいながら、
+ポジティブで前向きなアドバイスを伝えてください。
+口調は「温かく・親しみやすく・少しだけカジュアル」にしてください。
+専門家というより「一緒にがんばる伴走パートナーAI」の立ち位置です。
 
-【前回診断結果】
-- 体質タイプ：${parts.typeName || "不明"}
-- お体の傾向：${parts.traits || "不明"}
-- 巡りの傾向：${parts.flowIssue || "不明"}
-- 内臓の負担傾向：${parts.organBurden || "不明"}
-- ととのう計画：${planAdvice}
-- 推奨漢方リンク：${parts.link || "なし"}
+🎯 指示：
+- 読みやすく、長すぎない内容にしてください（目安：800文字前後）
+- セルフケア項目（呼吸法・ストレッチなど）の初回提案ケア(ととのうガイド)をベースにしつつ、今回の評価も踏まえて「どう改善すればいいか」を簡潔に書いてください
+- 提案したセルフケアをあまり実践せずに不調が快方に向かっていない場合は、言葉を選んで優しく促すようにしてください
+- ストレッチや呼吸法が“なんで大事なのか”を、経絡・巡り・内臓などの説明もライトに含めて触れてください
+- アドバイスは“やってみたくなるように”楽しく・励ますトーンで
+- 必ず1つ以上は「これは続けてほしい！」というポイントを入れてください
+- 絵文字も適度に使って、明るく励ますようにしてください
+
+📦 前回診断結果
+- タイプ：${parts.typeName}
+- 傾向：${parts.traits}
+- 巡り：${parts.flowIssue}
+- 内臓：${parts.organBurden}
 
 ${scoreExplanation}
 
-【主訴】${parts.symptom || "不明"}
-【主訴の変化】${parts.symptomChange || "不明"}
-【体調全体】${parts.overall || "不明"}
+🧭 前回アドバイス（ととのう計画）
+${planAdvice}
 
-【セルフケア実施状況】
-- 習慣改善：${parts.habits || "未回答"}
-- ストレッチ：${parts.stretch || "未回答"}
-- 呼吸法：${parts.breathing || "未回答"}
-- 漢方薬：${parts.kampo || "未回答"}
-- その他：${parts.otherCare || "未回答"}
+💨 呼吸法アドバイス
+${breathingAdvice}
 
-【動作テスト】
-- 前回の動作：${parts.motion || "不明"}
-- 今回の動作変化：${parts.motionChange || "不明"}
+🤸 経絡ストレッチアドバイス
+${stretchAdvice}
 
-【生活習慣の変化】${parts.lifestyle || "未記入"}
+🌿 漢方薬アドバイス
+${kampoAdvice}
+
+🎯 ツボ・その他のアドバイス
+${tsuboAdvice}
+
+📝 今回の再診回答
+- 主訴：${parts.symptom}
+- 主訴の変化：${parts.symptomChange}
+- 全体の体調：${parts.overall}
+- 呼吸法：${parts.breathing}
+- ストレッチ：${parts.stretch}
+- 漢方薬：${parts.kampo}
+- その他：${parts.otherCare}
+- 動作テスト：${parts.motion} → ${parts.motionChange}
+- ライフスタイル変化：${parts.lifestyle}
 `;
 }
 
@@ -71,26 +104,8 @@ async function sendFollowupPromptToGPT(promptParts) {
       messages: [
         {
           role: "system",
-          content: `
-あなたは東洋医学とセルフケアに精通した専門家です。
-
-患者の初回診断（体質タイプ・内臓傾向・巡りの病理）と、再診で得られた5つの回答（主訴の変化・体調全体・セルフケア実施・動作の変化・生活習慣）をもとに、
-
-以下の視点でアドバイスを作成してください：
-
-1. 体質や傾向の変化を読み取り、セルフケアとの関連を評価してください。
-2. 呼吸法は「ただ深呼吸する」ものではなく、中脘に手を当てて行う経絡呼吸（中焦への刺激）です。吐く・吸う・リズムなど、パターンの実践意義に沿ってコメントを。
-3. ストレッチは経絡ストレッチで、体の連動性や内臓負担軽減を目的としています。臓腑負担や動作の変化と関連付けて評価してください。
-4. 生活習慣や漢方の影響も考慮に入れてください。
-
-🌱コメントには以下を必ず含めてください：
-- ①良かった点のポジティブフィードバック（モチベ向上目的）
-- ②継続しやすくするための工夫やヒント（患者目線で）
-- ③次に意識してほしい1〜2つの具体的行動・視点（短く・明確に）
-
-🌟トーンは温かく、親しみやすく。
-📌箇条書きや絵文字を交えて、読みやすく簡潔にまとめてください。
-        `.trim(),
+          content:
+            "あなたは東洋医学に詳しく、患者と伴走するパートナーAIです。優しく、わかりやすく、応援の気持ちを込めてアドバイスしてください。絵文字も適度にOK。",
         },
         {
           role: "user",
@@ -98,7 +113,7 @@ async function sendFollowupPromptToGPT(promptParts) {
         },
       ],
       temperature: 0.85,
-      max_tokens: 1000,
+      max_tokens: 1200,
     });
 
     return chatCompletion.choices?.[0]?.message?.content || "解析に失敗しました。";
