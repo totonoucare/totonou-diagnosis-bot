@@ -25,7 +25,16 @@ const motionLabels = {
   E: '上体をそらす',
 };
 
-const userSession = {}; // userSession[userId] = { step: 1, answers: [], partialAnswers: {} }
+// Q3の各項目キーに対応する日本語ラベル
+const q3Labels = {
+  habits: "習慣改善（睡眠・食事・行動の見直し）",
+  stretch: "経絡ストレッチ",
+  breathing: "巡りととのえ呼吸法",
+  kampo: "漢方薬の服用",
+  other: "その他独自のセルフケア"
+};
+
+const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
 
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== 'string') return '';
@@ -92,26 +101,25 @@ async function handleFollowup(event, client, userId) {
       if (!session.partialAnswers) session.partialAnswers = {};
       session.partialAnswers[key] = answer;
 
-      // 🔄 未回答項目が残っている場合はメッセージのみ返す
+      // 🔍 未回答項目が残っているかチェック
       const remaining = question.subQuestions
         .map(sub => sub.key)
         .filter(k => !(k in session.partialAnswers));
 
       if (remaining.length > 0) {
+        const remainingLabels = remaining.map(k => q3Labels[k] || k).join('・');
         return [{
           type: 'text',
-          text: `✅ 回答ありがとうございます。\n残りの項目：${remaining.join('・')} をご回答ください。`
+          text: `✅ 回答ありがとうございます。\n残りの項目：${remainingLabels} をご回答ください。`
         }];
       }
 
-      // ✅ 全部揃ったらQ3として保存
       session.answers.push({ ...session.partialAnswers });
       delete session.partialAnswers;
       session.step++;
-    }
 
-    // ✅ 通常の単一選択処理
-    else if (!question.isMulti) {
+    } else {
+      // ✅ 単一選択処理（Q1〜Q2, Q4〜Q5）
       const answer = message.charAt(0).toUpperCase();
       const isValid = question.options.some(opt => opt.startsWith(answer));
 
