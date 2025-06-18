@@ -70,11 +70,13 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
         score1,
         score2,
         score3,
-        result.flowIssue,
-        result.organBurden,
+        result.flowType,      // ← 明示的に追加
+        result.organType,     // ← 明示的に追加
         result.type,
         result.traits,
-        result.adviceCards
+        result.adviceCards,
+        category,             // ← 主訴（symptom）として保存
+        result.motionKey      // ← 動作（motion）として保存（handleAnswersで生成要）
       );
     } catch (err) {
       console.error("❌ Supabase保存失敗:", err);
@@ -168,7 +170,7 @@ function startSession(userId) {
     answers: [],
   };
 
-  // ✅ ユーザー初期化（DBに行がない場合でも）
+  // ✅ ユーザー初期化
   initializeUser(userId).catch(err => {
     console.error("❌ ユーザー初期化エラー:", err);
   });
