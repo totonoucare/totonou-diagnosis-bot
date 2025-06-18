@@ -4,7 +4,7 @@ const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
-// 主訴と動作の日本語変換マップ
+// 主訴（symptom）の日本語変換マップ
 const symptomLabels = {
   stomach: '胃腸の調子',
   sleep: '睡眠改善・集中力',
@@ -17,21 +17,13 @@ const symptomLabels = {
   unknown: 'なんとなく不調・不定愁訴',
 };
 
-const motionLabels = {
-  A: '首を後ろに倒すor左右に回す',
-  B: '腕をバンザイする',
-  C: '前屈する',
-  D: '腰を左右にねじるor側屈',
-  E: '上体をそらす',
-};
-
 const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
 
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== 'string') return '';
   return template
     .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
-    .replace(/\{\{motion\}\}/g, motionLabels[context.motion] || '特定の動作');
+    .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
 }
 
 async function handleFollowup(event, client, userId) {
@@ -49,7 +41,7 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ セッション開始トリガー（subscribed 限定）
+    // ✅ セッション開始
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
@@ -65,7 +57,6 @@ async function handleFollowup(event, client, userId) {
       return [buildFlexMessage(q1, context)];
     }
 
-    // ✅ セッションがない状態で応答が来た場合
     if (!userSession[userId]) {
       return [{
         type: 'text',
@@ -77,7 +68,7 @@ async function handleFollowup(event, client, userId) {
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    // ✅ Q3の複数選択処理
+    // ✅ Q3の複数回答処理
     if (question.id === 'Q3' && question.isMulti && message.includes(':')) {
       const parts = message.split(':');
       if (parts.length !== 2) {
@@ -93,7 +84,7 @@ async function handleFollowup(event, client, userId) {
       session.partialAnswers[key] = answer;
 
       if (Object.keys(session.partialAnswers).length < question.subQuestions.length) {
-        return []; // 続きの回答を待機
+        return []; // 続きの回答を待つ
       }
 
       session.answers.push({ ...session.partialAnswers });
@@ -116,7 +107,7 @@ async function handleFollowup(event, client, userId) {
       session.step++;
     }
 
-    // ✅ 終了判定：全質問終了後に再診結果出力
+    // ✅ 終了時：回答とcontextからgptComment生成
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(userId);
