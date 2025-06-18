@@ -8,7 +8,7 @@ const stretchPointDictionary = require("./stretchPointDictionary");
 const flowAdviceDictionary = require("./flowAdviceDictionary");
 const getTypeName = require("./typeMapper");
 
-function generateResult(score1, score2, score3, flowType, organType) {
+function generateResult(score1, score2, score3, flowType, organType, symptom, motion) {
   const typeName = getTypeName(score1, score2, score3);
 
   console.log("📊 generateResult:");
@@ -22,6 +22,8 @@ function generateResult(score1, score2, score3, flowType, organType) {
       traits: "",
       flowType,
       organType,
+      symptom: symptom || "不明な不調",
+      motion: motion || "特定の動作",
       flowIssue: flowDictionary[flowType] || "",
       organBurden: organDictionary[organType] || "",
       scores: [score1, score2, score3],
@@ -47,7 +49,7 @@ function generateResult(score1, score2, score3, flowType, organType) {
   const rawLinkText = linkDictionary[typeName] || "";
   const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
 
-  // 📦 カルーセル用アドバイス構造化（漢方も含む）
+  // 📦 カルーセル用アドバイス構造化
   const adviceCards = [
     {
       header: "💡ここから始める体質改善習慣！",
@@ -74,10 +76,12 @@ function generateResult(score1, score2, score3, flowType, organType) {
   return {
     type: typeName,
     traits: baseInfo.traits || "",
-    flowType,                     // ⭐ 追加（名称コード）
-    organType,                    // ⭐ 追加（名称コード）
-    flowIssue: flowInfo,          // 表示用テキスト
-    organBurden: organInfo,       // 表示用テキスト
+    flowType,
+    organType,
+    symptom: symptom || "不明な不調",
+    motion: motion || "特定の動作",
+    flowIssue: flowInfo,
+    organBurden: organInfo,
     adviceCards: adviceCards,
     scores: [score1, score2, score3]
   };
