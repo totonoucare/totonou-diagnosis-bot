@@ -20,21 +20,26 @@ function generateFollowupResult(answers, context = {}) {
     lifestyleChange: q5
   };
 
-  // 🔸プロンプト用に構造化した情報
+  // 🔸 advice配列から特定のアドバイスを抽出
+  const adviceArray = Array.isArray(context.advice) ? context.advice : [];
+  const findAdviceByHeader = (keyword) =>
+    adviceArray.find(card => card.header.includes(keyword))?.body || "（前回アドバイス未登録）";
+
   const promptParts = {
     // 🩺 前回診断情報（context由来）
     symptom: context.symptom || "未登録",
     motion: context.motion || "未登録",
 
-    typeName: context.type || "未登録",  // ← context.type に統一
+    typeName: context.type || "未登録",
     traits: context.trait || "未登録",
     flowIssue: context.flowIssue || "未登録",
     organBurden: context.organBurden || "未登録",
 
-    planAdvice: context.advice?.habit || "（前回アドバイス未登録）",
-    link: context.advice?.kampo || "（未登録）",
+    // 🌿 セルフケア計画とリンク（カルーセルより取得）
+    planAdvice: findAdviceByHeader("体質改善習慣"),
+    link: findAdviceByHeader("漢方薬"),
 
-    // 📝 フォローアップ回答
+    // 📝 フォローアップ回答（Q1〜Q5）
     symptomChange: q1,
     overall: q2,
     habits: q3?.habits || "未実施",
