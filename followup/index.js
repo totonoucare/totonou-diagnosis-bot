@@ -134,23 +134,29 @@ async function handleFollowup(event, client, userId) {
       session.step++;
     }
 
-    // ✅ 終了判定
-    if (session.step > questionSets.length) {
-      const answers = session.answers;
-      const context = await supabaseMemoryManager.getContext(userId);
+// ✅ 終了判定
+if (session.step > questionSets.length) {
+  const answers = session.answers;
+  const context = await supabaseMemoryManager.getContext(userId);
 
-      if (!context?.symptom || !context?.type) {
-        console.warn("⚠️ context 情報が不完全です");
-      }
+  if (!context?.symptom || !context?.type) {
+    console.warn("⚠️ context 情報が不完全です");
+  }
 
-      const result = await handleFollowupAnswers(userId, answers);
-      delete userSession[userId];
+  // 👇 ここで「考え中」メッセージを先に送信
+  await client.pushMessage(userId, {
+    type: 'text',
+    text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
+  });
 
-      return [{
-        type: 'text',
-        text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
-      }];
-    }
+  const result = await handleFollowupAnswers(userId, answers);
+  delete userSession[userId];
+
+  return [{
+    type: 'text',
+    text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
+  }];
+}
 
     // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
