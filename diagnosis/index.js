@@ -75,8 +75,8 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
         result.type,
         result.traits,
         result.adviceCards,
-        category,             // ← 主訴（symptom）として保存
-        result.motionKey      // ← 動作（motion）として保存（handleAnswersで生成要）
+        result.symptom,  
+        result.motion    
       );
     } catch (err) {
       console.error("❌ Supabase保存失敗:", err);
