@@ -68,15 +68,15 @@ async function getDiagnosis(lineId) {
 }
 
 // ✅ context構造保存（体質・スコア・流れ・臓腑・アドバイス）
-async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards) {
+async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
   const context = {
     type,                        // 表示用体質名
     trait: traits,               // 説明文
     scores: [score1, score2, score3],
     flowType,                    // 気滞・瘀血など
     organType,                   // 肝・脾など
-    symptom,  // ← 追加
-    motion,   // ← 追加
+    symptom: symptom || "不明な不調",  // ← 追加
+    motion: motion || "特定の動作",   // ← 追加
     advice: adviceCards          // カルーセルアドバイス配列
   };
 
