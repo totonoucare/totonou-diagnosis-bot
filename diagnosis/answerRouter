@@ -10,10 +10,9 @@ function handleAnswers(userAnswers) {
       console.warn(`⚠️ 無効な選択肢が含まれています: ${answer}`);
       return null;
     }
-    return Number(scoreMap[answer]); // ← 明示的に数値へ変換
+    return Number(scoreMap[answer]);
   });
 
-  // バリデーション：nullが含まれていたら診断中止
   if (scoreArray.includes(null)) {
     console.error("❌ スコア変換に失敗しました。無効な回答が含まれています:", q1to3);
     return {
@@ -26,7 +25,6 @@ function handleAnswers(userAnswers) {
     };
   }
 
-  // デバッグ用ログ出力
   console.log("📊 scoreArray:", scoreArray);
   console.log("🔑 scoreKey:", `${scoreArray[0]},${scoreArray[1]},${scoreArray[2]}`);
 
@@ -40,19 +38,31 @@ function handleAnswers(userAnswers) {
     default: flow = "不明"; break;
   }
 
-  // Q5 → 臓腑影響
+  // Q5 → 臓腑影響（動作テスト結果）
   let organ = "";
+  let motion = "";
   switch (userAnswers[4]) {
-    case "A": organ = "肺・大腸"; break;
-    case "B": organ = "心・小腸"; break;
-    case "C": organ = "腎・膀胱"; break;
-    case "D": organ = "肝・胆"; break;
-    case "E": organ = "脾・胃"; break;
-    default: organ = "不明"; break;
+    case "A": organ = "肺・大腸"; motion = "首の回旋"; break;
+    case "B": organ = "心・小腸"; motion = "腕の挙上"; break;
+    case "C": organ = "腎・膀胱"; motion = "前屈"; break;
+    case "D": organ = "肝・胆";   motion = "体幹のねじれ・側屈"; break;
+    case "E": organ = "脾・胃";   motion = "後屈"; break;
+    default: organ = "不明";      motion = "特定の動作"; break;
   }
 
-  // 診断ロジック呼び出し
-  const result = generateDiagnosis(scoreArray[0], scoreArray[1], scoreArray[2], flow, organ);
+  // Q0 → 主訴（sessionから持ってくる必要あり：一時的に不明で処理）
+  const symptom = "不明な不調"; // ← diagnosis/index.js側から渡されるようにするならここを修正
+
+  // ✅ 診断ロジック呼び出し（symptomとmotionを追加）
+  const result = generateDiagnosis(
+    scoreArray[0],
+    scoreArray[1],
+    scoreArray[2],
+    flow,
+    organ,
+    symptom,
+    motion
+  );
 
   return result;
 }
