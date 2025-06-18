@@ -61,7 +61,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       ]
     };
   } else {
-    const result = await handleAnswers(session.answers);
+    const result = await handleAnswers(session.answers, session.selectedCategory);
     const [score1, score2, score3] = result.scores || [];
 
     try {
