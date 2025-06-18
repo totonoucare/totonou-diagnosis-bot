@@ -49,64 +49,99 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ セッション開始
+    // ✅ セッション開始トリガー（subscribed 限定）
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
-        return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
+        return [{
+          type: 'text',
+          text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。'
+        }];
       }
 
-      userSession[userId] = { step: 1, answers: [], partialAnswers: {} };
+      userSession[userId] = { step: 1, answers: [] };
       const q1 = questionSets[0];
       const context = await supabaseMemoryManager.getContext(userId);
       return [buildFlexMessage(q1, context)];
     }
 
+    // ✅ セッションがない状態で応答が来た場合
     if (!userSession[userId]) {
-      return [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }];
+      return [{
+        type: 'text',
+        text: '再診を始めるには「定期チェック診断」と送ってください。'
+      }];
     }
 
     const session = userSession[userId];
-    const step = session.step;
-    const question = questionSets[step - 1];
+    const currentStep = session.step;
+    const question = questionSets[currentStep - 1];
 
     // ✅ Q3の複数選択処理
-    if (question.id === 'Q3' && question.isMulti) {
-      const [key, value] = message.split(':');
+    if (question.id === 'Q3' && question.isMulti && message.includes(':')) {
+      const parts = message.split(':');
+      if (parts.length !== 2) {
+        return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
+      }
 
-      if (!['A', 'B', 'C', 'D'].includes(value)) {
+      const [key, answer] = parts;
+      if (!['A', 'B', 'C', 'D'].includes(answer)) {
         return [{ type: 'text', text: 'A〜Dのボタンで選んでください。' }];
       }
 
-      session.partialAnswers[key] = value;
+      if (!session.partialAnswers) session.partialAnswers = {};
+      session.partialAnswers[key] = answer;
 
-      const allKeys = question.subQuestions.map(q => q.key);
-      const filled = allKeys.every(k => session.partialAnswers[k]);
+      // 🔄 未回答項目が残っている場合はメッセージのみ返す
+      const remaining = question.subQuestions
+        .map(sub => sub.key)
+        .filter(k => !(k in session.partialAnswers));
 
-      if (filled) {
-        session.answers.push({ ...session.partialAnswers });
-        session.partialAnswers = {};
-        session.step++;
+      if (remaining.length > 0) {
+        return [{
+          type: 'text',
+          text: `✅ 回答ありがとうございます。\n残りの項目：${remaining.join('・')} をご回答ください。`
+        }];
       }
 
-    } else {
-      // ✅ 単一選択
+      // ✅ 全部揃ったらQ3として保存
+      session.answers.push({ ...session.partialAnswers });
+      delete session.partialAnswers;
+      session.step++;
+    }
+
+    // ✅ 通常の単一選択処理
+    else if (!question.isMulti) {
       const answer = message.charAt(0).toUpperCase();
       const isValid = question.options.some(opt => opt.startsWith(answer));
 
       if (!isValid) {
-        return [{ type: 'text', text: 'A〜Eの中からボタンで選んでください。' }];
+        return [{
+          type: 'text',
+          text: 'A〜Eの中からボタンで選んでください。'
+        }];
       }
 
       session.answers.push(answer);
       session.step++;
     }
 
-    // ✅ 終了処理
+    // ✅ 終了判定
     if (session.step > questionSets.length) {
-      const result = await handleFollowupAnswers(userId, session.answers);
+      const answers = session.answers;
+      const context = await supabaseMemoryManager.getContext(userId);
+
+      if (!context?.symptom || !context?.type) {
+        console.warn("⚠️ context 情報が不完全です");
+      }
+
+      const result = await handleFollowupAnswers(userId, answers);
       delete userSession[userId];
-      return [{ type: 'text', text: `📋【今回の定期チェック診断結果】\n${result.gptComment}` }];
+
+      return [{
+        type: 'text',
+        text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
+      }];
     }
 
     // ✅ 次の質問へ
@@ -116,13 +151,16 @@ async function handleFollowup(event, client, userId) {
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
-    return [{ type: 'text', text: '診断中にエラーが発生しました。再度お試しください。' }];
+    return [{
+      type: 'text',
+      text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。'
+    }];
   }
 }
 
 function buildFlexMessage(question, context = {}) {
   if (question.isMulti && question.subQuestions) {
-    const subs = question.subQuestions.map(sub => ({
+    const updatedSubs = question.subQuestions.map(sub => ({
       ...sub,
       header: replacePlaceholders(sub.header, context),
       body: replacePlaceholders(sub.body, context)
@@ -131,7 +169,7 @@ function buildFlexMessage(question, context = {}) {
       altText: replacePlaceholders(question.header, context),
       header: replacePlaceholders(question.header, context),
       body: replacePlaceholders(question.body, context),
-      questions: subs
+      questions: updatedSubs
     });
   }
 
@@ -148,5 +186,5 @@ function buildFlexMessage(question, context = {}) {
 }
 
 module.exports = Object.assign(handleFollowup, {
-  hasSession: userId => !!userSession[userId]
+  hasSession: (userId) => !!userSession[userId]
 });
