@@ -6,88 +6,66 @@ const openai = new OpenAI({
 
 function buildPrompt(parts = {}) {
   const { scores = [], adviceCards = [] } = parts;
-
   const [score1, score2, score3] = scores;
-  const scoreExplanation =
-    scores.length === 3
-      ? `
+
+  const scoreExplanation = scores.length === 3
+    ? `
 【前回の体質スコア】
 - 虚実（体力の絶対量）: ${score1}
 - 寒熱（体内の熱状態）: ${score2}
-- 気血バランス（+1:気虚, -1:血虚）: ${score3}
+- 気血バランス: ${score3}（+1=気虚／-1=血虚）
 
-※ スコア定義：
-  - 虚実： -1 = 虚（体力少ない）／+1 = 実（体力あり）
-  - 寒熱： -1 = 寒（冷え体質）／+1 = 熱（熱がこもる体質）
-  - 陰陽： -1 = 血虚（栄養・潤い不足）／+1 = 気虚（エネルギー不足）
+※ スコア定義
+- 虚実： -1 = 虚（体力少ない）／+1 = 実（体力あり）
+- 寒熱： -1 = 寒（冷え体質）／+1 = 熱（熱がこもる体質）
+- 陰陽： -1 = 血虚（栄養・潤い不足）／+1 = 気虚（エネルギー不足）
 `
-      : "（体質スコアの記録はありません）";
+    : "（体質スコアの記録はありません）";
 
-  const planAdvice = adviceCards.find((c) =>
-    c.header?.includes("体質改善習慣")
-  )?.body || "（初回のアドバイスが取得できませんでした）";
-
-  const stretchAdvice = adviceCards.find((c) =>
-    c.header?.includes("ストレッチ")
-  )?.body || "（ストレッチのアドバイス未登録）";
-
-  const breathingAdvice = adviceCards.find((c) =>
-    c.header?.includes("呼吸法")
-  )?.body || "（呼吸法のアドバイス未登録）";
-
-  const kampoAdvice = adviceCards.find((c) =>
-    c.header?.includes("漢方薬")
-  )?.body || "（漢方薬のアドバイス未登録）";
-
-  const tsuboAdvice = adviceCards.find((c) =>
-    c.header?.includes("ツボ")
-  )?.body || "（ツボのアドバイス未登録）";
+  const planAdvice = adviceCards.find(c => c.header?.includes("体質改善習慣"))?.body || "（体質改善アドバイス未登録）";
+  const breathingAdvice = adviceCards.find(c => c.header?.includes("呼吸"))?.body || "（呼吸法アドバイス未登録）";
+  const stretchAdvice = adviceCards.find(c => c.header?.includes("ストレッチ"))?.body || "（ストレッチアドバイス未登録）";
+  const kampoAdvice = adviceCards.find(c => c.header?.includes("漢方"))?.body || "（漢方薬アドバイス未登録）";
+  const tsuboAdvice = adviceCards.find(c => c.header?.includes("ツボ"))?.body || "（ツボアドバイス未登録）";
 
   return `
 あなたは、東洋医学とセルフケアに詳しいサポートAIです。
-患者さんが送った再診データをもとに、
+以下の情報をもとに、再診ユーザーに対してやさしく寄り添うようにアドバイスしてください：
 
-- 良かった点のポジティブフィードバック（絵文字OK）
-- 今後も無理なく続けられるちょっとした工夫
-- 今回ととのうガイド（前回アドバイス）をちゃんと踏まえた提案
-- 「次にやってみるといいこと」を1〜2個だけ丁寧に
+1. 前回の「ととのうガイド」に沿って取り組めた点を、しっかり褒めて応援（絵文字もOK）
+2. あまりできていなかった部分にも、前向きな工夫や“次のヒント”を自然に提案
+3. 今の状態に合わせて、「次にやってみると良さそうなこと」を1つか2つだけ丁寧に
+4. 内容は250文字以内を目安に、簡潔かつ中身のあるコメントに
 
-を意識して、温かく、寄り添うようにアドバイスしてください。
-固すぎず、頼れる相棒のようなトーンで！内容は簡潔に、でも中身は深く！
+トーンは、信頼できる相棒のように。ややカジュアルで、でも芯のあるやさしい語り口で。
 
-📦 前回診断結果
-- タイプ：${parts.typeName}
-- 傾向：${parts.traits}
-- 巡り：${parts.flowIssue}
-- 内臓：${parts.organBurden}
+【前回の診断結果】
+- 体質タイプ：${parts.typeName || "不明"}
+- 傾向：${parts.traits || "不明"}
+- 巡りの傾向：${parts.flowIssue || "不明"}
+- 内臓の負担傾向：${parts.organBurden || "不明"}
 
 ${scoreExplanation}
 
-🧭 前回アドバイス（ととのう計画）
-${planAdvice}
+【ととのうガイド（初回アドバイス）】
+- 習慣改善：${planAdvice}
+- 呼吸法：${breathingAdvice}
+- ストレッチ：${stretchAdvice}
+- ツボケア：${tsuboAdvice}
+- 漢方薬：${kampoAdvice}
 
-💨 呼吸法アドバイス
-${breathingAdvice}
-
-🤸 経絡ストレッチアドバイス
-${stretchAdvice}
-
-🌿 漢方薬アドバイス
-${kampoAdvice}
-
-🎯 ツボ・その他のアドバイス
-${tsuboAdvice}
-
-📝 今回の再診回答
+【今回の再診データ】
 - 主訴：${parts.symptom}
 - 主訴の変化：${parts.symptomChange}
 - 全体の体調：${parts.overall}
-- 呼吸法：${parts.breathing}
-- ストレッチ：${parts.stretch}
-- 漢方薬：${parts.kampo}
-- その他：${parts.otherCare}
-- 動作テスト：${parts.motion} → ${parts.motionChange}
-- ライフスタイル変化：${parts.lifestyle}
+- セルフケア状況：
+   ・習慣：${parts.habits}
+   ・ストレッチ：${parts.stretch}
+   ・呼吸法：${parts.breathing}
+   ・漢方薬：${parts.kampo}
+   ・ツボ・その他：${parts.otherCare}
+- 動作テスト変化：${parts.motionChange}
+- ライフスタイルの変化：${parts.lifestyle}
 `;
 }
 
@@ -101,7 +79,7 @@ async function sendFollowupPromptToGPT(promptParts) {
         {
           role: "system",
           content:
-            "あなたは東洋医学に詳しく、患者と伴走するパートナーAIです。優しく、わかりやすく、応援の気持ちを込めてアドバイスしてください。絵文字も適度にOK。",
+            "あなたは東洋医学に詳しく、患者と伴走するパートナーAIです。優しく、わかりやすく、応援の気持ちを込めてアドバイスしてください。絵文字も適度に使ってください。",
         },
         {
           role: "user",
