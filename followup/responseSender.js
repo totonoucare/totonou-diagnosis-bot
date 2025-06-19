@@ -87,7 +87,7 @@ async function sendFollowupPromptToGPT(promptParts) {
           content: prompt,
         },
       ],
-      temperature: 0.85,
+      temperature: 0.8,
       max_tokens: 1200,
     });
 
