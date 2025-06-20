@@ -4,7 +4,6 @@ const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
-// 主訴と動作の日本語変換マップ
 const symptomLabels = {
   stomach: '胃腸の調子',
   sleep: '睡眠改善・集中力',
@@ -25,16 +24,7 @@ const motionLabels = {
   E: '上体をそらす',
 };
 
-// Q3の各項目キーに対応する日本語ラベル
-const q3Labels = {
-  habits: "体質改善の習慣（温活・食事・睡眠など）",
-  breathing: "巡りととのえ呼吸法",
-  stretch: "内臓ととのえストレッチ",
-  tsubo: "ツボケア（指圧・お灸）",
-  kampo: "漢方薬の服用"
-};
-
-const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
+const userSession = {};
 
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== 'string') return '';
@@ -46,26 +36,18 @@ function replacePlaceholders(template, context = {}) {
 async function handleFollowup(event, client, userId) {
   try {
     let message = "";
-
     if (event.type === 'message' && event.message.type === 'text') {
       message = event.message.text.trim();
     } else if (event.type === 'postback' && event.postback.data) {
       message = event.postback.data.trim();
     } else {
-      return [{
-        type: 'text',
-        text: '形式が不正です。A〜Eのボタンで回答してください。'
-      }];
+      return [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }];
     }
 
-    // ✅ セッション開始トリガー（subscribed 限定）
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
-        return [{
-          type: 'text',
-          text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。'
-        }];
+        return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
       }
 
       userSession[userId] = { step: 1, answers: [] };
@@ -74,75 +56,46 @@ async function handleFollowup(event, client, userId) {
       return [buildFlexMessage(q1, context)];
     }
 
-    // ✅ セッションがない状態で応答が来た場合
     if (!userSession[userId]) {
-      return [{
-        type: 'text',
-        text: '再診を始めるには「定期チェック診断」と送ってください。'
-      }];
+      return [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }];
     }
 
     const session = userSession[userId];
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    // ✅ Q3の複数選択処理
-    if (question.id === 'Q3' && question.isMulti && message.includes(':')) {
-      const parts = message.split(':');
-      if (parts.length !== 2) {
-        return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
-      }
-
-      const [key, answer] = parts;
-      if (!['A', 'B', 'C', 'D'].includes(answer)) {
-        return [{ type: 'text', text: 'A〜Dのボタンで選んでください。' }];
-      }
-
+    // 複数選択対応（Q1・Q2・Q3）
+    if (question.isMulti) {
       if (!session.partialAnswers) session.partialAnswers = {};
-      session.partialAnswers[key] = answer;
+      if (message.includes(':')) {
+        const [key, answer] = message.split(':');
+        session.partialAnswers[key] = answer;
+      }
 
-      // 🔍 未回答項目が残っているかチェック
-      const remaining = question.subQuestions
-        .map(sub => sub.key)
-        .filter(k => !(k in session.partialAnswers));
+      const remaining = question.options.filter(opt => {
+        return !session.partialAnswers.hasOwnProperty(opt.id);
+      });
 
-      if (remaining.length > 0) {
-        const remainingLabels = remaining.map(k => q3Labels[k] || k).join('・');
+      if (remaining.length === 0) {
+        session.answers.push({ ...session.partialAnswers });
+        session.step++;
+        delete session.partialAnswers;
+      } else {
         return [{
           type: 'text',
-          text: `✅ 回答ありがとうございます。\n残りの項目：${remainingLabels} をご回答ください。`
+          text: `✅ 回答ありがとうございます。\n残りの項目：${remaining.map(r => r.label).join('・')} をご回答ください。`
         }];
       }
-
-      session.answers.push({ ...session.partialAnswers });
-      delete session.partialAnswers;
-      session.step++;
 
     } else {
-      // ✅ 単一選択処理（Q1〜Q2, Q4〜Q5）
-      const answer = message.charAt(0).toUpperCase();
-      const isValid = question.options.some(opt => opt.startsWith(answer));
-
-      if (!isValid) {
-        return [{
-          type: 'text',
-          text: 'A〜Eの中からボタンで選んでください。'
-        }];
-      }
-
-      session.answers.push(answer);
+      // 単一選択（Q4・Q5）
+      session.answers.push(message);
       session.step++;
     }
 
-    // ✅ 終了判定
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(userId);
-
-      if (!context?.symptom || !context?.type) {
-        console.warn("⚠️ context 情報が不完全です");
-      }
-
       await client.pushMessage(userId, {
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
@@ -157,7 +110,6 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(userId);
     return [buildFlexMessage(nextQuestion, context)];
@@ -172,17 +124,16 @@ async function handleFollowup(event, client, userId) {
 }
 
 function buildFlexMessage(question, context = {}) {
-  if (question.isMulti && question.subQuestions) {
-    const updatedSubs = question.subQuestions.map(sub => ({
-      ...sub,
-      header: replacePlaceholders(sub.title, context),
-      body: question.body // body全体は固定文なのでそのまま
-    }));
+  if (question.isMulti) {
     return buildMultiQuestionFlex({
       altText: replacePlaceholders(question.header, context),
       header: replacePlaceholders(question.header, context),
       body: replacePlaceholders(question.body, context),
-      questions: updatedSubs
+      questions: question.options.map(opt => ({
+        key: opt.id,
+        title: opt.label,
+        options: opt.items
+      }))
     });
   }
 
@@ -192,7 +143,7 @@ function buildFlexMessage(question, context = {}) {
     body: replacePlaceholders(question.body, context),
     buttons: question.options.map(opt => ({
       label: opt,
-      data: opt.includes(':') ? opt : opt.charAt(0),
+      data: opt,
       displayText: opt
     }))
   });
