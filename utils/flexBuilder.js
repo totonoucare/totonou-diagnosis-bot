@@ -64,7 +64,7 @@ function buildCategorySelectionFlex() {
     buttons: [
       { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
       { label: '睡眠改善・集中力', data: 'sleep', displayText: '睡眠改善・集中力' },
-      { label: '肩こり・腰痛・関節', data: 'pain', displayText: '肩こり・腰痛・関節' },
+      { label: '肩こり・腰痛・関節痛', data: 'pain', displayText: '肩こり・腰痛・関節' },
       { label: 'イライラや不安感', data: 'mental', displayText: 'イライラや不安感' },
       { label: '体温バランス・むくみ', data: 'cold', displayText: '体温バランス・むくみ' },
       { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
