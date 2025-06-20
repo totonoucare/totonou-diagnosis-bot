@@ -14,10 +14,10 @@ function generateFollowupResult(answers, context = {}) {
   // 🔹そのまま保存したい回答の生データ
   const rawData = {
     symptomChange: q1,
-    overallCondition: q2,
+    lifestyle: q2,
     careDetails: q3,
     motionTestChange: q4,
-    lifestyleChange: q5
+    careTrouble: q5
   };
 
   // 🔸 advice配列から特定のアドバイスを抽出
@@ -34,21 +34,21 @@ function generateFollowupResult(answers, context = {}) {
     traits: context.trait || "未登録",
     flowIssue: context.flowIssue || "未登録",
     organBurden: context.organBurden || "未登録",
+    scores: context.scores || [],
 
     // 🌿 セルフケア計画とリンク（カルーセルより取得）
-    planAdvice: findAdviceByHeader("体質改善習慣"),
-    link: findAdviceByHeader("漢方薬"),
+    adviceCards: adviceArray,
 
     // 📝 フォローアップ回答（Q1〜Q5）
     symptomChange: q1,
-    overall: q2,
+    lifestyle: q2,
     habits: q3?.habits || "未実施",
     stretch: q3?.stretch || "未実施",
     breathing: q3?.breathing || "未実施",
     kampo: q3?.kampo || "未使用",
     otherCare: q3?.other || "なし",
     motionChange: q4,
-    lifestyle: q5
+    careTrouble: q5
   };
 
   return { rawData, promptParts };
