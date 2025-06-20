@@ -10,6 +10,7 @@ const flowlabelDictionary = require('./diagnosis/flowlabelDictionary');
 const linkDictionary = require('./diagnosis/linkDictionary');
 
 const TABLE_NAME = 'users';
+const FOLLOWUP_TABLE = 'followup_answers';
 
 // ✅ ユーザー初期化（診断開始時に呼ぶ）
 async function initializeUser(lineId) {
@@ -55,7 +56,7 @@ async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
   if (error) throw error;
 }
 
-// ✅ 診断データ取得（未使用なら保留でもOK）
+// ✅ 診断データ取得
 async function getDiagnosis(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -75,9 +76,9 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
     scores: [score1, score2, score3],
     flowType,                    // 気滞・瘀血など
     organType,                   // 肝・脾など
-    symptom: symptom || "不明な不調",  // ← 追加
-    motion: motion || "特定の動作",   // ← 追加
-    advice: adviceCards          // カルーセルアドバイス配列
+    symptom: symptom || "不明な不調",
+    motion: motion || "特定の動作",
+    advice: adviceCards
   };
 
   const { error } = await supabase
@@ -115,6 +116,25 @@ async function getContext(lineId) {
   }
 }
 
+// ✅ 再診回答の保存
+async function setFollowupAnswers(lineId, answers) {
+  const { error } = await supabase
+    .from(FOLLOWUP_TABLE)
+    .upsert(
+      {
+        line_id: lineId,
+        answers: answers,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: ['line_id'] }
+    );
+
+  if (error) {
+    console.error('❌ followup_answers保存エラー:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -124,5 +144,6 @@ module.exports = {
   getDiagnosis,
   saveContext,
   getContext,
-  setInitialContext: saveContext
+  setInitialContext: saveContext,
+  setFollowupAnswers
 };
