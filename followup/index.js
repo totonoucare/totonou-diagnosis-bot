@@ -4,6 +4,7 @@ const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
+// 主訴と動作の日本語変換マップ
 const symptomLabels = {
   stomach: '胃腸の調子',
   sleep: '睡眠改善・集中力',
@@ -24,7 +25,13 @@ const motionLabels = {
   E: '上体をそらす',
 };
 
-const q3Labels = {
+// 各Qの複数選択項目の日本語ラベル（Q1〜Q3対応）
+const multiLabels = {
+  symptom: "「{{symptom}}」のお悩みレベル",
+  general: "全体的な調子",
+  sleep: "睡眠の状態",
+  meal: "食事の状態",
+  stress: "ストレスの状態",
   habits: "体質改善の習慣（温活・食事・睡眠など）",
   breathing: "巡りととのえ呼吸法",
   stretch: "内臓ととのえストレッチ",
@@ -32,13 +39,13 @@ const q3Labels = {
   kampo: "漢方薬の服用"
 };
 
-const userSession = {}; // userSession[userId] = { step, answers }
+const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
 
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== 'string') return '';
   return template
     .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
-    .replace(/\{\{motion\}\}/g, motionLabels[context.motion] || '特定の動作');
+    .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
 }
 
 async function handleFollowup(event, client, userId) {
@@ -50,20 +57,13 @@ async function handleFollowup(event, client, userId) {
     } else if (event.type === 'postback' && event.postback.data) {
       message = event.postback.data.trim();
     } else {
-      return [{
-        type: 'text',
-        text: '形式が不正です。A〜Eのボタンで回答してください。'
-      }];
+      return [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }];
     }
 
-    // ✅ セッション開始
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
-        return [{
-          type: 'text',
-          text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。'
-        }];
+        return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
       }
 
       userSession[userId] = { step: 1, answers: [] };
@@ -72,40 +72,34 @@ async function handleFollowup(event, client, userId) {
       return [buildFlexMessage(q1, context)];
     }
 
-    // ✅ セッション未開始
     if (!userSession[userId]) {
-      return [{
-        type: 'text',
-        text: '再診を始めるには「定期チェック診断」と送ってください。'
-      }];
+      return [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }];
     }
 
     const session = userSession[userId];
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    // ✅ 複数選択（Q1〜Q3）
-    if (question.isMulti) {
-      const answerIndex = message.charAt(0).toUpperCase();
-      const validOptions = ['A', 'B', 'C', 'D', 'E'];
-      if (!validOptions.includes(answerIndex)) {
-        return [{ type: 'text', text: 'A〜Eの中からボタンで選んでください。' }];
+    if (question.isMulti && Array.isArray(question.options)) {
+      const parts = message.split(':');
+      if (parts.length !== 2) {
+        return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
       }
 
-      const targetSub = question.options.find((sub, i) => {
-        return !session.partialAnswers || !(sub.id in session.partialAnswers);
-      });
-
-      if (!targetSub) {
-        return [{ type: 'text', text: 'すでにすべて回答済みです。次に進みます。' }];
+      const [key, answer] = parts;
+      if (!question.options.find(opt => opt.id === key)) {
+        return [{ type: 'text', text: '不正な選択肢です。ボタンから選んでください。' }];
       }
 
       if (!session.partialAnswers) session.partialAnswers = {};
-      session.partialAnswers[targetSub.id] = answerIndex;
+      session.partialAnswers[key] = answer;
 
-      const remaining = question.options.filter(opt => !(opt.id in session.partialAnswers));
+      const remaining = question.options
+        .map(sub => sub.id)
+        .filter(k => !(k in session.partialAnswers));
+
       if (remaining.length > 0) {
-        const remainingLabels = remaining.map(k => q3Labels[k.id] || k.label).join('・');
+        const remainingLabels = remaining.map(k => multiLabels[k] || k).join('・');
         return [{
           type: 'text',
           text: `✅ 回答ありがとうございます。\n残りの項目：${remainingLabels} をご回答ください。`
@@ -117,27 +111,23 @@ async function handleFollowup(event, client, userId) {
       session.step++;
 
     } else {
-      // ✅ 単一選択
-      const answer = message.charAt(0).toUpperCase();
-      const isValid = question.options.some(opt => opt.startsWith(answer));
-      if (!isValid) {
-        return [{
-          type: 'text',
-          text: 'A〜Eの中からボタンで選んでください。'
-        }];
+      if (!question.options.includes(message)) {
+        return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      session.answers.push(answer);
+      session.answers.push(message);
       session.step++;
     }
 
-    // ✅ 終了処理
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(userId);
 
-      // 🔥📝 ここで再診内容を保存！（追加した処理）
-      await supabaseMemoryManager.saveFollowup(userId, answers);
+      if (!context?.symptom || !context?.type) {
+        console.warn("⚠️ context 情報が不完全です");
+      }
+
+      await supabaseMemoryManager.setFollowupAnswers(userId, answers);
 
       await client.pushMessage(userId, {
         type: 'text',
@@ -153,7 +143,6 @@ async function handleFollowup(event, client, userId) {
       }];
     }
 
-    // ✅ 次の質問
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(userId);
     return [buildFlexMessage(nextQuestion, context)];
@@ -168,15 +157,15 @@ async function handleFollowup(event, client, userId) {
 }
 
 function buildFlexMessage(question, context = {}) {
-  if (question.isMulti) {
+  if (question.isMulti && Array.isArray(question.options)) {
     return buildMultiQuestionFlex({
       altText: replacePlaceholders(question.header, context),
       header: replacePlaceholders(question.header, context),
       body: replacePlaceholders(question.body, context),
       questions: question.options.map(opt => ({
         key: opt.id,
-        title: opt.label,
-        options: opt.items
+        title: replacePlaceholders(multiLabels[opt.id] || opt.label || opt.id, context),
+        items: opt.items
       }))
     });
   }
@@ -187,7 +176,7 @@ function buildFlexMessage(question, context = {}) {
     body: replacePlaceholders(question.body, context),
     buttons: question.options.map(opt => ({
       label: opt,
-      data: opt.includes(':') ? opt : opt.charAt(0),
+      data: opt,
       displayText: opt
     }))
   });
