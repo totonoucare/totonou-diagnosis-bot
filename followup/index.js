@@ -27,11 +27,11 @@ const motionLabels = {
 
 // Q3の各項目キーに対応する日本語ラベル
 const q3Labels = {
-  habits: "習慣改善（睡眠・食事・行動の見直し）",
-  stretch: "経絡ストレッチ",
+  habits: "体質改善の習慣（温活・食事・睡眠など）",
   breathing: "巡りととのえ呼吸法",
-  kampo: "漢方薬の服用",
-  other: "その他独自のセルフケア"
+  stretch: "内臓ととのえストレッチ",
+  tsubo: "ツボケア（指圧・お灸）",
+  kampo: "漢方薬の服用"
 };
 
 const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
@@ -134,29 +134,28 @@ async function handleFollowup(event, client, userId) {
       session.step++;
     }
 
-// ✅ 終了判定
-if (session.step > questionSets.length) {
-  const answers = session.answers;
-  const context = await supabaseMemoryManager.getContext(userId);
+    // ✅ 終了判定
+    if (session.step > questionSets.length) {
+      const answers = session.answers;
+      const context = await supabaseMemoryManager.getContext(userId);
 
-  if (!context?.symptom || !context?.type) {
-    console.warn("⚠️ context 情報が不完全です");
-  }
+      if (!context?.symptom || !context?.type) {
+        console.warn("⚠️ context 情報が不完全です");
+      }
 
-  // 👇 ここで「考え中」メッセージを先に送信
-  await client.pushMessage(userId, {
-    type: 'text',
-    text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
-  });
+      await client.pushMessage(userId, {
+        type: 'text',
+        text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
+      });
 
-  const result = await handleFollowupAnswers(userId, answers);
-  delete userSession[userId];
+      const result = await handleFollowupAnswers(userId, answers);
+      delete userSession[userId];
 
-  return [{
-    type: 'text',
-    text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
-  }];
-}
+      return [{
+        type: 'text',
+        text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
+      }];
+    }
 
     // ✅ 次の質問へ
     const nextQuestion = questionSets[session.step - 1];
@@ -176,8 +175,8 @@ function buildFlexMessage(question, context = {}) {
   if (question.isMulti && question.subQuestions) {
     const updatedSubs = question.subQuestions.map(sub => ({
       ...sub,
-      header: replacePlaceholders(sub.header, context),
-      body: replacePlaceholders(sub.body, context)
+      header: replacePlaceholders(sub.title, context),
+      body: question.body // body全体は固定文なのでそのまま
     }));
     return buildMultiQuestionFlex({
       altText: replacePlaceholders(question.header, context),
