@@ -43,7 +43,7 @@ async function markSubscribed(lineId) {
   if (error) throw error;
 }
 
-// ✅ 診断データ保存（任意形式）
+// ✅ 初診：診断データ保存（カルーセル＝ととのうガイド込み）
 async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
   const { error } = await supabase
     .from(TABLE_NAME)
@@ -56,7 +56,7 @@ async function saveDiagnosis(lineId, diagnosisResult, totonouGuide) {
   if (error) throw error;
 }
 
-// ✅ 診断データ取得
+// ✅ 初診：診断データ取得
 async function getDiagnosis(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -68,7 +68,7 @@ async function getDiagnosis(lineId) {
   return data;
 }
 
-// ✅ context構造保存（体質・スコア・流れ・臓腑・アドバイス）
+// ✅ 初診：context構造保存（スコア・流通・臓腑・症状・セルフケア）
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
   const context = {
     type,
@@ -113,10 +113,10 @@ async function getContext(lineId) {
   }
 }
 
-// ✅ 再診回答の保存（履歴形式で挿入）
+// ✅ 再診：フォローアップ回答保存（完全強制・履歴形式）
 async function setFollowupAnswers(lineId, answers) {
   try {
-    // usersテーブルから user_id(uuid) を取得
+    // user_id取得
     const { data: userRow, error: userError } = await supabase
       .from(TABLE_NAME)
       .select('id')
@@ -131,24 +131,36 @@ async function setFollowupAnswers(lineId, answers) {
 
     const payload = {
       user_id: userId,
-      symptom_level: parseInt(answers[0].symptom) || null,  // 修正！
-      general_level: parseInt(answers[0].general) || null,  // 修正！
-      sleep: parseInt(answers[1]) || null,                  // Q2の最初の値
-      meal: parseInt(answers[3]) || null,
-      stress: parseInt(answers[4]) || null,
-      habits: multi.habits || null,
-      breathing: multi.breathing || null,
-      stretch: multi.stretch || null,
-      tsubo: multi.tsubo || null,
-      kampo: multi.kampo || null,
-      motion_level: parseInt(answers[6]) || null,
-      difficulty: answers[7] || null,
+      symptom_level: parseInt(answers[0].symptom),  // Q1-1
+      general_level: parseInt(answers[0].general),  // Q1-2
+      sleep: parseInt(answers[1].sleep),            // Q2-1
+      meal: parseInt(answers[1].meal),              // Q2-2
+      stress: parseInt(answers[1].stress),          // Q2-3
+      habits: multi.habits,
+      breathing: multi.breathing,
+      stretch: multi.stretch,
+      tsubo: multi.tsubo,
+      kampo: multi.kampo,
+      motion_level: parseInt(answers[6]),           // Q4
+      difficulty: answers[7],                       // Q5
       created_at: new Date().toISOString()
     };
 
+    // 欠損チェック（null禁止）
+    const requiredFields = [
+      'symptom_level', 'general_level', 'sleep', 'meal', 'stress',
+      'habits', 'breathing', 'stretch', 'tsubo', 'kampo',
+      'motion_level', 'difficulty'
+    ];
+    for (const key of requiredFields) {
+      if (payload[key] === undefined || payload[key] === null) {
+        throw new Error(`❌ 必須項目が未定義: ${key}`);
+      }
+    }
+
     const { error: insertError } = await supabase
       .from(FOLLOWUP_TABLE)
-      .insert(payload); // 履歴として追加
+      .insert(payload);
 
     if (insertError) {
       console.error('❌ followup_answers保存エラー:', insertError);
