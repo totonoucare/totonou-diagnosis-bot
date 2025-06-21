@@ -34,6 +34,11 @@ function buildPrompt(parts = {}) {
    • 1位：体質改善習慣　• 2位：呼吸法　• 3位：ストレッチ　• 4位：ツボ　• 5位：漢方薬
 4. コメントは250文字以内で端的に。あたたかく、信頼できる語り口で。
 
+【スケール定義】
+- Q1/Q2/Q4：1＝とても良い（改善）／5＝悪化・不調
+- Q3（セルフケア習慣）：未実施 < 時々 < ほぼ毎日
+- Q5：セルフケアで最も困ったことを選択
+
 【前回の診断結果】
 - 体質タイプ：${parts.typeName || "不明"}
 - 傾向：${parts.traits || "不明"}
@@ -65,16 +70,13 @@ ${scoreExplanation}
   ・ツボ：${parts.tsubo || "未入力"}
   ・漢方：${parts.kampo || "未入力"}
 
-- セルフケアで困ったこと：${parts.difficulty || "未入力"}
+- セルフケアで困ったこと（Q5）：${parts.q5_answer || "未入力"}
 `;
 }
 
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
-    // 初回診断（context）取得
     const context = await supabaseMemoryManager.getContext(userId);
-
-    // 再診データと統合
     const promptParts = {
       ...context,
       ...followupAnswers,
@@ -98,7 +100,6 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
     const gptComment = chatCompletion.choices?.[0]?.message?.content || "解析に失敗しました。";
 
-    // ✅ 数値スコアを基に卒業判定・再診誘導
     const sym = parseInt(followupAnswers.symptom_level);
     const gen = parseInt(followupAnswers.general_level);
 
