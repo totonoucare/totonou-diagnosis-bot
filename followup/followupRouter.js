@@ -2,7 +2,7 @@
 
 const generateFollowupResult = require("./resultGenerator");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
-const { sendFollowupPromptToGPT } = require("./responseSender");
+const { sendFollowupResponse } = require("./responseSender"); // ✅ 関数名を統一
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
@@ -31,18 +31,20 @@ async function handleFollowupAnswers(userId, answers) {
     await supabaseMemoryManager.setFollowupAnswers(userId, answers);
 
     // 🤖 GPTコメント生成（東洋医学の専門家として返信）
-    const gptComment = await sendFollowupPromptToGPT(result.promptParts);
+    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
-    // 🧾 結果オブジェクトにコメントを追加して返す
+    // 🧾 結果オブジェクトにコメントと状態を追加して返す
     return {
       ...result,
       gptComment,
+      statusMessage,
     };
   } catch (err) {
     console.error("❌ 再診処理中にエラー:", err);
     return {
       error: "再診処理中にエラーが発生しました。",
-      gptComment: "通信エラーにより解析に失敗しました。時間を置いてもう一度お試しください。"
+      gptComment: "通信エラーにより解析に失敗しました。時間を置いてもう一度お試しください。",
+      statusMessage: "",
     };
   }
 }
