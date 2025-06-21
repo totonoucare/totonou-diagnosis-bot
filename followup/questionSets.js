@@ -72,7 +72,8 @@ const followupQuestionSet = [
         items: ["未使用", "時々", "ほぼ毎日"]
       }
     ]
-  },{
+  },
+  {
   id: "Q4",
   header: "【Q4】動作テストの変化",
   body: "初回診断での「{{motion}}」の辛さが5段階で5として、今の状態はどのくらいですか？",
