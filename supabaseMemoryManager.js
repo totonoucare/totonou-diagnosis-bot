@@ -4,7 +4,7 @@ const CONTEXT_TABLE = 'contexts';
 const USERS_TABLE = 'users';
 const FOLLOWUP_TABLE = 'followups';
 
-// ✅ ユーザー初期化（診断開始時に呼ぶ）
+// ✅ ユーザー初期化
 async function initializeUser(lineId) {
   const { error } = await supabase
     .from(USERS_TABLE)
@@ -93,7 +93,7 @@ async function getContext(lineId) {
   return data;
 }
 
-// ✅ 再診：フォローアップ回答保存（オブジェクト形式に完全対応）
+// ✅ 再診：フォローアップ回答保存
 async function setFollowupAnswers(lineId, answers) {
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -116,12 +116,11 @@ async function setFollowupAnswers(lineId, answers) {
     tsubo: answers.tsubo,
     kampo: answers.kampo,
     motion_level: parseInt(answers.motion),
-    difficulty: answers.reason
+    q5_answer: answers.Q5   // ← ここが修正ポイント
   };
 
-  // 欠損チェック
-  const requiredFields = Object.keys(payload);
-  for (const key of requiredFields) {
+  // 欠損チェック（null, undefined, 空文字をエラーに）
+  for (const key in payload) {
     if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
       throw new Error(`❌ 必須項目が未定義: ${key}`);
     }
