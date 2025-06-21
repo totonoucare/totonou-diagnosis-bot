@@ -22,29 +22,24 @@ function buildPrompt(parts = {}) {
 `
     : "（体質スコアの記録はありません）";
 
-  const planAdvice = adviceCards.find(c => c.header?.includes("体質改善習慣"))?.body || "（体質改善アドバイス未登録）";
-  const breathingAdvice = adviceCards.find(c => c.header?.includes("呼吸"))?.body || "（呼吸法アドバイス未登録）";
-  const stretchAdvice = adviceCards.find(c => c.header?.includes("ストレッチ"))?.body || "（ストレッチアドバイス未登録）";
-  const kampoAdvice = adviceCards.find(c => c.header?.includes("漢方"))?.body || "（漢方薬アドバイス未登録）";
-  const tsuboAdvice = adviceCards.find(c => c.header?.includes("ツボ"))?.body || "（ツボアドバイス未登録）";
+  const find = (keyword) => adviceCards.find(c => c.header?.includes(keyword))?.body || "（アドバイス未登録）";
 
   return `
 あなたは、東洋医学とセルフケアに詳しいサポートAIです。
 以下の情報をもとに、再診ユーザーに対してやさしく寄り添うようにアドバイスしてください。
 
-1.	前回の「ととのうガイド」に沿って取り組めた点を1つだけ選んでしっかり褒めて応援してください（絵文字もOK）。
-	2.	「ととのうガイド」であまり実行できていなかった項目のうち、優先度が高いものを1つ選び、前向きに提案・ヒントを添えてください。
-	3.	コメントでは、以下のセルフケア項目の優先順位を考慮してください（重要な順）：
-	•	1位：体質改善習慣（食事・睡眠）
-	•	2位：呼吸法（巡りととのえ呼吸）
-	•	3位：経絡ストレッチ
-	•	4位：ツボケア（押す・お灸など）
-	•	5位：漢方薬（補助的）
-	4.	コメントは1つか2つのポイントに絞って、250文字以内で簡潔かつ中身のある内容にしてください。
-	5.	前回のアドバイス内容を正確に反映させることを最優先してください（ととのうガイドの各項目の文を参考にする）。
+1. 前回の「ととのうガイド」に沿って取り組めた点を1つだけ選んでしっかり褒めて応援してください（絵文字もOK）。
+2. 「ととのうガイド」であまり実行できていなかった項目のうち、優先度が高いものを1つ選び、前向きに提案・ヒントを添えてください。
+3. コメントでは、以下のセルフケア項目の優先順位を考慮してください（重要な順）：
+   • 1位：体質改善習慣（食事・睡眠）
+   • 2位：呼吸法（巡りととのえ呼吸）
+   • 3位：経絡ストレッチ
+   • 4位：ツボケア（押す・お灸など）
+   • 5位：漢方薬（補助的）
+4. コメントは1つか2つのポイントに絞って、250文字以内で簡潔かつ中身のある内容にしてください。
+5. 前回のアドバイス内容を正確に反映させることを最優先してください（ととのうガイドの各項目の文を参考にする）。
 
-
-トーンは、**信頼できるパートナーのように**。あたたかく、フレンドリーで、でも芯のある語り口にしてください。
+トーンは、信頼できるパートナーのように。あたたかく、フレンドリーで、でも芯のある語り口にしてください。
 
 【前回の診断結果】
 - 体質タイプ：${parts.typeName || "不明"}
@@ -55,36 +50,38 @@ function buildPrompt(parts = {}) {
 ${scoreExplanation}
 
 【ととのうガイド（初回アドバイス）】
-以下は、患者さんの体質に合わせて前回提案された具体的なセルフケアガイドです。
-これらをしっかり参考にしてコメントを構成してください。
-
 1. 💡体質改善習慣
-${planAdvice}
+${find("体質改善習慣")}
 
 2. 🧘巡りととのえ呼吸法
-${breathingAdvice}
+${find("呼吸")}
 
 3. 🧍経絡ストレッチ
-${stretchAdvice}
+${find("ストレッチ")}
 
 4. 🎯ツボケア
-${tsuboAdvice}
+${find("ツボ")}
 
 5. 🌿漢方薬の選び方
-${kampoAdvice}
+${find("漢方")}
 
 【今回の再診データ】
-- 主訴：${parts.symptom}
-- 主訴の変化：${parts.symptomChange}
-- 全体の体調：${parts.overall}
-- セルフケア状況：
-   ・習慣：${parts.habits}
-   ・ストレッチ：${parts.stretch}
-   ・呼吸法：${parts.breathing}
-   ・漢方薬：${parts.kampo}
-   ・ツボ・その他：${parts.otherCare}
-- 動作テスト変化：${parts.motionChange}
-- ライフスタイルの変化：${parts.lifestyle}
+- 主訴：${parts.symptom || "未登録"}
+- 主訴の変化：${parts.symptom_level || "未入力"}
+- 全体の体調：${parts.general_level || "未入力"}
+
+- セルフケア実践状況：
+  ・睡眠：${parts.sleep || "未入力"}
+  ・食事：${parts.meal || "未入力"}
+  ・ストレス対処：${parts.stress || "未入力"}
+  ・習慣：${parts.habits || "未入力"}
+  ・呼吸法：${parts.breathing || "未入力"}
+  ・ストレッチ：${parts.stretch || "未入力"}
+  ・ツボケア：${parts.tsubo || "未入力"}
+  ・漢方薬：${parts.kampo || "未入力"}
+
+- 動作テストの変化：${parts.motion_level || "未入力"}
+- セルフケアで困った点：${parts.difficulty || "未入力"}
 `;
 }
 
