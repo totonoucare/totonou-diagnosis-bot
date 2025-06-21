@@ -50,8 +50,8 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
     type,
     trait: traits,
     scores: [score1, score2, score3],
-    flowType,         // ← 修正済み
-    organType,        // ← 修正済み
+    flowType,
+    organType,
     symptom: symptom || '不明な不調',
     motion: motion || '特定の動作',
     advice: adviceCards
@@ -93,7 +93,7 @@ async function getContext(lineId) {
   return data;
 }
 
-// ✅ 再診：フォローアップ回答保存（完全履歴式）
+// ✅ 再診：フォローアップ回答保存（オブジェクト形式に完全対応）
 async function setFollowupAnswers(lineId, answers) {
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -103,28 +103,26 @@ async function setFollowupAnswers(lineId, answers) {
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
-  const multi = answers[5] || {};
-
   const payload = {
     user_id: userRow.id,
-    symptom_level: parseInt(answers[0].symptom),
-    general_level: parseInt(answers[0].general),
-    sleep: parseInt(answers[1].sleep),
-    meal: parseInt(answers[1].meal),
-    stress: parseInt(answers[1].stress),
-    habits: multi.habits,
-    breathing: multi.breathing,
-    stretch: multi.stretch,
-    tsubo: multi.tsubo,
-    kampo: multi.kampo,
-    motion_level: parseInt(answers[6]),
-    difficulty: answers[7]
+    symptom_level: parseInt(answers.symptom),
+    general_level: parseInt(answers.general),
+    sleep: parseInt(answers.sleep),
+    meal: parseInt(answers.meal),
+    stress: parseInt(answers.stress),
+    habits: answers.habits,
+    breathing: answers.breathing,
+    stretch: answers.stretch,
+    tsubo: answers.tsubo,
+    kampo: answers.kampo,
+    motion_level: parseInt(answers.motion),
+    difficulty: answers.reason
   };
 
   // 欠損チェック
   const requiredFields = Object.keys(payload);
   for (const key of requiredFields) {
-    if (payload[key] === undefined || payload[key] === null) {
+    if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
       throw new Error(`❌ 必須項目が未定義: ${key}`);
     }
   }
