@@ -4,7 +4,6 @@ const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
-// 主訴と動作の日本語変換マップ
 const symptomLabels = {
   stomach: '胃腸の調子',
   sleep: '睡眠改善・集中力',
@@ -35,16 +34,18 @@ const multiLabels = {
   breathing: "巡りととのえ呼吸法",
   stretch: "内臓ととのえストレッチ",
   tsubo: "ツボケア（指圧・お灸）",
-  kampo: "漢方薬の服用"
+  kampo: "漢方薬の服用",
+  Q4: "動作テストの変化",
+  Q5: "セルフケアの課題"
 };
 
-const userSession = {}; // userSession[userId] = { step: 1, answers: {} }
+const userSession = {};
 
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== 'string') return '';
   return template
     .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
-    .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
+    .replace(/\{\{motion\}\}/g, motionLabels[context.motion] || '特定の動作');
 }
 
 async function handleFollowup(event, client, userId) {
@@ -110,7 +111,9 @@ async function handleFollowup(event, client, userId) {
       session.step++;
 
     } else {
-      if (!question.options.includes(message)) {
+      // Q4, Q5 など isMulti: false の処理
+      const validDataValues = question.options.map(opt => opt.data);
+      if (!validDataValues.includes(message)) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
@@ -174,9 +177,9 @@ function buildFlexMessage(question, context = {}) {
     header: replacePlaceholders(question.header, context),
     body: replacePlaceholders(question.body, context),
     buttons: question.options.map(opt => ({
-      label: opt,
-      data: `${question.id}:${opt}`,
-      displayText: `${multiLabels[question.id] || question.id} → ${opt}`
+      label: opt.label,
+      data: opt.data,
+      displayText: opt.displayText
     }))
   });
 }
