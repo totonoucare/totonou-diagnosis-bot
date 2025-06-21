@@ -1,9 +1,13 @@
 const questionSets = require('./questionSets');
-const { buildQuestionFlex, buildCategorySelectionFlex, buildCarouselFlex } = require('../utils/flexBuilder');
+const {
+  buildQuestionFlex,
+  buildCategorySelectionFlex,
+  buildCarouselFlex
+} = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
 const {
-  saveContextToTable,
-  getLatestContext,
+  saveContext,
+  getContext,
   initializeUser
 } = require('../supabaseMemoryManager');
 
@@ -65,19 +69,19 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     const [score1, score2, score3] = result.scores || [];
 
     try {
-      await saveContextToTable({
-        user_id: userId,
+      await saveContext(
+        userId,
         score1,
         score2,
         score3,
-        flowType: result.flowType,
-        organType: result.organType,
-        type: result.type,
-        traits: result.traits,
-        advice: result.adviceCards,
-        symptom: result.symptom || "未設定",
-        motion: result.motion || "未設定"
-      });
+        result.flowType,
+        result.organType,
+        result.type,
+        result.traits,
+        result.adviceCards,
+        result.symptom || "未設定",
+        result.motion || "未設定"
+      );
     } catch (err) {
       console.error("❌ Supabase保存失敗:", err);
     }
@@ -112,7 +116,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうガイド")) {
     try {
-      const context = await getLatestContext(userId); // 最新の診断結果を取得
+      const context = await getContext(userId); // 最新の診断結果を取得
 
       if (!context || !context.advice) {
         return {
@@ -171,7 +175,6 @@ function startSession(userId) {
     answers: [],
   };
 
-  // ✅ ユーザー初期化（必要なら users テーブルに登録だけ）
   initializeUser(userId).catch(err => {
     console.error("❌ ユーザー初期化エラー:", err);
   });
