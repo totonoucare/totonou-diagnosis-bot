@@ -27,7 +27,7 @@ async function getUser(lineId) {
     .from(TABLE_NAME)
     .select('*')
     .eq('line_id', lineId)
-    .maybeSingle(); // 0件でもOK
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -71,11 +71,11 @@ async function getDiagnosis(lineId) {
 // ✅ context構造保存（体質・スコア・流れ・臓腑・アドバイス）
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
   const context = {
-    type,                        // 表示用体質名
-    trait: traits,               // 説明文
+    type,
+    trait: traits,
     scores: [score1, score2, score3],
-    flowType,                    // 気滞・瘀血など
-    organType,                   // 肝・脾など
+    flowType,
+    organType,
     symptom: symptom || "不明な不調",
     motion: motion || "特定の動作",
     advice: adviceCards
@@ -83,10 +83,7 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
 
   const { error } = await supabase
     .from(TABLE_NAME)
-    .upsert(
-      { line_id: lineId, context },
-      { onConflict: ['line_id'] }
-    );
+    .upsert({ line_id: lineId, context }, { onConflict: ['line_id'] });
 
   if (error) {
     console.error('❌ Supabase context保存エラー:', error);
@@ -94,7 +91,7 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
   }
 }
 
-// ✅ context構造取得（parseも含む）
+// ✅ context構造取得
 async function getContext(lineId) {
   const { data, error } = await supabase
     .from(TABLE_NAME)
@@ -116,22 +113,51 @@ async function getContext(lineId) {
   }
 }
 
-// ✅ 再診回答の保存
+// ✅ 再診回答の保存（履歴形式で挿入）
 async function setFollowupAnswers(lineId, answers) {
-  const { error } = await supabase
-    .from(FOLLOWUP_TABLE)
-    .upsert(
-      {
-        line_id: lineId,
-        answers: answers,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: ['line_id'] }
-    );
+  try {
+    // usersテーブルから user_id(uuid) を取得
+    const { data: userRow, error: userError } = await supabase
+      .from(TABLE_NAME)
+      .select('id')
+      .eq('line_id', lineId)
+      .maybeSingle();
 
-  if (error) {
-    console.error('❌ followup_answers保存エラー:', error);
-    throw error;
+    if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+
+    const userId = userRow.id;
+
+    const multi = answers[5] || {};
+
+    const payload = {
+      user_id: userId,
+      symptom_level: parseInt(answers[0]) || null,
+      general_level: parseInt(answers[1]) || null,
+      sleep: parseInt(answers[2]) || null,
+      meal: parseInt(answers[3]) || null,
+      stress: parseInt(answers[4]) || null,
+      habits: multi.habits || null,
+      breathing: multi.breathing || null,
+      stretch: multi.stretch || null,
+      tsubo: multi.tsubo || null,
+      kampo: multi.kampo || null,
+      motion_level: parseInt(answers[6]) || null,
+      difficulty: answers[7] || null,
+      created_at: new Date().toISOString()
+    };
+
+    const { error: insertError } = await supabase
+      .from(FOLLOWUP_TABLE)
+      .insert(payload); // 履歴として追加
+
+    if (insertError) {
+      console.error('❌ followup_answers保存エラー:', insertError);
+      throw insertError;
+    }
+
+  } catch (err) {
+    console.error('❌ setFollowupAnswers 実行時エラー:', err);
+    throw err;
   }
 }
 
