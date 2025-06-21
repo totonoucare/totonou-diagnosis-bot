@@ -1,4 +1,3 @@
-// utils/flexBuilder.js
 function MessageBuilder({ altText, header, body, buttons }) {
   return {
     type: 'flex',
@@ -56,12 +55,10 @@ function MessageBuilder({ altText, header, body, buttons }) {
   };
 }
 
-// プレースホルダー挿入
 function injectContext(template, context = {}) {
   return template.replace(/\{\{(.*?)\}\}/g, (_, key) => context[key] ?? `{{${key}}}`);
 }
 
-// カテゴリー選択用
 function buildCategorySelectionFlex() {
   return MessageBuilder({
     altText: '診断を開始します。どの不調が気になりますか？',
@@ -81,7 +78,6 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// 通常の質問（1問）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
@@ -95,7 +91,7 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
-// 複数小問の質問カード（通常診断用）
+// ✅ 修正済み：選択肢を q.items に準拠させる
 function buildMultiQuestionFlex({ altText, header, body, questions }) {
   const questionContents = questions.flatMap((q) => [
     {
@@ -111,7 +107,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
       layout: 'horizontal',
       spacing: 'sm',
       margin: 'sm',
-      contents: ['A', 'B', 'C', 'D'].map((choice) => ({
+      contents: q.items.map((choice) => ({
         type: 'button',
         action: {
           type: 'postback',
@@ -171,7 +167,6 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
   };
 }
 
-// 再診用 followup 質問カード
 function buildFollowupQuestionFlex(questionObj, context = {}) {
   const { id, header, body, options, isMulti } = questionObj;
 
@@ -249,7 +244,6 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
   }
 }
 
-// アドバイスカルーセル
 function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計画') {
   const bubbles = cards.map((card) => ({
     type: 'bubble',
@@ -295,7 +289,6 @@ function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計
   };
 }
 
-// 通常カルーセル（別名）
 function buildCarouselFlex(cards, altText = '診断結果とセルフケア提案') {
   return buildAdviceCarouselFlex(cards, altText);
 }
