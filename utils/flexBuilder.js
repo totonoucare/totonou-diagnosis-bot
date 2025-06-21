@@ -1,3 +1,5 @@
+// utils/flexBuilder.js
+
 function MessageBuilder({ altText, header, body, buttons }) {
   return {
     type: 'flex',
@@ -55,7 +57,12 @@ function MessageBuilder({ altText, header, body, buttons }) {
   };
 }
 
-// カテゴリー選択用のバブル
+// プレースホルダー挿入
+function injectContext(template, context = {}) {
+  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => context[key] ?? `{{${key}}}`);
+}
+
+// カテゴリー選択用
 function buildCategorySelectionFlex() {
   return MessageBuilder({
     altText: '診断を開始します。どの不調が気になりますか？',
@@ -75,7 +82,7 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// 通常の質問カードをビルド（Flex）
+// 通常の質問（1問）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
@@ -89,7 +96,7 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
-// 複数小問対応の質問カード
+// 複数小問の質問カード（通常診断用）
 function buildMultiQuestionFlex({ altText, header, body, questions }) {
   const questionContents = questions.flatMap((q) => [
     {
@@ -165,7 +172,85 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
   };
 }
 
-// アドバイスカード（カルーセル）作成
+// 再診用 followup 質問カード
+function buildFollowupQuestionFlex(questionObj, context = {}) {
+  const { id, header, body, options, isMulti } = questionObj;
+
+  const injectedHeader = injectContext(header, context);
+  const injectedBody = injectContext(body, context);
+
+  if (isMulti) {
+    const questionContents = options.flatMap((q) => [
+      {
+        type: 'text',
+        text: `🔸 ${injectContext(q.label, context)}`,
+        weight: 'bold',
+        size: 'sm',
+        margin: 'md',
+        color: '#444444',
+      },
+      {
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        margin: 'sm',
+        contents: q.items.map((choice) => ({
+          type: 'button',
+          action: {
+            type: 'postback',
+            label: choice,
+            data: `${q.id}:${choice}`,
+            displayText: `${injectContext(q.label, context)} → ${choice}`,
+          },
+          height: 'sm',
+          style: 'primary',
+          color: '#828E7B',
+          flex: 1,
+        })),
+      },
+    ]);
+
+    return {
+      type: 'flex',
+      altText: injectedHeader,
+      contents: {
+        type: 'bubble',
+        size: 'mega',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [{ type: 'text', text: injectedHeader, weight: 'bold', size: 'md', color: '#ffffff' }],
+          backgroundColor: '#788972',
+          paddingAll: '12px',
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'md',
+          contents: [
+            { type: 'text', text: injectedBody, wrap: true, size: 'md', color: '#333333' },
+            { type: 'separator', margin: 'md' },
+            ...questionContents,
+          ],
+        },
+      },
+    };
+  } else {
+    const buttons = options.map((opt) => ({
+      label: opt,
+      data: `${id}:${opt}`,
+      displayText: `${injectedHeader} → ${opt}`,
+    }));
+    return MessageBuilder({
+      altText: injectedHeader,
+      header: injectedHeader,
+      body: injectedBody,
+      buttons,
+    });
+  }
+}
+
+// アドバイスカルーセル
 function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計画') {
   const bubbles = cards.map((card) => ({
     type: 'bubble',
@@ -211,9 +296,9 @@ function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計
   };
 }
 
-// 通常のカルーセル（別名）
+// 通常カルーセル（別名）
 function buildCarouselFlex(cards, altText = '診断結果とセルフケア提案') {
-  return buildAdviceCarouselFlex(cards, altText); // 実装は同じものを流用
+  return buildAdviceCarouselFlex(cards, altText);
 }
 
 module.exports = {
@@ -222,5 +307,6 @@ module.exports = {
   buildQuestionFlex,
   buildMultiQuestionFlex,
   buildAdviceCarouselFlex,
-  buildCarouselFlex, // ← 忘れずに追加！
+  buildCarouselFlex,
+  buildFollowupQuestionFlex,
 };
