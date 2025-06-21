@@ -25,7 +25,6 @@ const motionLabels = {
   E: '上体をそらす',
 };
 
-// 各Qの複数選択項目の日本語ラベル（Q1〜Q3対応）
 const multiLabels = {
   symptom: "「{{symptom}}」のお悩みレベル",
   general: "全体的な調子",
@@ -39,7 +38,7 @@ const multiLabels = {
   kampo: "漢方薬の服用"
 };
 
-const userSession = {}; // userSession[userId] = { step: 1, answers: [] }
+const userSession = {}; // userSession[userId] = { step: 1, answers: {} }
 
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== 'string') return '';
@@ -66,7 +65,7 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
       }
 
-      userSession[userId] = { step: 1, answers: [] };
+      userSession[userId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
       const context = await supabaseMemoryManager.getContext(userId);
       return [buildFlexMessage(q1, context)];
@@ -106,7 +105,7 @@ async function handleFollowup(event, client, userId) {
         }];
       }
 
-      session.answers.push({ ...session.partialAnswers });
+      Object.assign(session.answers, session.partialAnswers);
       delete session.partialAnswers;
       session.step++;
 
@@ -115,7 +114,7 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      session.answers.push(message);
+      session.answers[question.id] = message;
       session.step++;
     }
 
@@ -176,8 +175,8 @@ function buildFlexMessage(question, context = {}) {
     body: replacePlaceholders(question.body, context),
     buttons: question.options.map(opt => ({
       label: opt,
-      data: opt,
-      displayText: opt
+      data: `${question.id}:${opt}`,
+      displayText: `${multiLabels[question.id] || question.id} → ${opt}`
     }))
   });
 }
