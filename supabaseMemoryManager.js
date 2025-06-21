@@ -50,8 +50,8 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
     type,
     trait: traits,
     scores: [score1, score2, score3],
-    flow_issue: flowType,
-    organ_burden: organType,
+    flowType,         // ← 修正済み
+    organType,        // ← 修正済み
     symptom: symptom || '不明な不調',
     motion: motion || '特定の動作',
     advice: adviceCards
