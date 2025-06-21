@@ -10,7 +10,7 @@ const flowlabelDictionary = require('./diagnosis/flowlabelDictionary');
 const linkDictionary = require('./diagnosis/linkDictionary');
 
 const TABLE_NAME = 'users';
-const FOLLOWUP_TABLE = 'followup_answers';
+const FOLLOWUP_TABLE = 'followups';
 
 // ✅ ユーザー初期化（診断開始時に呼ぶ）
 async function initializeUser(lineId) {
