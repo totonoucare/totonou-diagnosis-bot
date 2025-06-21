@@ -27,6 +27,9 @@ async function handleFollowupAnswers(userId, answers) {
     // 🎯 再診結果（回答5問＋前回データからプロンプト用partsを生成）
     const result = generateFollowupResult(answers, context);
 
+    // ✅ 再診回答をSupabaseに保存（履歴形式）
+    await supabaseMemoryManager.setFollowupAnswers(userId, answers);
+
     // 🤖 GPTコメント生成（東洋医学の専門家として返信）
     const gptComment = await sendFollowupPromptToGPT(result.promptParts);
 
