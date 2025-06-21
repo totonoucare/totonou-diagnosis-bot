@@ -9,7 +9,7 @@ function buildPrompt(parts = {}) {
 
   const scoreExplanation = scores.length === 3
     ? `
-【前回の体質スコア】
+【初回診断時の体質スコア】
 - 虚実（体力の絶対量）: ${score1}
 - 寒熱（体内の熱状態）: ${score2}
 - 気血バランス: ${score3}（+1=気虚／-1=血虚）
