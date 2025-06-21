@@ -131,9 +131,9 @@ async function setFollowupAnswers(lineId, answers) {
 
     const payload = {
       user_id: userId,
-      symptom_level: parseInt(answers[0]) || null,
-      general_level: parseInt(answers[1]) || null,
-      sleep: parseInt(answers[2]) || null,
+      symptom_level: parseInt(answers[0].symptom) || null,  // 修正！
+      general_level: parseInt(answers[0].general) || null,  // 修正！
+      sleep: parseInt(answers[1]) || null,                  // Q2の最初の値
       meal: parseInt(answers[3]) || null,
       stress: parseInt(answers[4]) || null,
       habits: multi.habits || null,
