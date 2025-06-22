@@ -134,6 +134,15 @@ async function handleFollowup(event, client, userId) {
 
       await supabaseMemoryManager.setFollowupAnswers(userId, answers);
 
+      const motionLevel = answers['Q4']; // "1"〜"5" の数値文字列
+
+      if (motionLevel && /^[1-5]$/.test(motionLevel)) {
+        await supabaseMemoryManager.updateUserFields(userId, {
+          motion_level: parseInt(motionLevel)
+        });
+      }
+
+
       await client.pushMessage(userId, {
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
