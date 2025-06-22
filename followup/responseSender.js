@@ -71,6 +71,7 @@ function buildPrompt(parts = {}) {
 - 傾向：${parts.traits || "不明"}
 - 巡りの傾向：${parts.flowIssue || "不明"}
 - 内臓の負担傾向：${parts.organBurden || "不明"}
+- 初回診断時の動作テスト：${parts.motion || "未登録"}
 
 
 ${scoreExplanation}
