@@ -100,7 +100,7 @@ async function handleFollowup(event, client, userId) {
 
       const context = await supabaseMemoryManager.getContext(userId);
       const label = replacePlaceholders(multiLabels[key] || key, context);
-      const value = answerLabelMap[answer] || answer;
+      const value = answer;
 
       if (remaining.length > 0) {
         return [{
