@@ -1,7 +1,7 @@
 const followupQuestionSet = [
   {
     id: "Q1",
-    header: "【Q1】主訴と全体調子の変化",
+    header: "【Q1】お悩みの全体調子の変化",
     body: "初回診断での「{{symptom}}」のお悩みレベルが5段階中の5として、今はどのくらいですか？\nまた、全体的なお身体の調子は、絶不調が5として、今はどのくらいですか？",
     isMulti: true,
     options: [
@@ -49,27 +49,27 @@ const followupQuestionSet = [
       {
         id: "habits",
         label: "体質改善の生活習慣",
-        items: ["未実施", "時々", "ほぼ毎日"]
+        items: ["未実践", "時々", "実践中"]
       },
       {
         id: "breathing",
         label: "呼吸法",
-        items: ["未実施", "時々", "ほぼ毎日"]
+        items: ["未実践", "時々", "実践中"]
       },
       {
         id: "stretch",
         label: "ストレッチ",
-        items: ["未実施", "時々", "ほぼ毎日"]
+        items: ["未実践", "時々", "実践中"]
       },
       {
         id: "tsubo",
         label: "ツボケア",
-        items: ["未実施", "時々", "ほぼ毎日"]
+        items: ["未実践", "時々", "実践中"]
       },
       {
         id: "kampo",
         label: "漢方薬",
-        items: ["未使用", "時々", "ほぼ毎日"]
+        items: ["未使用", "時々", "服用中"]
       }
     ]
   },
