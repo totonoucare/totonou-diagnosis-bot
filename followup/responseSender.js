@@ -146,14 +146,8 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
     const gptComment = chatCompletion.choices?.[0]?.message?.content || "解析に失敗しました。";
 
-    const sym = parseInt(followupAnswers.symptom_level);
-    const gen = parseInt(followupAnswers.general_level);
-
-    let statusMessage = "";
-
     return {
       gptComment,
-      statusMessage,
     };
   } catch (err) {
     console.error("❌ フォローアップ解析エラー:", err);
