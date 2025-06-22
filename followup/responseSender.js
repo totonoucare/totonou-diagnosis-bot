@@ -151,14 +151,6 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
     let statusMessage = "";
 
-    if (sym <= 2 && gen <= 2) {
-      statusMessage = `🎉 お悩みの症状も全体の体調も改善していますね！\n今後はリマインド機能のみ（月額半額）の継続もご検討いただけます。`;
-    } else if (sym <= 2 && gen >= 3) {
-      statusMessage = `🎯 お悩みの症状は落ち着きましたが、全体的な体調がまだ不安定なようですね。\n再評価のため、もう一度初回診断を受けてみることをおすすめします🌱`;
-    } else {
-      statusMessage = `📊 改善の途中段階ですが、続けていくと着実にお身体は変化していきます！引き続きサポートいたしますので、安心して一緒にととのえていきましょう！`;
-    }
-
     return {
       gptComment,
       statusMessage,
