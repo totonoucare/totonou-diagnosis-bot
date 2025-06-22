@@ -49,22 +49,22 @@ const followupQuestionSet = [
       {
         id: "habits",
         label: "体質改善の生活習慣",
-        items: ["未実践", "時々", "実践中"]
+        items: ["未着手", "時々", "実践中"]
       },
       {
         id: "breathing",
         label: "呼吸法",
-        items: ["未実践", "時々", "実践中"]
+        items: ["未着手", "時々", "実践中"]
       },
       {
         id: "stretch",
         label: "ストレッチ",
-        items: ["未実践", "時々", "実践中"]
+        items: ["未着手", "時々", "実践中"]
       },
       {
         id: "tsubo",
         label: "ツボケア",
-        items: ["未実践", "時々", "実践中"]
+        items: ["未着手", "時々", "実践中"]
       },
       {
         id: "kampo",
