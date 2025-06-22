@@ -31,8 +31,8 @@ function generateFollowupResult(answers, context = {}) {
     motion: context.motion || "未登録",
     typeName: context.type || "未登録",
     traits: context.trait || "未登録",
-    flowIssue: context.flowIssue || "未登録",
-    organBurden: context.organBurden || "未登録",
+    flowIssue: context.flowType || "未登録",
+    organBurden: context.organType || "未登録",
     scores: context.scores || [],
     adviceCards: adviceArray,
 
