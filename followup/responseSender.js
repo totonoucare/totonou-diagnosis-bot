@@ -136,7 +136,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
         {
           role: "system",
           content:
-            "あなたは東洋医学に詳しいセルフケア支援AIです。親しみやすく、希望が持てるアドバイスを350文字前後で返してください。",
+            "あなたは東洋医学に詳しいセルフケア伴走AIです。親しみやすく可愛げのあるキャラで、希望が持てるアドバイスを350文字前後で返してください。",
         },
         { role: "user", content: prompt },
       ],
