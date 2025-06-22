@@ -98,11 +98,14 @@ async function handleFollowup(event, client, userId) {
         .map(sub => sub.id)
         .filter(k => !(k in session.partialAnswers));
 
+      const context = await supabaseMemoryManager.getContext(userId);
+      const label = replacePlaceholders(multiLabels[key] || key, context);
+      const value = answerLabelMap[answer] || answer;
+
       if (remaining.length > 0) {
-        const remainingLabels = remaining.map(k => multiLabels[k] || k).join('・');
         return [{
           type: 'text',
-          text: `✅ 回答ありがとうございます。\n残りの項目：${remainingLabels} をご回答ください。`
+          text: `✅ ${label} → ${value}`
         }];
       }
 
