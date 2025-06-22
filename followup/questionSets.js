@@ -97,7 +97,7 @@ const followupQuestionSet = [
     { label: "時間が取れなかった", data: "Q5=C", displayText: "時間が取れなかった" },
     { label: "体に合わない気がした", data: "Q5=D", displayText: "体に合わない気がした" },
     { label: "モチベーションが続かなかった", data: "Q5=E", displayText: "モチベーションが続かなかった" },
-    { label: "その他の理由", data: "Q5=F", displayText: "その他の理由" }
+    { label: "特になし", data: "Q5=F", displayText: "特になし" }
   ]
 }
 ];
