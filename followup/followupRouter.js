@@ -7,7 +7,7 @@ const { sendFollowupResponse } = require("./responseSender"); // ✅ 関数名�
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
  * @param {string} userId - ユーザーID（＝LINEのuserId）
- * @param {Array<string>} answers - ユーザーの回答（例: ["motion_level=3", "q5_answer=B"]）
+ * @param {Array|string|object} answers - ユーザーの回答（形式に応じて処理分岐）
  * @returns {Promise<Object|null>} - GPTコメント付きの再診結果 or null（未登録者）
  */
 async function handleFollowupAnswers(userId, answers) {
@@ -15,7 +15,6 @@ async function handleFollowupAnswers(userId, answers) {
     // 🔍 Supabaseから該当ユーザー情報を取得
     const user = await supabaseMemoryManager.getUser(userId);
 
-    // ❌ サブスク登録されていない場合は再診不可
     if (!user || !user.subscribed) {
       console.log(`⛔️ ユーザー ${userId} はサブスク未登録のため再診不可`);
       return null;
@@ -24,25 +23,33 @@ async function handleFollowupAnswers(userId, answers) {
     // ✅ context（初回診断結果）を取得
     const context = await supabaseMemoryManager.getContext(userId);
 
-    // 🎯 再診結果（回答5問＋前回データからプロンプト用partsを生成）
-    const result = generateFollowupResult(answers, context);
+    // 🧩 answers の形式チェック
+    let parsedAnswers = {};
 
-    // 🔁 ["motion_level=3", "q5_answer=B"] を { motion_level: "3", q5_answer: "B" } に変換
-    const parsedAnswers = {};
-    for (const ans of answers) {
-      const [key, value] = ans.split("=");
-      if (key && value !== undefined) {
-        parsedAnswers[key] = value;
+    if (Array.isArray(answers)) {
+      // 例: ["motion_level=3", "q5_answer=B"]
+      for (const ans of answers) {
+        const [key, value] = ans.split("=");
+        if (key && value !== undefined) {
+          parsedAnswers[key] = value;
+        }
       }
+    } else if (typeof answers === 'object' && answers !== null) {
+      // すでに { motion_level: "3", q5_answer: "B" } の形式
+      parsedAnswers = answers;
+    } else {
+      throw new Error("answers形式が不正です");
     }
 
-    // ✅ 再診回答をSupabaseに保存（履歴形式）
+    // 🎯 再診結果の生成
+    const result = generateFollowupResult(parsedAnswers, context);
+
+    // 💾 Supabaseへ保存
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
-    // 🤖 GPTコメント生成（東洋医学の専門家として返信）
+    // 🤖 GPTコメント生成
     const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
-    // 🧾 結果オブジェクトにコメントと状態を追加して返す
     return {
       ...result,
       gptComment,
