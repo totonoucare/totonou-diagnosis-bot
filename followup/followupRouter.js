@@ -31,7 +31,7 @@ async function handleFollowupAnswers(userId, answers) {
     await supabaseMemoryManager.setFollowupAnswers(userId, answers);
 
     // 🤖 GPTコメント生成（東洋医学の専門家として返信）
-    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
+    const { gptComment } = await sendFollowupResponse(userId, result.rawData);
 
     // 🧾 結果オブジェクトにコメントと状態を追加して返す
     return {
