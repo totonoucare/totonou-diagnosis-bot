@@ -7,7 +7,7 @@ const { sendFollowupResponse } = require("./responseSender"); // ✅ 関数名�
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
  * @param {string} userId - ユーザーID（＝LINEのuserId）
- * @param {Array} answers - ユーザーの回答（Q1〜Q5）
+ * @param {Array<string>} answers - ユーザーの回答（例: ["motion_level=3", "q5_answer=B"]）
  * @returns {Promise<Object|null>} - GPTコメント付きの再診結果 or null（未登録者）
  */
 async function handleFollowupAnswers(userId, answers) {
@@ -27,11 +27,20 @@ async function handleFollowupAnswers(userId, answers) {
     // 🎯 再診結果（回答5問＋前回データからプロンプト用partsを生成）
     const result = generateFollowupResult(answers, context);
 
+    // 🔁 ["motion_level=3", "q5_answer=B"] を { motion_level: "3", q5_answer: "B" } に変換
+    const parsedAnswers = {};
+    for (const ans of answers) {
+      const [key, value] = ans.split("=");
+      if (key && value !== undefined) {
+        parsedAnswers[key] = value;
+      }
+    }
+
     // ✅ 再診回答をSupabaseに保存（履歴形式）
-    await supabaseMemoryManager.setFollowupAnswers(userId, answers);
+    await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
     // 🤖 GPTコメント生成（東洋医学の専門家として返信）
-    const { gptComment } = await sendFollowupResponse(userId, result.rawData);
+    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
     // 🧾 結果オブジェクトにコメントと状態を追加して返す
     return {
