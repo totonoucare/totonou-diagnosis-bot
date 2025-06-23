@@ -92,12 +92,12 @@ const followupQuestionSet = [
   body: "セルフケアに取り組む上で、難しかったこと・悩んだことがあれば教えてください（今回もっとも感じたことを教えてください）",
   isMulti: false,
   options: [
-    { label: "やり方が分からなかった", data: "Q5=A", displayText: "やり方が分からなかった" },
-    { label: "効果を感じなかった", data: "Q5=B", displayText: "効果を感じなかった" },
-    { label: "時間が取れなかった", data: "Q5=C", displayText: "時間が取れなかった" },
-    { label: "体に合わない気がした", data: "Q5=D", displayText: "体に合わない気がした" },
-    { label: "モチベーションが続かなかった", data: "Q5=E", displayText: "モチベーションが続かなかった" },
-    { label: "特になし", data: "Q5=F", displayText: "特になし" }
+    { label: "やり方が分からなかった", data: "q5_answer=A", displayText: "やり方が分からなかった" },
+    { label: "効果を感じなかった", data: "q5_answer=B", displayText: "効果を感じなかった" },
+    { label: "時間が取れなかった", data: "q5_answer=C", displayText: "時間が取れなかった" },
+    { label: "体に合わない気がした", data: "q5_answer=D", displayText: "体に合わない気がした" },
+    { label: "モチベーションが続かなかった", data: "q5_answer=E", displayText: "モチベーションが続かなかった" },
+    { label: "特になし", data: "q5_answer=F", displayText: "特になし" }
   ]
 }
 ];
