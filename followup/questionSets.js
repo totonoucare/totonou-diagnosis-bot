@@ -76,7 +76,7 @@ const followupQuestionSet = [
   {
     id: "Q4",
     header: "【Q4】動作テストの変化",
-    body: "...",
+    body: "初回診断時の「{{motion}}」のつらさを「5」とした場合、今はどのくらいですか？",
     isMulti: false,
     options: [
       { label: "1", data: "motion_level=1", displayText: "1" },
