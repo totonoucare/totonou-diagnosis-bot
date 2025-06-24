@@ -2,7 +2,7 @@
 
 const generateFollowupResult = require("./resultGenerator");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
-const { sendFollowupResponse } = require("./responseSender"); // ✅ 関数名を統一
+const { sendFollowupResponse } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
@@ -23,20 +23,22 @@ async function handleFollowupAnswers(userId, answers) {
     // ✅ context（初回診断結果）を取得
     const context = await supabaseMemoryManager.getContext(userId);
 
-    // 🧩 answers の形式チェック
+    // 🧩 answers の形式チェック＆解析
     let parsedAnswers = {};
-
     if (Array.isArray(answers)) {
-      // 例: ["motion_level=3", "q5_answer=B"]
       for (const ans of answers) {
         const [key, value] = ans.split("=");
         if (key && value !== undefined) {
-          parsedAnswers[key] = value;
+          // motion_levelだけ数値に変換（Supabaseがint4なので）
+          if (key === "Q4") {
+            parsedAnswers.motion_level = parseInt(value);
+          } else {
+            parsedAnswers[key] = value;
+          }
         }
       }
-    } else if (typeof answers === 'object' && answers !== null) {
-      // すでに { motion_level: "3", q5_answer: "B" } の形式
-      parsedAnswers = answers;
+    } else if (typeof answers === "object" && answers !== null) {
+      parsedAnswers = { ...answers };
     } else {
       throw new Error("answers形式が不正です");
     }
@@ -44,7 +46,7 @@ async function handleFollowupAnswers(userId, answers) {
     // 🎯 再診結果の生成
     const result = generateFollowupResult(parsedAnswers, context);
 
-    // 💾 Supabaseへ保存
+    // 💾 Supabaseへ保存（motion_levelの形式修正済み）
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
     // 🤖 GPTコメント生成
