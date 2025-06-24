@@ -120,7 +120,9 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      session.answers[question.id] = message;
+      // 👇 Q5だけ keyName = q5_answer に変換
+      const keyName = question.id === "Q5" ? "q5_answer" : question.id;
+      session.answers[keyName] = message;
       session.step++;
     }
 
