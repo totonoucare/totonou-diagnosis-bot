@@ -116,7 +116,7 @@ async function setFollowupAnswers(lineId, answers) {
     tsubo: answers.tsubo,
     kampo: answers.kampo,
     motion_level: parseInt(answers.motion_level),
-    q5_answer: answers.q5_answer   // ← ここが修正ポイント
+    q5_answer: answers.Q5   // ← ここが修正ポイント
   };
 
   // 欠損チェック（null, undefined, 空文字をエラーに）
