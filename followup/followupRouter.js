@@ -29,12 +29,30 @@ async function handleFollowupAnswers(userId, answers) {
       for (const ans of answers) {
         const [key, value] = ans.split("=");
         if (key && value !== undefined) {
-          if (key === "Q4") {
-            parsedAnswers.motion_level = parseInt(value);
-          } else if (key === "q5_answer") {
-            parsedAnswers.q5_answer = value;
-          } else {
-            parsedAnswers[key] = value;
+          switch (key) {
+            case "Q4":
+              parsedAnswers.motion_level = parseInt(value);
+              break;
+            case "q5_answer":
+              parsedAnswers.q5_answer = value;
+              break;
+            case "symptom":
+            case "general":
+            case "sleep":
+            case "meal":
+            case "stress":
+              parsedAnswers[key + "_level"] = parseInt(value);
+              break;
+            case "habits":
+            case "breathing":
+            case "stretch":
+            case "tsubo":
+            case "kampo":
+              parsedAnswers[key] = value;
+              break;
+            default:
+              parsedAnswers[key] = value;
+              break;
           }
         }
       }
@@ -47,7 +65,7 @@ async function handleFollowupAnswers(userId, answers) {
     // 🎯 再診結果の生成
     const result = generateFollowupResult(parsedAnswers, context);
 
-    // 💾 Supabaseへ保存（motion_levelの形式修正済み）
+    // 💾 Supabaseへ保存
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
     // 🤖 GPTコメント生成
