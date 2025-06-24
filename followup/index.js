@@ -114,14 +114,18 @@ async function handleFollowup(event, client, userId) {
       session.step++;
 
     } else {
-      // Q4, Q5 など isMulti: false の処理
       const validDataValues = question.options.map(opt => opt.data);
       if (!validDataValues.includes(message)) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      // 👇 Q5だけ keyName = q5_answer に変換
-      const keyName = question.id === "Q5" ? "q5_answer" : question.id;
+      // Q4・Q5はキーを変換、それ以外はそのまま
+      const keyName = question.id === "Q5"
+        ? "q5_answer"
+        : question.id === "Q4"
+        ? "motion_level"
+        : question.id;
+
       session.answers[keyName] = message;
       session.step++;
     }
@@ -136,14 +140,12 @@ async function handleFollowup(event, client, userId) {
 
       await supabaseMemoryManager.setFollowupAnswers(userId, answers);
 
-      const motionLevel = answers['Q4']; // "1"〜"5" の数値文字列
-
+      const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
         await supabaseMemoryManager.updateUserFields(userId, {
           motion_level: parseInt(motionLevel)
         });
       }
-
 
       await client.pushMessage(userId, {
         type: 'text',
