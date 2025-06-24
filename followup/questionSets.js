@@ -79,11 +79,11 @@ const followupQuestionSet = [
     body: "初回診断時の「{{motion}}」のつらさを「5」とした場合、今はどのくらいですか？",
     isMulti: false,
     options: [
-      { label: "1", data: "motion_level=1", displayText: "1" },
-      { label: "2", data: "motion_level=2", displayText: "2" },
-      { label: "3", data: "motion_level=3", displayText: "3" },
-      { label: "4", data: "motion_level=4", displayText: "4" },
-      { label: "5", data: "motion_level=5", displayText: "5" }
+      { label: "1", data: "Q4=1", displayText: "1" },
+      { label: "2", data: "Q4=2", displayText: "2" },
+      { label: "3", data: "Q4=3", displayText: "3" },
+      { label: "4", data: "Q4=4", displayText: "4" },
+      { label: "5", data: "Q4=5", displayText: "5" }
     ]
   },
 {
