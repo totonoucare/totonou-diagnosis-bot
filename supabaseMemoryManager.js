@@ -115,7 +115,7 @@ async function setFollowupAnswers(lineId, answers) {
     stretch: answers.stretch,
     tsubo: answers.tsubo,
     kampo: answers.kampo,
-    motion_level: parseInt(answers.motion),
+    motion_level: parseInt(answers.motion_level),
     q5_answer: answers.Q5   // ← ここが修正ポイント
   };
 
