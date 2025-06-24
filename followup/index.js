@@ -119,22 +119,22 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      // Q4は "Q4=3" 形式なので数値だけ取り出す
-      const keyName = question.id === "Q5"
-        ? "q5_answer"
-        : question.id === "Q4"
-        ? "motion_level"
-        : question.id;
+      // Q4・Q5はキーを変換、それ以外はそのまま
+const keyName = question.id === "Q5"
+  ? "q5_answer"
+  : question.id === "Q4"
+  ? "motion_level"
+  : question.id;
 
-      let value = message;
+let value = message;
 
-      if (question.id === "Q4" && value.startsWith("Q4=")) {
-        value = value.split("=")[1]; // "Q4=3" → "3"
-      }
+if (question.id === "Q4" && value.startsWith("Q4=")) {
+  const num = parseInt(value.split("=")[1]);
+  value = isNaN(num) ? null : num;  // ここで数値型に変換
+}
 
-      session.answers[keyName] = value;
-      session.step++;
-    }
+session.answers[keyName] = value;
+session.step++;
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
