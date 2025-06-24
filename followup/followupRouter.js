@@ -29,9 +29,10 @@ async function handleFollowupAnswers(userId, answers) {
       for (const ans of answers) {
         const [key, value] = ans.split("=");
         if (key && value !== undefined) {
-          // motion_levelだけ数値に変換（Supabaseがint4なので）
           if (key === "Q4") {
             parsedAnswers.motion_level = parseInt(value);
+          } else if (key === "q5_answer") {
+            parsedAnswers.q5_answer = value;
           } else {
             parsedAnswers[key] = value;
           }
