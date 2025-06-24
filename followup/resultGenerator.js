@@ -19,7 +19,7 @@ function generateFollowupResult(answers, context = {}) {
     stretch: answers.stretch || null,
     tsubo: answers.tsubo || null,
     kampo: answers.kampo || null,
-    motion_level: parseInt(answers.motion) || null,
+    motion_level: parseInt(answers.motion_level) || null,
     q5_answer: answers.q5_answer || null,
   };
 
