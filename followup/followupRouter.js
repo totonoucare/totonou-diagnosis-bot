@@ -33,6 +33,9 @@ async function handleFollowupAnswers(userId, answers) {
             case "Q4":
               parsedAnswers.motion_level = parseInt(value);
               break;
+            case "Q5":  // ← これを追加
+              parsedAnswers.q5_answer = value;
+              break;
             case "q5_answer":
               parsedAnswers.q5_answer = value;
               break;
