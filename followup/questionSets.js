@@ -79,11 +79,11 @@ const followupQuestionSet = [
     body: "初回診断時の「{{motion}}」のつらさを「5」とした場合、今はどのくらいですか？",
     isMulti: false,
     options: [
-      { label: "1", data: "motion_level=1", displayText: "1" },
-      { label: "2", data: "motion_level=2", displayText: "2" },
-      { label: "3", data: "motion_level=3", displayText: "3" },
-      { label: "4", data: "motion_level=4", displayText: "4" },
-      { label: "5", data: "motion_level=5", displayText: "5" }
+      { label: "1", data: "1", displayText: "1" },
+      { label: "2", data: "2", displayText: "2" },
+      { label: "3", data: "3", displayText: "3" },
+      { label: "4", data: "4", displayText: "4" },
+      { label: "5", data: "5", displayText: "5" }
     ]
   },
 {
@@ -92,12 +92,12 @@ const followupQuestionSet = [
   body: "セルフケアに取り組む上で、難しかったこと・悩んだことがあれば教えてください（今回もっとも感じたことを教えてください）",
   isMulti: false,
   options: [
-    { label: "やり方が分からなかった", data: "q5_answer=A", displayText: "やり方が分からなかった" },
-    { label: "効果を感じなかった", data: "q5_answer=B", displayText: "効果を感じなかった" },
-    { label: "時間が取れなかった", data: "q5_answer=C", displayText: "時間が取れなかった" },
-    { label: "体に合わない気がした", data: "q5_answer=D", displayText: "体に合わない気がした" },
-    { label: "モチベーションが続かなかった", data: "q5_answer=E", displayText: "モチベーションが続かなかった" },
-    { label: "特になし", data: "q5_answer=F", displayText: "特になし" }
+    { label: "やり方が分からなかった", data: "A", displayText: "やり方が分からなかった" },
+    { label: "効果を感じなかった", data: "B", displayText: "効果を感じなかった" },
+    { label: "時間が取れなかった", data: "C", displayText: "時間が取れなかった" },
+    { label: "体に合わない気がした", data: "D", displayText: "体に合わない気がした" },
+    { label: "モチベーションが続かなかった", data: "E", displayText: "モチベーションが続かなかった" },
+    { label: "特になし", data: "F", displayText: "特になし" }
   ]
 }
 ];
