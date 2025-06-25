@@ -136,6 +136,12 @@ async function setFollowupAnswers(lineId, answers) {
   }
 }
 
+// ✅ ダミー定義：updateUserFields（呼び出されても無害にする）
+async function updateUserFields(lineId, updates) {
+  console.warn("⚠️ updateUserFieldsは現在未使用です。呼び出されましたが処理は行っていません。");
+  return;
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -144,5 +150,6 @@ module.exports = {
   saveContext,
   getContext,
   setInitialContext: saveContext,
-  setFollowupAnswers
+  setFollowupAnswers,
+  updateUserFields // ← 追加
 };
