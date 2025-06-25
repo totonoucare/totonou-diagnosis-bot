@@ -50,7 +50,6 @@ function buildPrompt(parts = {}) {
   return `
 以下の情報をもとに、定期チェックユーザーに対してやさしく寄り添うようにアドバイスしてください。
 
-
 【回答スケール定義】
 - Q1/Q2/Q4：1＝とても良い（改善）／5＝悪化・不調
 - Q3（セルフケア習慣）：未着手 < 時々 < 継続中
@@ -91,7 +90,6 @@ function buildPrompt(parts = {}) {
 - 内臓の負担傾向：${parts.organBurden || "不明"}
 - 初回診断時の動作テスト：${parts.motion || "未登録"}（${getMeridianFromMotion(parts.motion)}）
 
-
 ${scoreExplanation}
 
 【ととのうガイド】
@@ -124,9 +122,11 @@ ${scoreExplanation}
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
     const context = await supabaseMemoryManager.getContext(userId);
+    
+    // 🔄 Q1〜Q5などの回答を優先してマージ
     const promptParts = {
-      ...context,
       ...followupAnswers,
+      ...context,
     };
 
     const prompt = buildPrompt(promptParts);
