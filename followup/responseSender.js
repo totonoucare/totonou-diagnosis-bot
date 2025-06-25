@@ -3,29 +3,6 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// 🧭 初回診断時motionの経絡対応
-function getMeridianFromMotion(motion) {
-  switch (motion) {
-    case "前屈":
-    case "立って前屈する":
-      return "腎経／膀胱経（体背面ライン）";
-    case "上体をそらす":
-    case "上体をそらす（腰に手を当て）":
-      return "脾経／胃経（前面ライン）";
-    case "バンザイ":
-    case "腕をバンザイする":
-      return "心経／小腸経（腕の内側ライン）";
-    case "腰を左右にねじる":
-    case "腰を側屈":
-      return "肝経／胆経（体側ライン）";
-    case "首を後ろに倒す":
-    case "首を左右に回す":
-      return "肺経／大腸経（首前面ライン）";
-    default:
-      return "不明";
-  }
-}
-
 function buildPrompt(parts = {}) {
   const { scores = [], adviceCards = [] } = parts;
   const [score1, score2, score3] = scores;
@@ -92,7 +69,7 @@ function buildPrompt(parts = {}) {
 - 傾向：${parts.traits || "不明"}
 - 巡りの傾向：${parts.flowIssue || "不明"}
 - 内臓の負担傾向：${parts.organBurden || "不明"}
-- 初回診断時の動作テスト：${parts.motion || "未登録"}（${getMeridianFromMotion(parts.motion)}）
+- 初回診断時の動作テスト：${parts.motion || "未登録"}
 
 ${scoreExplanation}
 
