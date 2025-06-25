@@ -120,21 +120,22 @@ async function handleFollowup(event, client, userId) {
       }
 
       // Q4・Q5はキーを変換、それ以外はそのまま
-const keyName = question.id === "Q5"
-  ? "q5_answer"
-  : question.id === "Q4"
-  ? "motion_level"
-  : question.id;
+      const keyName = question.id === "Q5"
+        ? "q5_answer"
+        : question.id === "Q4"
+        ? "motion_level"
+        : question.id;
 
-let value = message;
+      let value = message;
 
-if (question.id === "Q4" && value.startsWith("Q4=")) {
-  const num = parseInt(value.split("=")[1]);
-  value = isNaN(num) ? null : num;  // ここで数値型に変換
-}
+      if (question.id === "Q4" && value.startsWith("Q4=")) {
+        const num = parseInt(value.split("=")[1]);
+        value = isNaN(num) ? null : num;  // ここで数値型に変換
+      }
 
-session.answers[keyName] = value;
-session.step++;
+      session.answers[keyName] = value;
+      session.step++;
+      }
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
