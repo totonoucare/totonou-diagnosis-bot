@@ -35,7 +35,7 @@ async function markSubscribed(lineId) {
   if (error) throw error;
 }
 
-// ✅ ガイド初回受信フラグ（初回だけサブスク文を送る）
+// ✅ ガイド初回受信フラグ
 async function markGuideReceived(lineId) {
   const { error } = await supabase
     .from(USERS_TABLE)
@@ -48,7 +48,7 @@ async function markGuideReceived(lineId) {
   }
 }
 
-// ✅ context保存（診断結果＋アドバイス構造）
+// ✅ context保存
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -80,11 +80,11 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
   }
 }
 
-// ✅ 最新のcontext取得（直近1件）
+// ✅ 最新のcontext取得
 async function getContext(lineId) {
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
-    .select('id, guide_received') // ← guide_received を取得
+    .select('id, guide_received')
     .eq('line_id', lineId)
     .maybeSingle();
 
@@ -103,14 +103,13 @@ async function getContext(lineId) {
     throw contextError;
   }
 
-  // guide_received を返却に含める
   return {
     ...context,
     guide_received: userRow.guide_received || false
   };
 }
 
-// ✅ 再診：フォローアップ回答保存
+// ✅ フォローアップ回答保存
 async function setFollowupAnswers(lineId, answers) {
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -152,7 +151,35 @@ async function setFollowupAnswers(lineId, answers) {
   }
 }
 
-// ✅ ダミー定義：updateUserFields（将来拡張用）
+// ✅ 最新のfollowup取得
+async function getLatestFollowup(lineId) {
+  const { data: userRow, error: userError } = await supabase
+    .from(USERS_TABLE)
+    .select('id')
+    .eq('line_id', lineId)
+    .maybeSingle();
+
+  if (userError || !userRow) {
+    throw userError || new Error('ユーザーが見つかりません');
+  }
+
+  const { data: followup, error: followupError } = await supabase
+    .from(FOLLOWUP_TABLE)
+    .select('*')
+    .eq('user_id', userRow.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (followupError) {
+    console.error('❌ 最新フォローアップ取得エラー:', followupError);
+    throw followupError;
+  }
+
+  return followup;
+}
+
+// ✅ 将来拡張用
 async function updateUserFields(lineId, updates) {
   console.warn("⚠️ updateUserFieldsは現在未使用です。呼び出されましたが処理は行っていません。");
   return;
@@ -168,5 +195,6 @@ module.exports = {
   getContext,
   setInitialContext: saveContext,
   setFollowupAnswers,
+  getLatestFollowup,
   updateUserFields
 };
