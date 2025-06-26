@@ -35,6 +35,19 @@ async function markSubscribed(lineId) {
   if (error) throw error;
 }
 
+// ✅ ガイド初回受信フラグ（初回だけサブスク文を送る）
+async function markGuideReceived(lineId) {
+  const { error } = await supabase
+    .from(USERS_TABLE)
+    .update({ guide_received: true })
+    .eq('line_id', lineId);
+
+  if (error) {
+    console.error("❌ markGuideReceived エラー:", error);
+    throw error;
+  }
+}
+
 // ✅ context保存（診断結果＋アドバイス構造）
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
   const { data: userRow, error: userError } = await supabase
@@ -71,13 +84,13 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
 async function getContext(lineId) {
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
-    .select('id')
+    .select('id, guide_received') // ← guide_received を取得
     .eq('line_id', lineId)
     .maybeSingle();
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
-  const { data, error } = await supabase
+  const { data: context, error: contextError } = await supabase
     .from(CONTEXT_TABLE)
     .select('*')
     .eq('user_id', userRow.id)
@@ -85,12 +98,16 @@ async function getContext(lineId) {
     .limit(1)
     .maybeSingle();
 
-  if (error) {
-    console.error('❌ context取得エラー:', error);
-    throw error;
+  if (contextError) {
+    console.error('❌ context取得エラー:', contextError);
+    throw contextError;
   }
 
-  return data;
+  // guide_received を返却に含める
+  return {
+    ...context,
+    guide_received: userRow.guide_received || false
+  };
 }
 
 // ✅ 再診：フォローアップ回答保存
@@ -119,7 +136,6 @@ async function setFollowupAnswers(lineId, answers) {
     q5_answer: answers.q5_answer
   };
 
-  // 欠損チェック（null, undefined, 空文字をエラーに）
   for (const key in payload) {
     if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
       throw new Error(`❌ 必須項目が未定義: ${key}`);
@@ -136,7 +152,7 @@ async function setFollowupAnswers(lineId, answers) {
   }
 }
 
-// ✅ ダミー定義：updateUserFields（呼び出されても無害にする）
+// ✅ ダミー定義：updateUserFields（将来拡張用）
 async function updateUserFields(lineId, updates) {
   console.warn("⚠️ updateUserFieldsは現在未使用です。呼び出されましたが処理は行っていません。");
   return;
@@ -147,9 +163,10 @@ module.exports = {
   getUser,
   upsertUser: initializeUser,
   markSubscribed,
+  markGuideReceived,
   saveContext,
   getContext,
   setInitialContext: saveContext,
   setFollowupAnswers,
-  updateUserFields // ← 追加
+  updateUserFields
 };
