@@ -8,7 +8,8 @@ const { handleAnswers } = require('./answerRouter');
 const {
   saveContext,
   getContext,
-  initializeUser
+  initializeUser,
+  markGuideReceived  // ← これを追加！
 } = require('../supabaseMemoryManager');
 
 const userSessions = {};
