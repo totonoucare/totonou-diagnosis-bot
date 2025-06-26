@@ -116,23 +116,28 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうガイド")) {
     try {
-      const context = await getContext(userId); // 最新の診断結果を取得
+      const context = await getContext(userId);
 
       if (!context || !context.advice) {
         return {
-          messages: [
-            { type: 'text', text: '診断データが見つかりませんでした。もう一度診断をお願いします。' }
-          ]
+          messages: [{ type: 'text', text: '診断データが見つかりませんでした。もう一度診断をお願いします。' }]
         };
       }
 
       const carousel = buildCarouselFlex(context.advice);
-      return {
-        messages: [
-          carousel,
-          {
-            type: 'text',
-            text: `🔄 「ととのう習慣」で、変わる毎日へ🌱
+
+      // 初回のみプロモーション文を送る
+      const isFirstTime = !context.guide_received;
+
+      if (isFirstTime) {
+        await markGuideReceived(userId); // 次回からは送らないようにマーク
+
+        return {
+          messages: [
+            carousel,
+            {
+              type: 'text',
+              text: `🔄 「ととのう習慣」で、変わる毎日へ🌱
 
 初回診断、おつかれさまでした！
 
@@ -155,9 +160,12 @@ async function handleExtraCommands(userId, messageText) {
 
 👉 今すぐ始めたい方は「サブスク希望」と送信してください！
 `
-          }
-        ]
-      };
+            }
+          ]
+        };
+      } else {
+        return { messages: [carousel] }; // 2回目以降はカルーセルだけ
+      }
     } catch (err) {
       console.error("❌ context取得エラー:", err);
       return {
