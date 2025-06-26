@@ -3,6 +3,29 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// 🧭 初回診断時motionの経絡対応
+function getMeridianFromMotion(motion) {
+  switch (motion) {
+    case "前屈":
+    case "立って前屈する":
+      return "腎経／膀胱経（体背面ライン）";
+    case "上体をそらす":
+    case "上体をそらす（腰に手を当て）":
+      return "脾経／胃経（前面ライン）";
+    case "バンザイ":
+    case "腕をバンザイする":
+      return "心経／小腸経（腕の内側ライン）";
+    case "腰を左右にねじる":
+    case "腰を側屈":
+      return "肝経／胆経（体側ライン）";
+    case "首を後ろに倒す":
+    case "首を左右に回す":
+      return "肺経／大腸経（首前面ライン）";
+    default:
+      return "不明";
+  }
+}
+
 function buildPrompt(parts = {}) {
   const { scores = [], adviceCards = [] } = parts;
   const [score1, score2, score3] = scores;
@@ -46,7 +69,7 @@ function buildPrompt(parts = {}) {
 	•	立って前屈する → 腎経／膀胱経（体背面ラインの伸展）
 	•	腰を左右にねじるor側屈 → 肝経／胆経（体側ラインの伸展）
 	•	上体をそらす（腰に手を当て） → 脾経／胃経（腹部・太もも前面ラインの伸展）
-	5.	 必要に応じて、初回診断の結果（typeName,traits,flowIssue,organBurden）も参考にしてコメントに織り交ぜてください（簡潔でOKです）。
+	5.	 必要に応じて、初回診断時の体質スコア・体質タイプ・巡りの傾向・臓腑の負担傾向なども参考にしてコメントに織り交ぜてください（簡潔でOKです）。
  ただし、原則として提案するセルフケア内容は「ととのうガイド」の提案内容に準拠すること（ツボやストレッチなどを勝手に他の指導に変更しないこと）。
         6.	Q2の「生活リズムの整い具合」が乱れぎみ（４〜5）の場合、セルフケア以前にここを見さないと不調の原因の一つになるという柔らかい提言と前向きな工夫を一言アドバイスしてください。
 	7.	Q5（セルフケアで困ったこと）の回答内容にも必ず触れてください。その困りごとがある状態でもできる工夫や、気持ちの面で寄り添うコメントを入れてください。
@@ -69,7 +92,7 @@ function buildPrompt(parts = {}) {
 - 傾向：${parts.traits || "不明"}
 - 巡りの傾向：${parts.flowIssue || "不明"}
 - 内臓の負担傾向：${parts.organBurden || "不明"}
-- 初回診断時の動作テスト：${parts.motion || "未登録"}
+- 初回診断時の動作テスト：${parts.motion || "未登録"}（${getMeridianFromMotion(parts.motion)}）
 
 ${scoreExplanation}
 
