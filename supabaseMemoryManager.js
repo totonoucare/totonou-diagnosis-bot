@@ -179,6 +179,21 @@ async function getLatestFollowup(lineId) {
   return followup;
 }
 
+// ✅ サブスク登録ユーザー一覧取得（リマインド用）
+async function getSubscribedUsers() {
+  const { data, error } = await supabase
+    .from(USERS_TABLE)
+    .select('id, line_id')
+    .eq('subscribed', true);
+
+  if (error) {
+    console.error("❌ サブスクユーザー取得エラー:", error);
+    throw error;
+  }
+
+  return data || [];
+}
+
 // ✅ 将来拡張用
 async function updateUserFields(lineId, updates) {
   console.warn("⚠️ updateUserFieldsは現在未使用です。呼び出されましたが処理は行っていません。");
@@ -196,5 +211,6 @@ module.exports = {
   setInitialContext: saveContext,
   setFollowupAnswers,
   getLatestFollowup,
+  getSubscribedUsers,
   updateUserFields
 };
