@@ -41,7 +41,7 @@ async function sendReminders() {
             '焦らず、心地よくいきましょう🧘‍♂️🍵'
         });
       } catch (err) {
-        console.error(❌ ${user.line_id} への初日メッセージ送信失敗:, err);
+        console.error(`❌ ${user.line_id} への初日メッセージ送信失敗:`, err);
       }
       continue;
     }
@@ -62,7 +62,7 @@ async function sendReminders() {
         await line.client.pushMessage(user.line_id, flex);
       }
     } catch (err) {
-      console.error(❌ ${user.line_id} への送信失敗:, err);
+      console.error(`❌ ${user.line_id} への送信失敗:`, err);
     }
   }
 }
