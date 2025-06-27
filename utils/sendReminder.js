@@ -2,7 +2,7 @@ const supabase = require('../supabaseClient');
 const line = require('../line');
 const { getLatestFollowup } = require('../supabaseMemoryManager');
 const generateGPTMessage = require('./generateGPTMessage'); // 別途定義するGPTメッセージ生成
-const generateFlexMessage = require('./generateFlexMessage'); // 別途定義するFlex定期診断カード
+const generateFlexMessage = require('./flexBuilder'); // 別途定義するFlex定期診断カード
 
 // ユーザー一覧取得（subscribed = true）
 async function getSubscribedUsers() {
