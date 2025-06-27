@@ -91,7 +91,6 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
-// ✅ 修正済み：選択肢を q.items に準拠させる
 function buildMultiQuestionFlex({ altText, header, body, questions }) {
   const questionContents = questions.flatMap((q) => [
     {
@@ -293,6 +292,61 @@ function buildCarouselFlex(cards, altText = '診断結果とセルフケア提�
   return buildAdviceCarouselFlex(cards, altText);
 }
 
+// ✅ 8日おきリマインドのFlex
+function buildReminderFlex() {
+  return {
+    type: 'flex',
+    altText: '📅 定期チェック診断のご案内',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '📅 定期チェック診断',
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#788972',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: '前回の診断から8日が経ちました。\nあなたの「ととのい状況」をチェックし、次のアドバイスをAIが提案します。',
+            wrap: true,
+            color: '#333333',
+            size: 'md',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'button',
+            action: {
+              type: 'message',
+              label: '診断スタート',
+              text: 'ケア状況分析&見直し',
+            },
+            style: 'primary',
+            color: '#788972',
+          },
+        ],
+      },
+    },
+  };
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
@@ -301,4 +355,5 @@ module.exports = {
   buildAdviceCarouselFlex,
   buildCarouselFlex,
   buildFollowupQuestionFlex,
+  buildReminderFlex, // ✅ 追加
 };
