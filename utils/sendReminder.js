@@ -4,6 +4,8 @@ const { getLatestFollowup } = require('../supabaseMemoryManager');
 const generateGPTMessage = require('./generateGPTMessage');
 const generateFlexMessage = require('./flexBuilder');
 
+console.log('🚀 リマインダー実行開始');
+
 // サブスク中のユーザー取得
 async function getSubscribedUsers() {
   const { data, error } = await supabase
@@ -12,14 +14,13 @@ async function getSubscribedUsers() {
     .eq('subscribed', true);
 
   if (error) {
-    console.error('❌ Supabase取得エラー:', error);
+    console.error('❌ Supabaseからのユーザー取得失敗:', error);
     throw error;
   }
-
   return data;
 }
 
-// JST補正を入れた日数差計算（UTC→JSTにして日付丸め）
+// JST補正を入れた日数差計算
 function getDaysSince(dateInput) {
   const baseDate = new Date(typeof dateInput === 'string' ? dateInput + 'Z' : dateInput);
   const now = new Date();
@@ -36,72 +37,58 @@ function getDaysSince(dateInput) {
 
 // メイン処理
 async function sendReminders() {
-  console.log('::notice::🚀 sendReminders 処理開始');
+  try {
+    const users = await getSubscribedUsers();
+    console.log(`👥 サブスク中ユーザー数: ${users.length}`);
 
-  const users = await getSubscribedUsers();
-  console.log(`👥 リマインド対象ユーザー数: ${users.length}`);
-  if (users.length === 0) {
-    console.warn('::warning::⚠️ サブスク中ユーザーが0人です。処理終了');
-    return;
-  }
+    for (const user of users) {
+      console.log(`\n🔍 チェックユーザー: ${user.line_id}`);
+      console.log(`🕒 subscribed_at: ${user.subscribed_at}`);
 
-  for (const user of users) {
-    console.log(`\n🔍 チェック中ユーザー: ${user.line_id}`);
-    console.log(`🕒 subscribed_at: ${user.subscribed_at}`);
+      if (!user.subscribed_at) {
+        console.warn('⚠️ subscribed_at 未設定スキップ');
+        continue;
+      }
 
-    const refDate = user.subscribed_at;
-    if (!refDate) {
-      console.warn(`::warning::⚠️ subscribed_at 未設定 → スキップ: ${user.line_id}`);
-      continue;
-    }
+      const days = getDaysSince(user.subscribed_at);
+      console.log(`📆 経過日数: ${days}`);
 
-    const days = getDaysSince(refDate);
-    console.log(`📆 経過日数: ${days}日`);
-
-    // ✅ 1日後の初回リマインド
-    if (days === 1) {
-      console.log(`🟢 初回リマインド対象`);
-      try {
+      if (days === 1) {
+        console.log(`🟢 初回リマインド対象: ${user.line_id}`);
         await line.client.pushMessage(user.line_id, {
           type: 'text',
-          text:
-            '今日から本格的に『ととのうケア習慣』、始めていきましょうね🌱\n\n' +
-            '最初は「習慣改善」や「ストレッチ」など、できそうなことから1つで大丈夫。\n' +
-            '焦らず、心地よくいきましょう🧘‍♂️🍵'
+          text: '🌱 今日から本格的に「ととのうケア」始めましょう！'
         });
-        console.log(`✅ 初回リマインド送信成功`);
+        console.log(`✅ 初回リマインド送信完了`);
+        continue;
+      }
+
+      if (days === 0 || days % 4 !== 0) {
+        console.log(`⏭️ リマインド対象外（days=${days}）`);
+        continue;
+      }
+
+      const isEven = (days / 4) % 2 === 0;
+      console.log(`🔄 ${days}日目: ${isEven ? 'GPT' : 'Flex'}送信対象`);
+
+      try {
+        if (isEven) {
+          const followup = await getLatestFollowup(user.line_id);
+          const msg = await generateGPTMessage(followup);
+          await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
+          console.log('✅ GPTメッセージ送信完了');
+        } else {
+          const flex = generateFlexMessage();
+          await line.client.pushMessage(user.line_id, flex);
+          console.log('✅ Flexメッセージ送信完了');
+        }
       } catch (err) {
-        console.error(`::error::❌ 初回リマインド送信失敗:`, err);
+        console.error(`❌ メッセージ送信エラー:`, err);
       }
-      continue;
     }
-
-    // ⛔ スキップ条件
-    if (days === 0 || days % 4 !== 0) {
-      console.log(`⏭️ スキップ（days=${days}）`);
-      continue;
-    }
-
-    const isEvenCycle = (days / 4) % 2 === 0;
-    console.log(`🔄 ${days}日目 → ${isEvenCycle ? 'GPT' : 'Flex'}送信対象`);
-
-    try {
-      if (isEvenCycle) {
-        const followup = await getLatestFollowup(user.line_id);
-        const gptMessage = await generateGPTMessage(followup);
-        await line.client.pushMessage(user.line_id, { type: 'text', text: gptMessage });
-        console.log(`✅ GPTメッセージ送信成功`);
-      } else {
-        const flex = generateFlexMessage();
-        await line.client.pushMessage(user.line_id, flex);
-        console.log(`✅ Flexカード送信成功`);
-      }
-    } catch (err) {
-      console.error(`::error::❌ 定期リマインド送信失敗:`, err);
-    }
+  } catch (mainErr) {
+    console.error('💥 sendReminders()全体で例外発生:', mainErr);
   }
-
-  console.log('::notice::✅ sendReminders 処理完了');
 }
 
-module.exports = sendReminders;
+sendReminders().then(() => console.log('🎉 リマインダー完了'));
