@@ -1,5 +1,6 @@
 const OpenAI = require("openai");
 const { createClient } = require("@supabase/supabase-js");
+const getUserIdFromLineId = require("./getUserIdFromLineId");
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const supabaseMemoryManager = require("../supabaseMemoryManager");
 
@@ -34,8 +35,12 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
 `;
 }
 
-async function generateGPTMessage(userId) {
+async function generateGPTMessage(lineId) {
   try {
+    // LINE ID → Supabaseのuser_idに変換
+    const userId = await getUserIdFromLineId(lineId);
+    if (!userId) throw new Error("該当ユーザーが見つかりません");
+
     // 定期チェック診断データ取得
     const { data: followups, error: followupError } = await supabase
       .from("followups")
