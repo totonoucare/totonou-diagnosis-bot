@@ -1,80 +1,72 @@
-const { supabase } = require('../supabaseClient');
-const OpenAI = require('openai');
+const OpenAI = require("openai");
+const { createClient } = require("@supabase/supabase-js");
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabaseMemoryManager = require("../supabaseMemoryManager");
 
-// OpenAIインスタンスの初期化（環境変数から取得）
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-/**
- * LINE IDから直近のフォローアップ診断結果を取得する
- */
-async function getLatestFollowup(lineId) {
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('line_id', lineId)
-    .single();
+function buildReminderPrompt(parts = {}) {
+  const { habits, breathing, stretch, tsubo, kampo } = parts;
 
-  if (userError || !userData) {
-    console.error('❌ ユーザー取得失敗', userError);
-    return null;
-  }
+  return `
+以下は、あるユーザーの最近の定期チェック診断の回答内容です。
+初回診断では体質に応じた「ととのうガイド」（5つのセルフケア）を提案しており、その進捗状況をもとにリマインドコメントを作成してください。
 
-  const { data: followup, error: followupError } = await supabase
-    .from('followups')
-    .select('*')
-    .eq('user_id', userData.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+【診断データ】
+- 体質改善習慣（habits）: ${habits}
+- 呼吸法（breathing）: ${breathing}
+- ストレッチ（stretch）: ${stretch}
+- ツボケア（tsubo）: ${tsubo}
+- 漢方薬（kampo）: ${kampo}
 
-  if (followupError || !followup) {
-    console.error('❌ フォローアップ診断の取得失敗', followupError);
-    return null;
-  }
-
-  return followup;
+【指示】
+・前回診断の結果に軽く触れながら、「このうち1つをピックアップ」して、実施状況についての問いかけや優しく寄り添う一言メッセージを送ってください。
+・文量は100〜200文字程度。
+・明るく親しみやすいトーンで、絵文字を1〜2個含めてください。
+・診断を受けていない場合は、初回診断のガイド内容の中から、1つをピックアップしてコメントしてください。
+`;
 }
 
-/**
- * フォローアップ診断結果に応じたGPTメッセージを生成
- */
-async function generateGPTMessage(lineId) {
-  const followup = await getLatestFollowup(lineId);
-
-  if (!followup) {
-    return 'こんにちは！最近の診断データが見つからなかったため、今回は一般的なセルフケアをおすすめします。気になることがあれば、いつでもご相談ください😊';
-  }
-
-  // フォローアップ診断の情報を要約してプロンプトに含める
-  const prompt = `
-あなたは東洋医学の専門アシスタントです。
-以下はあるユーザーの直近の定期チェック診断結果です。
-この診断内容をもとに、改善傾向・維持すべきこと・少し注意が必要な点などを踏まえて、
-「一言アドバイス＋応援メッセージ（合計150文字程度）」を日本語で優しく提案してください。
-
---- ユーザー診断データ ---
-${JSON.stringify(followup, null, 2)}
----------------------------
-
-`;
-
+async function generateGPTMessage(userId) {
   try {
-    const chat = await openai.chat.completions.create({
-      model: 'gpt-4',
+    // userIdに紐づく最新の診断データを取得（followupsのcreated_at降順）
+    const { data: followups, error } = await supabase
+      .from("followups")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const followup = followups?.[0];
+
+    if (!followup) {
+      // 診断データなし → 通常のセルフケアメッセージ（初回ガイド準拠）
+      return "こんにちは！最近の診断はまだ未実施のようですね😊\n\n以前お伝えしたセルフケアの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n深く吐くことからはじめてみましょう🌿";
+    }
+
+    // プロンプト構築
+    const prompt = buildReminderPrompt(followup);
+
+    // GPT呼び出し
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
       messages: [
-        { role: 'system', content: 'あなたは東洋医学の専門アシスタントです。' },
-        { role: 'user', content: prompt },
+        {
+          role: "system",
+          content: "あなたは東洋医学に詳しい親しみやすいキャラのAIで、セルフケアの習慣化を優しく支援する伴走者です。診断履歴を参考にして、問いかけ型や励ましの言葉で寄り添ってください。",
+        },
+        { role: "user", content: prompt },
       ],
-      temperature: 0.9,
-      max_tokens: 300,
+      temperature: 0.8,
+      max_tokens: 500,
     });
 
-    return chat.choices[0].message.content.trim();
-  } catch (err) {
-    console.error('❌ GPTメッセージ生成エラー', err);
-    return 'こんにちは！最近の様子はいかがですか？焦らず、できるところから整えていきましょうね😊';
+    const gptComment = completion.choices?.[0]?.message?.content?.trim();
+
+    return gptComment || "今日も無理せず、自分のペースで“ととのう”を続けていきましょうね🌱";
+  } catch (error) {
+    console.error("⚠️ GPTメッセージ生成エラー:", error);
+    return "リマインドメッセージの生成に失敗しました。次回の診断で状況をお聞かせください😊";
   }
 }
 
