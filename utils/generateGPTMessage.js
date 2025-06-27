@@ -5,22 +5,29 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-function buildReminderPrompt(parts = {}) {
-  const { habits, breathing, stretch, tsubo, kampo } = parts;
+function buildReminderPrompt(latestFollowup, advice = {}) {
+  const { habits = "", breathing = "", stretch = "", tsubo = "", kampo = "" } = advice;
 
   return `
 以下は、あるユーザーの最近の定期チェック診断の回答内容です。
 初回診断では体質に応じた「ととのうガイド」（5つのセルフケア）を提案しており、その進捗状況をもとにリマインドコメントを作成してください。
 
-【診断データ】
-- 体質改善習慣（habits）: ${habits}
-- 呼吸法（breathing）: ${breathing}
-- ストレッチ（stretch）: ${stretch}
-- ツボケア（tsubo）: ${tsubo}
-- 漢方薬（kampo）: ${kampo}
+【診断データ（定期チェック診断）】
+- 体質改善習慣（habits）: ${latestFollowup.habits}
+- 呼吸法（breathing）: ${latestFollowup.breathing}
+- ストレッチ（stretch）: ${latestFollowup.stretch}
+- ツボケア（tsubo）: ${latestFollowup.tsubo}
+- 漢方薬（kampo）: ${latestFollowup.kampo}
+
+【初回診断に基づくセルフケアアドバイス（Myととのうガイド）】
+1. 💡体質改善習慣: ${habits}
+2. 🧘呼吸法: ${breathing}
+3. 🤸ストレッチ: ${stretch}
+4. 🎯ツボケア: ${tsubo}
+5. 🌿漢方薬: ${kampo}
 
 【指示】
-・前回診断の結果に軽く触れながら、「このうち1つをピックアップ」して、実施状況についての問いかけや優しく寄り添う一言メッセージを送ってください。
+・上記内容をもとに、「このうち1つをピックアップ」して、実施状況についての問いかけや優しく寄り添う一言メッセージを作成してください。
 ・文量は100〜200文字程度。
 ・明るく親しみやすいトーンで、絵文字を1〜2個含めてください。
 ・診断を受けていない場合は、初回診断のガイド内容の中から、1つをピックアップしてコメントしてください。
@@ -29,8 +36,8 @@ function buildReminderPrompt(parts = {}) {
 
 async function generateGPTMessage(userId) {
   try {
-    // userIdに紐づく最新の診断データを取得（followupsのcreated_at降順）
-    const { data: followups, error } = await supabase
+    // 定期チェック診断データ取得
+    const { data: followups, error: followupError } = await supabase
       .from("followups")
       .select("*")
       .eq("user_id", userId)
@@ -39,15 +46,19 @@ async function generateGPTMessage(userId) {
 
     const followup = followups?.[0];
 
+    // 初回診断コンテキスト取得（Myととのうガイド含む）
+    const context = await supabaseMemoryManager.getContext(userId);
+    const advice = context?.advice || {};
+
+    // フォローアップ診断がない場合（初回ガイドベースで簡易メッセージ）
     if (!followup) {
-      // 診断データなし → 通常のセルフケアメッセージ（初回ガイド準拠）
-      return "こんにちは！最近の診断はまだ未実施のようですね😊\n\n以前お伝えしたセルフケアの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n深く吐くことからはじめてみましょう🌿";
+      return `こんにちは！最近の診断はまだ未実施のようですね😊\n\n以前お伝えしたセルフケアの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n${advice.breathing || "深く吐くことから始めてみましょう🌿"}`;
     }
 
-    // プロンプト構築
-    const prompt = buildReminderPrompt(followup);
+    // プロンプト生成
+    const prompt = buildReminderPrompt(followup, advice);
 
-    // GPT呼び出し
+    // OpenAI 呼び出し
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
