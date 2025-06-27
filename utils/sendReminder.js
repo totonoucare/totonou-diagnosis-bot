@@ -11,11 +11,15 @@ async function getSubscribedUsers() {
     .select('id, line_id, subscribed, subscribed_at')
     .eq('subscribed', true);
 
-  if (error) throw error;
+  if (error) {
+    console.error('❌ Supabase取得エラー:', error);
+    throw error;
+  }
+
   return data;
 }
 
-// JST補正を入れた日数差計算（UTCをJSTで丸めて比較）
+// JST補正を入れた日数差計算（UTC→JSTにして日付丸め）
 function getDaysSince(dateInput) {
   const baseDate = new Date(typeof dateInput === 'string' ? dateInput + 'Z' : dateInput);
   const now = new Date();
@@ -32,8 +36,14 @@ function getDaysSince(dateInput) {
 
 // メイン処理
 async function sendReminders() {
+  console.log('::notice::🚀 sendReminders 処理開始');
+
   const users = await getSubscribedUsers();
   console.log(`👥 リマインド対象ユーザー数: ${users.length}`);
+  if (users.length === 0) {
+    console.warn('::warning::⚠️ サブスク中ユーザーが0人です。処理終了');
+    return;
+  }
 
   for (const user of users) {
     console.log(`\n🔍 チェック中ユーザー: ${user.line_id}`);
@@ -41,7 +51,7 @@ async function sendReminders() {
 
     const refDate = user.subscribed_at;
     if (!refDate) {
-      console.warn(`⚠️ subscribed_at が未設定のためスキップ: ${user.line_id}`);
+      console.warn(`::warning::⚠️ subscribed_at 未設定 → スキップ: ${user.line_id}`);
       continue;
     }
 
@@ -61,7 +71,7 @@ async function sendReminders() {
         });
         console.log(`✅ 初回リマインド送信成功`);
       } catch (err) {
-        console.error(`❌ 初回リマインド送信失敗:`, err);
+        console.error(`::error::❌ 初回リマインド送信失敗:`, err);
       }
       continue;
     }
@@ -73,7 +83,7 @@ async function sendReminders() {
     }
 
     const isEvenCycle = (days / 4) % 2 === 0;
-    console.log(`🔄 ${days}日目 → ${(isEvenCycle ? 'GPT' : 'Flex')}送信対象`);
+    console.log(`🔄 ${days}日目 → ${isEvenCycle ? 'GPT' : 'Flex'}送信対象`);
 
     try {
       if (isEvenCycle) {
@@ -87,9 +97,11 @@ async function sendReminders() {
         console.log(`✅ Flexカード送信成功`);
       }
     } catch (err) {
-      console.error(`❌ メッセージ送信失敗:`, err);
+      console.error(`::error::❌ 定期リマインド送信失敗:`, err);
     }
   }
+
+  console.log('::notice::✅ sendReminders 処理完了');
 }
 
 module.exports = sendReminders;
