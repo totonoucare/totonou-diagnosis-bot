@@ -2,8 +2,9 @@ name: Send Reminder
 
 on:
   schedule:
-    - cron: '0 11 * * *'  # JSTで20時（UTC11時）
-  workflow_dispatch:  # 手動実行も可
+    - cron: '0 23 * * *'  # JST 08:00（UTC 23:00）→ 登録翌日リマインド
+    - cron: '0 11 * * *'  # JST 20:00（UTC 11:00）→ 4日ごと定期リマインド
+  workflow_dispatch:      # 手動実行も可能
 
 jobs:
   send:
