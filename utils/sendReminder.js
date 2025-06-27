@@ -15,12 +15,16 @@ async function getSubscribedUsers() {
   return data;
 }
 
-// 日数計算ヘルパー
+// 日数計算ヘルパー（カレンダー上の日付差）
 function getDaysSince(dateString) {
   const subscribedDate = new Date(dateString);
   const today = new Date();
-  const diffTime = today - subscribedDate;
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  const start = new Date(subscribedDate.getFullYear(), subscribedDate.getMonth(), subscribedDate.getDate());
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const diffTime = end - start;
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
 }
 
 // メイン関数
