@@ -1,6 +1,6 @@
-const supabase = require('./supabaseClient');
+const supabase = require('../supabaseClient');
 const line = require('../line');
-const { getLatestFollowup } = require('./supabaseMemoryManager');
+const { getLatestFollowup } = require('../supabaseMemoryManager');
 const generateGPTMessage = require('./generateGPTMessage'); // 別途定義するGPTメッセージ生成
 const generateFlexMessage = require('./generateFlexMessage'); // 別途定義するFlex定期診断カード
 
