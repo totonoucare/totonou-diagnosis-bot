@@ -50,7 +50,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           await client.replyMessage(event.replyToken, {
             type: "text",
             text:
-              "サブスク希望ありがとうございます❗️\n\n" +
+              "サブスクのご希望ありがとうございます❗️\n\n" +
               "只今8日間の無料お試し期間実施中につき、サブスク限定機能をまずは8日間無料で解放します！🎁\n\n" +
               "リマインド機能やメニューバーの【定期チェック診断】をぜひご体験ください✨",
           });
