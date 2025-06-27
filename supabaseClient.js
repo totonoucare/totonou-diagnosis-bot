@@ -1,10 +1,10 @@
 // supabaseClient.js
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
 
+// 環境変数から URL と Service Role Key を取得
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 module.exports = supabase;
