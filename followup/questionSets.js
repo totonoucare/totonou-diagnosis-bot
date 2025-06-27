@@ -43,7 +43,7 @@ const followupQuestionSet = [
   {
     id: "Q3",
     header: "【Q3】セルフケアの実施状況",
-    body: "「ととのうガイド」のセルフケアは、どれくらい取り組めていますか？",
+    body: "「ととのうガイド」のセルフケアは、どれくらい取り組めていますか？\n順にボタンを選択してください",
     isMulti: true,
     options: [
       {
