@@ -15,12 +15,11 @@ async function getSubscribedUsers() {
   return data;
 }
 
-// JST補正を入れた日数差計算
-function getDaysSince(dateString) {
-  const baseDate = new Date(dateString);
+// JST補正を入れた日数差計算（UTCをJSTで丸めて比較）
+function getDaysSince(dateInput) {
+  const baseDate = new Date(typeof dateInput === 'string' ? dateInput + 'Z' : dateInput);
   const now = new Date();
 
-  // JST補正（+9時間）
   const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
   const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
