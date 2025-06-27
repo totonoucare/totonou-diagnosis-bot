@@ -1,41 +1,57 @@
 const supabase = require('../supabaseClient');
 const line = require('../line');
 const { getLatestFollowup } = require('../supabaseMemoryManager');
-const generateGPTMessage = require('./generateGPTMessage'); // 別途定義するGPTメッセージ生成
-const generateFlexMessage = require('./flexBuilder'); // 別途定義するFlex定期診断カード
+const generateGPTMessage = require('./generateGPTMessage');
+const generateFlexMessage = require('./flexBuilder');
 
-// ユーザー一覧取得（subscribed = true）
+// サブスク中のユーザー取得
 async function getSubscribedUsers() {
   const { data, error } = await supabase
     .from('users')
-    .select('id, line_id, subscribed, created_at')
+    .select('id, line_id, subscribed, subscribed_at')
     .eq('subscribed', true);
 
   if (error) throw error;
   return data;
 }
 
-// 日数計算ヘルパー（カレンダー上の日付差）
+// JST補正を入れた日数差計算
 function getDaysSince(dateString) {
-  const subscribedDate = new Date(dateString);
-  const today = new Date();
+  const baseDate = new Date(dateString);
+  const now = new Date();
 
-  const start = new Date(subscribedDate.getFullYear(), subscribedDate.getMonth(), subscribedDate.getDate());
-  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  // JST補正（+9時間）
+  const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+
+  const start = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
+  const end = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
 
   const diffTime = end - start;
-  return Math.round(diffTime / (1000 * 60 * 60 * 24));
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// メイン関数
+// メイン処理
 async function sendReminders() {
   const users = await getSubscribedUsers();
+  console.log(`👥 リマインド対象ユーザー数: ${users.length}`);
 
   for (const user of users) {
-    const days = getDaysSince(user.created_at);
+    console.log(`\n🔍 チェック中ユーザー: ${user.line_id}`);
+    console.log(`🕒 subscribed_at: ${user.subscribed_at}`);
 
-    // ✅ 登録翌日（1日後）のメッセージ送信
+    const refDate = user.subscribed_at;
+    if (!refDate) {
+      console.warn(`⚠️ subscribed_at が未設定のためスキップ: ${user.line_id}`);
+      continue;
+    }
+
+    const days = getDaysSince(refDate);
+    console.log(`📆 経過日数: ${days}日`);
+
+    // ✅ 1日後の初回リマインド
     if (days === 1) {
+      console.log(`🟢 初回リマインド対象`);
       try {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
@@ -44,29 +60,35 @@ async function sendReminders() {
             '最初は「習慣改善」や「ストレッチ」など、できそうなことから1つで大丈夫。\n' +
             '焦らず、心地よくいきましょう🧘‍♂️🍵'
         });
+        console.log(`✅ 初回リマインド送信成功`);
       } catch (err) {
-        console.error(`❌ ${user.line_id} への初日メッセージ送信失敗:`, err);
+        console.error(`❌ 初回リマインド送信失敗:`, err);
       }
       continue;
     }
 
-    // ⛔ 1日目・4日ごとのタイミング以外はスキップ
-    if (days === 0 || days % 4 !== 0) continue;
+    // ⛔ スキップ条件
+    if (days === 0 || days % 4 !== 0) {
+      console.log(`⏭️ スキップ（days=${days}）`);
+      continue;
+    }
 
-    // 4×偶数 = GPTメッセージ、4×奇数 = Flex
     const isEvenCycle = (days / 4) % 2 === 0;
+    console.log(`🔄 ${days}日目 → ${(isEvenCycle ? 'GPT' : 'Flex')}送信対象`);
 
     try {
       if (isEvenCycle) {
         const followup = await getLatestFollowup(user.line_id);
         const gptMessage = await generateGPTMessage(followup);
         await line.client.pushMessage(user.line_id, { type: 'text', text: gptMessage });
+        console.log(`✅ GPTメッセージ送信成功`);
       } else {
         const flex = generateFlexMessage();
         await line.client.pushMessage(user.line_id, flex);
+        console.log(`✅ Flexカード送信成功`);
       }
     } catch (err) {
-      console.error(`❌ ${user.line_id} への送信失敗:`, err);
+      console.error(`❌ メッセージ送信失敗:`, err);
     }
   }
 }
