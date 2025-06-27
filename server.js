@@ -40,7 +40,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           await supabaseMemoryManager.markSubscribed(userId);
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: "サブスク登録ありがとうございます！\n\n次回からメニューバーの【定期チェック診断】が可能です✨",
+            text: "サブスク希望ありがとうございます❗️\n\n只今8日間の無料お試し期間実施中につき、サブスク限定機能をまずは8日間無料で解放します！\n\nメニューバーの【定期チェック診断】やリマインド機能をぜひご体験ください✨",
           });
         } catch (err) {
           console.error("❌ markSubscribed エラー:", err);
