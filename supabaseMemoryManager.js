@@ -25,11 +25,14 @@ async function getUser(lineId) {
   return data;
 }
 
-// ✅ サブスク登録フラグ
+// ✅ サブスク登録フラグ + 登録日時保存
 async function markSubscribed(lineId) {
   const { error } = await supabase
     .from(USERS_TABLE)
-    .update({ subscribed: true })
+    .update({
+      subscribed: true,
+      subscribed_at: new Date().toISOString(),
+    })
     .eq('line_id', lineId);
 
   if (error) throw error;
