@@ -57,7 +57,7 @@ async function generateGPTMessage(userId) {
         },
         { role: "user", content: prompt },
       ],
-      temperature: 0.8,
+      temperature: 0.85,
       max_tokens: 500,
     });
 
