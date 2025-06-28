@@ -20,10 +20,15 @@ async function getSubscribedUsers() {
   return data;
 }
 
-// JST補正を入れた日数差計算
+// JST補正を入れた日数差計算（デバッグログ付き）
 function getDaysSince(dateInput) {
   const baseDate = new Date(typeof dateInput === 'string' ? dateInput + 'Z' : dateInput);
   const now = new Date();
+
+  // デバッグログ追加
+  console.log('🕒 now:', now.toISOString());
+  console.log('🕒 baseDate:', baseDate.toISOString());
+  console.log('📊 差分(ms):', now - baseDate);
 
   const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
   const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -57,7 +62,10 @@ async function sendReminders() {
         console.log(`🟢 初回リマインド対象: ${user.line_id}`);
         await line.client.pushMessage(user.line_id, {
           type: 'text',
-          text: '🌱 今日から本格的に「ととのうケア」始めましょう！'
+          text:
+            '🌱 今日から本格的に『ととのうケア習慣』、始めていきましょうね！\n\n' +
+            '最初は「習慣改善」や「ストレッチ」など、できそうなことから1つで大丈夫。\n' +
+            '焦らず、心地よくいきましょう🧘‍♂️🍵'
         });
         console.log(`✅ 初回リマインド送信完了`);
         continue;
