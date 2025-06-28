@@ -322,7 +322,8 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '前回の診断から数日が経ちました。\n「ととのい状況」をチェックし、あなた専用のケア提案をもう一度見直しましょう。',
+            text: '前回の診断から、セルフケアの調子はいかがですか❓
+『定期チェック診断』で、ととのい具合の確認とケアの見直しをいつでもサポートしますよ🌿',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -335,8 +336,8 @@ function buildReminderFlex() {
             type: 'button',
             action: {
               type: 'message',
-              label: 'ケア状況分析&見直し',
-              text: 'ケア状況分析&見直し',
+              label: '定期チェック診断',
+              text: '定期チェック診断',
             },
             style: 'primary',
             color: '#788972',
