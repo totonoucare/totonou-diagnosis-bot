@@ -82,7 +82,7 @@ async function sendReminders() {
       try {
         if (isEven) {
           const followup = await getLatestFollowup(user.line_id);
-          const msg = await generateGPTMessage(followup);
+          const msg = await generateGPTMessage(user.line_id); // ← 修正済み
           await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
           console.log('✅ GPTメッセージ送信完了');
         } else {
