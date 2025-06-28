@@ -292,7 +292,7 @@ function buildCarouselFlex(cards, altText = '診断結果とセルフケア提�
   return buildAdviceCarouselFlex(cards, altText);
 }
 
-// ✅ 8日おきリマインドのFlex
+// ✅ 4日ごとリマインドで使用するFlex
 function buildReminderFlex() {
   return {
     type: 'flex',
@@ -322,7 +322,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '前回の診断から8日が経ちました。\nあなたの「ととのい状況」をチェックし、次のアドバイスをAIが提案します。',
+            text: '前回の診断から数日が経ちました。\n「ととのい状況」をチェックし、あなた専用のケア提案をもう一度見直しましょう。',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -335,7 +335,7 @@ function buildReminderFlex() {
             type: 'button',
             action: {
               type: 'message',
-              label: '診断スタート',
+              label: 'ケア状況分析&見直し',
               text: 'ケア状況分析&見直し',
             },
             style: 'primary',
@@ -355,5 +355,5 @@ module.exports = {
   buildAdviceCarouselFlex,
   buildCarouselFlex,
   buildFollowupQuestionFlex,
-  buildReminderFlex, // ✅ 追加
+  buildReminderFlex,
 };
