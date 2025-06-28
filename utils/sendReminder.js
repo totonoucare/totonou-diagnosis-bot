@@ -22,7 +22,7 @@ async function getSubscribedUsers() {
 
 // JST補正を入れた日数差計算（デバッグログ付き）
 function getDaysSince(dateInput) {
-  const baseDate = new Date(typeof dateInput === 'string' ? dateInput + 'Z' : dateInput);
+  const baseDate = new Date(dateInput);
   const now = new Date();
 
   // デバッグログ追加
