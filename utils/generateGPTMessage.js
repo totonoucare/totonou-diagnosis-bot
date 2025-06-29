@@ -7,18 +7,45 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 function buildReminderPrompt(latestFollowup, advice = {}) {
-  const { habits = "", breathing = "", stretch = "", tsubo = "", kampo = "" } = advice;
+  const {
+    habits = "", breathing = "", stretch = "", tsubo = "", kampo = ""
+  } = advice;
 
   return `
 以下は、あるユーザーの最近の定期チェック診断の回答内容です。
-初回診断では体質に応じた「ととのうガイド」（5つのセルフケア）を提案しており、その進捗状況（定期チェック診断）をもとにリマインドコメントを作成してください。
+初回診断では体質に応じた「ととのうガイド」（5つのセルフケア）を提案しており、その進捗状況をもとにリマインドコメントを作成してください。
 
-【診断データ（定期チェック診断）】
-- 体質改善習慣（habits）: ${latestFollowup.habits}
-- 呼吸法（breathing）: ${latestFollowup.breathing}
-- ストレッチ（stretch）: ${latestFollowup.stretch}
-- ツボケア（tsubo）: ${latestFollowup.tsubo}
-- 漢方薬（kampo）: ${latestFollowup.kampo}
+【followups テーブルのカラム定義】
+- symptom_level：1＝改善／5＝全く改善なし
+- general_level：1＝改善／5＝全く改善なし
+- sleep：1＝とても良い／5＝かなり悪い
+- meal：1＝とても良い／5＝かなり悪い
+- stress：1＝とても良い／5＝かなり悪い
+- habits：未着手 < 時々 < 継続中
+- breathing：未着手 < 時々 < 継続中
+- stretch：未着手 < 時々 < 継続中
+- tsubo：未着手 < 時々 < 継続中
+- kampo：未着手 < 時々 < 継続中
+- q5_answer：セルフケアで一番困ったことを選択  
+　A: やり方が分からなかった  
+　B: 効果を感じなかった  
+　C: 時間が取れなかった  
+　D: 体に合わない気がした  
+　E: モチベーションが続かなかった  
+　F: 特になし
+
+【このユーザーの最新の診断データ】
+- symptom_level：${latestFollowup.symptom_level}
+- general_level：${latestFollowup.general_level}
+- sleep：${latestFollowup.sleep}
+- meal：${latestFollowup.meal}
+- stress：${latestFollowup.stress}
+- habits：${latestFollowup.habits}
+- breathing：${latestFollowup.breathing}
+- stretch：${latestFollowup.stretch}
+- tsubo：${latestFollowup.tsubo}
+- kampo：${latestFollowup.kampo}
+- q5_answer：${latestFollowup.q5_answer}
 
 【初回診断に基づくセルフケアアドバイス（Myととのうガイド）】
 1. 💡体質改善習慣: ${habits}
@@ -28,20 +55,19 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
 5. 🌿漢方薬: ${kampo}
 
 【指示】
-・上記内容をもとに、「このうち1つをピックアップ」して、実施状況についての問いかけや優しく寄り添う一言メッセージを作成してください。
+・上記の情報をもとに、「このうち1つをピックアップ」して、実施状況に合わせた優しいリマインドメッセージを作成してください。
+・もし q5_answer に困りごとがある場合は、その悩みに寄り添うトーンで書いてください。
 ・文量は100〜200文字程度。
-・明るく親しみやすいトーンで、絵文字を1〜2個含めてください。
-・診断を受けていない場合は、初回診断のガイド内容の中から、1つをピックアップしてコメントしてください。
+・明るく親しみやすい口調で、絵文字を1〜2個含めてください。
+・診断を受けていない場合は、Myととのうガイドだけを参考にしてください。
 `;
 }
 
 async function generateGPTMessage(lineId) {
   try {
-    // LINE ID → Supabaseのuser_idに変換
     const userId = await getUserIdFromLineId(lineId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
-    // 定期チェック診断データ取得
     const { data: followups, error: followupError } = await supabase
       .from("followups")
       .select("*")
@@ -51,19 +77,15 @@ async function generateGPTMessage(lineId) {
 
     const followup = followups?.[0];
 
-    // 初回診断コンテキスト取得（Myととのうガイド含む）
     const context = await supabaseMemoryManager.getContext(userId);
     const advice = context?.advice || {};
 
-    // フォローアップ診断がない場合（初回ガイドベースで簡易メッセージ）
     if (!followup) {
       return `こんにちは！最近の診断はまだ未実施のようですね😊\n\n以前お伝えしたセルフケアの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n${advice.breathing || "深く吐くことから始めてみましょう🌿"}`;
     }
 
-    // プロンプト生成
     const prompt = buildReminderPrompt(followup, advice);
 
-    // OpenAI 呼び出し
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
