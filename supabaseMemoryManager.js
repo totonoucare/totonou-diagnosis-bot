@@ -88,7 +88,7 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
   }
 }
 
-// ✅ 最新のcontext取得
+// ✅ 最新のcontext取得（ログ＆user_id型変換付き）
 async function getContext(lineId) {
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
@@ -99,10 +99,13 @@ async function getContext(lineId) {
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
+  // ✅ userRow.id のログ出力
+  console.log("🧾 getContext() - userRow.id:", userRow.id);
+
   const { data: context, error: contextError } = await supabase
     .from(CONTEXT_TABLE)
     .select('*')
-    .eq('user_id', userRow.id)
+    .eq('user_id', String(userRow.id)) // ← ✅ 明示的に文字列化
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -111,6 +114,9 @@ async function getContext(lineId) {
     console.error('❌ context取得エラー:', contextError);
     throw contextError;
   }
+
+  // ✅ context のログ出力
+  console.log("📦 getContext() - context data:", context);
 
   return {
     ...context,
