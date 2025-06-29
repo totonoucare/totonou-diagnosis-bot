@@ -6,19 +6,21 @@ const FOLLOWUP_TABLE = 'followups';
 
 // ✅ ユーザー初期化
 async function initializeUser(lineId) {
+  const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
-    .upsert({ line_id: lineId }, { onConflict: ['line_id'] });
+    .upsert({ line_id: cleanId }, { onConflict: ['line_id'] });
 
   if (error) throw error;
 }
 
 // ✅ ユーザー情報取得
 async function getUser(lineId) {
+  const cleanId = lineId.trim();
   const { data, error } = await supabase
     .from(USERS_TABLE)
     .select('*')
-    .eq('line_id', lineId)
+    .eq('line_id', cleanId)
     .maybeSingle();
 
   if (error) throw error;
@@ -27,23 +29,25 @@ async function getUser(lineId) {
 
 // ✅ サブスク登録フラグ + 登録日時保存
 async function markSubscribed(lineId) {
+  const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
     .update({
       subscribed: true,
       subscribed_at: new Date().toISOString(),
     })
-    .eq('line_id', lineId);
+    .eq('line_id', cleanId);
 
   if (error) throw error;
 }
 
 // ✅ ガイド初回受信フラグ
 async function markGuideReceived(lineId) {
+  const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
     .update({ guide_received: true })
-    .eq('line_id', lineId);
+    .eq('line_id', cleanId);
 
   if (error) {
     console.error("❌ markGuideReceived エラー:", error);
@@ -53,10 +57,11 @@ async function markGuideReceived(lineId) {
 
 // ✅ context保存
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
+  const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
-    .eq('line_id', lineId)
+    .eq('line_id', cleanId)
     .maybeSingle();
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
@@ -85,10 +90,11 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
 
 // ✅ 最新のcontext取得
 async function getContext(lineId) {
+  const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id, guide_received')
-    .eq('line_id', lineId)
+    .eq('line_id', cleanId)
     .maybeSingle();
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
@@ -114,10 +120,11 @@ async function getContext(lineId) {
 
 // ✅ フォローアップ回答保存
 async function setFollowupAnswers(lineId, answers) {
+  const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
-    .eq('line_id', lineId)
+    .eq('line_id', cleanId)
     .maybeSingle();
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
@@ -156,10 +163,11 @@ async function setFollowupAnswers(lineId, answers) {
 
 // ✅ 最新のfollowup取得
 async function getLatestFollowup(lineId) {
+  const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
-    .eq('line_id', lineId)
+    .eq('line_id', cleanId)
     .maybeSingle();
 
   if (userError || !userRow) {
