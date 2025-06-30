@@ -65,9 +65,11 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
 
 async function generateGPTMessage(lineId) {
   try {
+    // ✅ Supabase上の uuid を取得（followups用）
     const userId = await getUserIdFromLineId(lineId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
+    // 最新の followup データ取得
     const { data: followups, error: followupError } = await supabase
       .from("followups")
       .select("*")
@@ -77,7 +79,8 @@ async function generateGPTMessage(lineId) {
 
     const followup = followups?.[0];
 
-    const context = await supabaseMemoryManager.getContext(userId);
+    // ✅ getContext に lineId をそのまま渡す（中で line_id で検索する）
+    const context = await supabaseMemoryManager.getContext(lineId);
     const advice = context?.advice || {};
 
     if (!followup) {
