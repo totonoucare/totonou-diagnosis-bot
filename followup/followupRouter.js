@@ -1,7 +1,8 @@
 // followup/followupRouter.js
 
-// 🔄 遅延読み込みで循環参照エラー防止
 const generateFollowupResult = require("./resultGenerator");
+const supabaseMemoryManager = require("../supabaseMemoryManager");
+const { sendFollowupResponse } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
@@ -11,18 +12,15 @@ const generateFollowupResult = require("./resultGenerator");
  */
 async function handleFollowupAnswers(userId, answers) {
   try {
-    // 🔄 必要なモジュールを関数内で遅延読み込み
-    const supabaseMemoryManager = require("../supabaseMemoryManager");
-    const { sendFollowupResponse } = require("./responseSender");
-
     // 🔍 Supabaseから該当ユーザー情報を取得
     const user = await supabaseMemoryManager.getUser(userId);
+
     if (!user || !user.subscribed) {
-      console.log(`⛔️ ユーザー ${userId} はサブスク未登録のため再診不可`);
+      console.log(⛔️ ユーザー ${userId} はサブスク未登録のため再診不可);
       return null;
     }
 
-    // ✅ 初回診断の context を取得
+    // ✅ context（初回診断結果）を取得
     const context = await supabaseMemoryManager.getContext(userId);
 
     // 🧩 answers の形式チェック＆解析
@@ -36,9 +34,11 @@ async function handleFollowupAnswers(userId, answers) {
               parsedAnswers.motion_level = parseInt(value);
               break;
             case "Q5":
-              parsedAnswers.q5_answer = value.startsWith("q5_answer=")
-                ? value.split("=")[1]
-                : value;
+              if (value.startsWith("q5_answer=")) {
+                parsedAnswers.q5_answer = value.split("=")[1];  // ← "A" だけ取り出す
+              } else {
+                parsedAnswers.q5_answer = value;  // ← 念のため
+              }
               break;
             case "symptom":
             case "general":
@@ -73,7 +73,7 @@ async function handleFollowupAnswers(userId, answers) {
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
     // 🤖 GPTコメント生成
-    const { gptComment, statusMessage } = await sendFollowupResponse(user.line_id, result.rawData);
+    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
     return {
       ...result,
