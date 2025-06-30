@@ -53,10 +53,9 @@ function buildPrompt(parts = {}) {
 【回答スケール定義】
 - Q1/Q2/Q4：1＝とても良い（改善）／5＝悪化・不調
 - Q3（セルフケア習慣）：未着手 < 時々 < 継続中
-- Q5：セルフケアで一番困ったことを選択（A:やり方が分からなかった／B:効果を感じなかった／C:時間が取れなかった／D:体に合わない気がした／E:モチベーションが続かなかった／F: 特になし）
+- Q5：セルフケアで一番困ったことを選択（A:やり方が分からなかった／B:効果を感じなかった／C:時間が取れなかった／D:体に合わない気がした／E:モチベーションが続かなかった／F:特になし）
 
 	1.	初回診断時に提示した「ととのうガイド」という5つのセルフケア項目について、Q3の質問項目で実践度合いを尋ねています。取り組めた点を1つだけ選び、しっかり褒めて応援してください（絵文字も入れて）。
- ※何も取り組めていない場合は、激励の言葉をかけて「Myととのうガイド」から1つだけでも始めてみるよう促してください。
 	2.	Q3で実行度合いが低かったセルフケア項目に注目し、その中でも優先度が高いセルフケア項目を1〜2つ選び、改善提案とヒントを添えてください。
 優先度は以下の通りです。
 ・1位：体質改善習慣　・2位：ストレッチ  ・3位：呼吸法　・4位：ツボ　・5位：漢方薬
@@ -121,10 +120,11 @@ ${scoreExplanation}
 `;
 }
 
-async function sendFollowupResponse(lineId, followupAnswers) {
+async function sendFollowupResponse(userId, followupAnswers) {
   try {
-    const context = await supabaseMemoryManager.getContext(lineId); // ✅ 修正：lineIdを渡す
-
+    const context = await supabaseMemoryManager.getContext(userId);
+    
+    // 🔄 Q1〜Q5などの回答を優先してマージ
     const promptParts = {
       ...followupAnswers,
       ...context,
