@@ -73,7 +73,7 @@ async function handleFollowupAnswers(userId, answers) {
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
     // 🤖 GPTコメント生成
-    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
+    const { gptComment, statusMessage } = await sendFollowupResponse(user.line_id, result.rawData);
 
     return {
       ...result,
