@@ -105,7 +105,7 @@ async function handleFollowup(event, client, userId) {
       if (remaining.length > 0) {
         return [{
           type: 'text',
-          text: ✅ ${label} → ${value}
+          text: `✅ ${label} → ${value}`
         }];
       }
 
