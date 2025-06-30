@@ -6,6 +6,8 @@ const FOLLOWUP_TABLE = 'followups';
 
 // ✅ ユーザー初期化
 async function initializeUser(lineId) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
@@ -16,6 +18,8 @@ async function initializeUser(lineId) {
 
 // ✅ ユーザー情報取得
 async function getUser(lineId) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data, error } = await supabase
     .from(USERS_TABLE)
@@ -29,6 +33,8 @@ async function getUser(lineId) {
 
 // ✅ サブスク登録フラグ + 登録日時保存
 async function markSubscribed(lineId) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
@@ -43,6 +49,8 @@ async function markSubscribed(lineId) {
 
 // ✅ ガイド初回受信フラグ
 async function markGuideReceived(lineId) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
@@ -57,6 +65,8 @@ async function markGuideReceived(lineId) {
 
 // ✅ context保存
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -88,8 +98,10 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
   }
 }
 
-// ✅ 最新のcontext取得（ログ＆user_id型変換付き）
+// ✅ 最新のcontext取得
 async function getContext(lineId) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -99,13 +111,12 @@ async function getContext(lineId) {
 
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
-  // ✅ userRow.id のログ出力
   console.log("🧾 getContext() - userRow.id:", userRow.id);
 
   const { data: context, error: contextError } = await supabase
     .from(CONTEXT_TABLE)
     .select('*')
-    .eq('user_id', String(userRow.id)) // ← ✅ 明示的に文字列化
+    .eq('user_id', String(userRow.id))
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -115,7 +126,6 @@ async function getContext(lineId) {
     throw contextError;
   }
 
-  // ✅ context のログ出力
   console.log("📦 getContext() - context data:", context);
 
   return {
@@ -126,6 +136,8 @@ async function getContext(lineId) {
 
 // ✅ フォローアップ回答保存
 async function setFollowupAnswers(lineId, answers) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -169,6 +181,8 @@ async function setFollowupAnswers(lineId, answers) {
 
 // ✅ 最新のfollowup取得
 async function getLatestFollowup(lineId) {
+  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
+  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -196,7 +210,7 @@ async function getLatestFollowup(lineId) {
   return followup;
 }
 
-// ✅ サブスク登録ユーザー一覧取得（リマインド用）
+// ✅ サブスク登録ユーザー一覧取得
 async function getSubscribedUsers() {
   const { data, error } = await supabase
     .from(USERS_TABLE)
