@@ -48,7 +48,7 @@ function replacePlaceholders(template, context = {}) {
     .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
 }
 
-async function handleFollowup(event, client, userId) {
+async function handleFollowup(event, client, lineId) {
   try {
     let message = "";
 
@@ -61,22 +61,22 @@ async function handleFollowup(event, client, userId) {
     }
 
     if (message === '定期チェック診断') {
-      const userRecord = await supabaseMemoryManager.getUser(userId);
+      const userRecord = await supabaseMemoryManager.getUser(lineId);
       if (!userRecord || !userRecord.subscribed) {
         return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
       }
 
-      userSession[userId] = { step: 1, answers: {} };
+      userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
-      const context = await supabaseMemoryManager.getContext(userId);
+      const context = await supabaseMemoryManager.getContext(lineId);
       return [buildFlexMessage(q1, context)];
     }
 
-    if (!userSession[userId]) {
+    if (!userSession[lineId]) {
       return [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }];
     }
 
-    const session = userSession[userId];
+    const session = userSession[lineId];
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
@@ -98,7 +98,7 @@ async function handleFollowup(event, client, userId) {
         .map(sub => sub.id)
         .filter(k => !(k in session.partialAnswers));
 
-      const context = await supabaseMemoryManager.getContext(userId);
+      const context = await supabaseMemoryManager.getContext(lineId);
       const label = replacePlaceholders(multiLabels[key] || key, context);
       const value = answer;
 
@@ -119,7 +119,6 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      // Q4・Q5はキーを変換、それ以外はそのまま
       const keyName = question.id === "Q5"
         ? "q5_answer"
         : question.id === "Q4"
@@ -130,37 +129,37 @@ async function handleFollowup(event, client, userId) {
 
       if (question.id === "Q4" && value.startsWith("Q4=")) {
         const num = parseInt(value.split("=")[1]);
-        value = isNaN(num) ? null : num;  // ここで数値型に変換
+        value = isNaN(num) ? null : num;
       }
 
       session.answers[keyName] = value;
       session.step++;
-      }
+    }
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const context = await supabaseMemoryManager.getContext(userId);
+      const context = await supabaseMemoryManager.getContext(lineId);
 
       if (!context?.symptom || !context?.type) {
         console.warn("⚠️ context 情報が不完全です");
       }
 
-      await supabaseMemoryManager.setFollowupAnswers(userId, answers);
+      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
       const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
-        await supabaseMemoryManager.updateUserFields(userId, {
+        await supabaseMemoryManager.updateUserFields(lineId, {
           motion_level: parseInt(motionLevel)
         });
       }
 
-      await client.pushMessage(userId, {
+      await client.pushMessage(lineId, {
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
       });
 
-      const result = await handleFollowupAnswers(userId, answers);
-      delete userSession[userId];
+      const result = await handleFollowupAnswers(lineId, answers);
+      delete userSession[lineId];
 
       return [{
         type: 'text',
@@ -169,7 +168,7 @@ async function handleFollowup(event, client, userId) {
     }
 
     const nextQuestion = questionSets[session.step - 1];
-    const context = await supabaseMemoryManager.getContext(userId);
+    const context = await supabaseMemoryManager.getContext(lineId);
     return [buildFlexMessage(nextQuestion, context)];
 
   } catch (err) {
@@ -208,5 +207,5 @@ function buildFlexMessage(question, context = {}) {
 }
 
 module.exports = Object.assign(handleFollowup, {
-  hasSession: (userId) => !!userSession[userId]
+  hasSession: (lineId) => !!userSession[lineId]
 });
