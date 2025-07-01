@@ -70,9 +70,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         try {
           const messages = await handleFollowup(event, client, userId);
 
+          // 👇診断中かどうかを確認して、誘導文の出し分け
           if (Array.isArray(messages) && messages.length > 0) {
             await client.replyMessage(event.replyToken, messages);
-          } else {
+          } else if (!handleFollowup.hasSession(userId)) {
             await client.replyMessage(event.replyToken, {
               type: "text",
               text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
