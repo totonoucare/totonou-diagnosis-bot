@@ -98,20 +98,35 @@ async function handleFollowup(event, client, userId) {
         .map(sub => sub.id)
         .filter(k => !(k in session.partialAnswers));
 
-      const context = await supabaseMemoryManager.getContext(userId);
-      const label = replacePlaceholders(multiLabels[key] || key, context);
-      const value = answer;
-
       if (remaining.length > 0) {
-        return [{
-          type: 'text',
-          text: `✅ ${label} → ${value}`
-        }];
+        return []; // ✅ 中間返信なし
       }
 
+      // 全回答完了 → まとめて確認メッセージ
       Object.assign(session.answers, session.partialAnswers);
       delete session.partialAnswers;
       session.step++;
+
+      const context = await supabaseMemoryManager.getContext(userId);
+      const summary = question.options.map(opt => {
+        const key = opt.id;
+        const label = replacePlaceholders(multiLabels[key] || key, context);
+        const value = session.answers[key];
+        return `・${label} → ${value}`;
+      }).join('\n');
+
+      let header = '';
+      switch (question.id) {
+        case 'Q1': header = '📝 主訴の改善度（自己評価）'; break;
+        case 'Q2': header = '🛌 生活習慣の状況'; break;
+        case 'Q3': header = '🧘 セルフケアの実施状況'; break;
+        default: header = '✅ 回答を確認しました'; break;
+      }
+
+      await client.pushMessage(userId, {
+        type: 'text',
+        text: `✅ ${header} を確認しました！\n\n${summary}`
+      });
 
     } else {
       const validDataValues = question.options.map(opt => opt.data);
@@ -119,7 +134,6 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      // Q4・Q5はキーを変換、それ以外はそのまま
       const keyName = question.id === "Q5"
         ? "q5_answer"
         : question.id === "Q4"
@@ -130,12 +144,21 @@ async function handleFollowup(event, client, userId) {
 
       if (question.id === "Q4" && value.startsWith("Q4=")) {
         const num = parseInt(value.split("=")[1]);
-        value = isNaN(num) ? null : num;  // ここで数値型に変換
+        value = isNaN(num) ? null : num;
       }
 
       session.answers[keyName] = value;
       session.step++;
+
+      if (['Q4', 'Q5'].includes(question.id)) {
+        const context = await supabaseMemoryManager.getContext(userId);
+        const label = replacePlaceholders(multiLabels[question.id] || question.id, context);
+        await client.pushMessage(userId, {
+          type: 'text',
+          text: `✅ ${label} → ${value}`
+        });
       }
+    }
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
