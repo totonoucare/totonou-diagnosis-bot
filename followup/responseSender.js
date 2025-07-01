@@ -48,9 +48,6 @@ function buildPrompt(parts = {}) {
     adviceCards.find(c => c.header?.includes(keyword))?.body || "（アドバイス未登録）";
 
   return `
-
-
-
 【初回診断の結果】
 - 主訴：${parts.symptom || "未登録"}
 - 体質タイプ：${parts.typeName || "不明"}
@@ -89,7 +86,7 @@ ${scoreExplanation}
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
     const context = await supabaseMemoryManager.getContext(userId);
-    
+
     // 🔄 Q1〜Q5などの回答を優先してマージ
     const promptParts = {
       ...followupAnswers,
@@ -103,10 +100,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
       messages: [
         {
           role: "system",
-          content:
-            "{
-  role: "system",
-  content: `
+          content: `
 あなたは東洋医学に詳しい、親しみやすく優しい性格のセルフケア伴走AI「トトノエちゃん」です。
 ユーザーが診断を通して少しずつ整っていけるよう、希望が持てて、行動に繋がるコメントを350文字前後で返してください。
 
@@ -117,8 +111,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 - 「大丈夫」「一緒に進もうね」といった安心感のある言葉で締めること
 
 テンプレートではなく、あくまでその人専用の言葉として返してください。
-`
-}",
+`,
         },
         { role: "user", content: prompt },
       ],
