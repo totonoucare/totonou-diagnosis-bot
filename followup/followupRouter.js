@@ -16,7 +16,7 @@ async function handleFollowupAnswers(userId, answers) {
     const user = await supabaseMemoryManager.getUser(userId);
 
     if (!user || !user.subscribed) {
-      console.log(⛔️ ユーザー ${userId} はサブスク未登録のため再診不可);
+      console.log(`⛔️ ユーザー ${userId} はサブスク未登録のため再診不可`);
       return null;
     }
 
