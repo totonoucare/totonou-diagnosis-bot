@@ -99,10 +99,9 @@ async function handleFollowup(event, client, userId) {
         .filter(k => !(k in session.partialAnswers));
 
       if (remaining.length > 0) {
-        return []; // ✅ 中間返信なし
+        return [];
       }
 
-      // 全回答完了 → まとめて確認メッセージ
       Object.assign(session.answers, session.partialAnswers);
       delete session.partialAnswers;
       session.step++;
@@ -150,12 +149,30 @@ async function handleFollowup(event, client, userId) {
       session.answers[keyName] = value;
       session.step++;
 
-      if (['Q4', 'Q5'].includes(question.id)) {
+      if (question.id === "Q4") {
         const context = await supabaseMemoryManager.getContext(userId);
         const label = replacePlaceholders(multiLabels[question.id] || question.id, context);
         await client.pushMessage(userId, {
           type: 'text',
           text: `✅ ${label} → ${value}`
+        });
+      }
+
+      if (question.id === "Q5") {
+        const q5TextMap = {
+          A: "やり方が分からなかった",
+          B: "効果を感じなかった",
+          C: "時間が取れなかった",
+          D: "体に合わない気がした",
+          E: "モチベーションが続かなかった",
+          F: "特になし"
+        };
+        const readable = q5TextMap[value?.split("=")[1]] || "不明";
+        const context = await supabaseMemoryManager.getContext(userId);
+        const label = replacePlaceholders(multiLabels[question.id] || question.id, context);
+        await client.pushMessage(userId, {
+          type: 'text',
+          text: `✅ ${label} → ${readable}`
         });
       }
     }
