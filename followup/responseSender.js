@@ -3,136 +3,100 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// 🧭 初回診断時motionの経絡対応
-function getMeridianFromMotion(motion) {
-  switch (motion) {
-    case "前屈":
-    case "立って前屈する":
-      return "腎経／膀胱経（体背面ライン）";
-    case "上体をそらす":
-    case "上体をそらす（腰に手を当て）":
-      return "脾経／胃経（前面ライン）";
-    case "バンザイ":
-    case "腕をバンザイする":
-      return "心経／小腸経（腕の内側ライン）";
-    case "腰を左右にねじる":
-    case "腰を側屈":
-      return "肝経／胆経（体側ライン）";
-    case "首を後ろに倒す":
-    case "首を左右に回す":
-      return "肺経／大腸経（首前面ライン）";
-    default:
-      return "不明";
+async function sendFollowupComment({ lineId, context, followupAnswers }) {
+  if (!context || !followupAnswers) {
+    console.error("❌ context または followupAnswers が不足しています。");
+    return null;
   }
-}
 
-function buildPrompt(parts = {}) {
-  const { scores = [], adviceCards = [] } = parts;
-  const [score1, score2, score3] = scores;
+  const { advice, motion, symptom } = context;
 
-  const scoreExplanation = scores.length === 3
-    ? `
-【初回診断時の体質スコア】
-- 虚実（体力の絶対量）: ${score1}
-- 寒熱（体内の熱状態）: ${score2}
-- 気血バランス: ${score3}（+1=気虚／-1=血虚）
+  const systemPrompt = `
+あなたは東洋医学に基づいたセルフケア支援の専門家です。
 
-※ スコア定義
-- 虚実： -1 = 虚（体力少ない）／+1 = 実（体力あり）
-- 寒熱： -1 = 寒（冷え体質）／+1 = 熱（熱がこもる体質）
-- 陰陽： -1 = 血虚（栄養・潤い不足）／+1 = 気虚（エネルギー不足）
-`
-    : "（体質スコアの記録はありません）";
+ユーザーの前回診断で作成された「Myととのうガイド（体質・巡りに基づいたセルフケア提案）」を参考に、
+今回の定期チェック診断の結果（Q1〜Q5）を踏まえて、状態の変化やアドバイスをまとめてください。
 
-  const find = (keyword) =>
-    adviceCards.find(c => c.header?.includes(keyword))?.body || "（アドバイス未登録）";
+診断コメントには以下の視点を含めてください：
+1. 前回診断内容と比較した体調の変化（主訴症状・全体的体調）→ Q1より
+2. 生活習慣の整い度合いと改善点 → Q2より
+3. 各セルフケア実施状況と定着レベル → Q3と advice より
+4. 経絡ストレッチ（Q4）と「motion」に基づくライン改善の観察 → motion + Q4 + advice.stretch を照合
+5. Q5の困りごと（継続阻害要因）を踏まえた前向きなアドバイス
 
-  return `
-【初回診断の結果】
-- 主訴：${parts.symptom || "未登録"}
-- 体質タイプ：${parts.typeName || "不明"}
-- 傾向：${parts.traits || "不明"}
-- 巡りの傾向：${parts.flowIssue || "不明"}
-- 内臓の負担傾向：${parts.organBurden || "不明"}
-- 初回診断時の動作テスト：${parts.motion || "未登録"}（${getMeridianFromMotion(parts.motion)}）
+形式は以下にしてください：
+- 冒頭で体調全体や変化をコメント（親しみやすい口調で）
+- 「このまま続けるといいこと」リスト（良い習慣への称賛）
+- 「次にやってみてほしいこと」リスト（今後の提案）
+- 締めのひとこと（前向きに、一緒に続けようというニュアンス）
 
-${scoreExplanation}
+【回答スケール定義】
+- Q1（体調）・Q2（生活リズム）・Q4（動作テストの変化）：
+　　1＝とても良い（改善）〜 5＝悪化・不調
+- Q3（セルフケア習慣）：
+　　1＝未着手、2＝時々実施、3＝継続中（良い習慣ほど数値が高い）
+- Q5（セルフケアの困りごと）：
+　　A＝やり方が分からなかった／B＝効果を感じなかった／
+　　C＝時間が取れなかった／D＝体に合わない気がした／
+　　E＝モチベーションが続かなかった／F＝特になし
 
-【ととのうガイド】
-1. 💡体質改善習慣\n${find("体質改善")}
-2. 🧘巡り呼吸\n${find("呼吸")}
-3. 🤸経絡ストレッチ\n${find("ストレッチ")}
-4. 🎯ツボケア\n${find("ツボ")}
-5. 🌿漢方薬\n${find("漢方")}
+【補足：Q4の「motion」→ 経絡マッピング】
+motion に応じて、以下の経絡ラインに注目してコメントしてください：
 
-【定期チェック診断データ】
-- 主訴の変化(Q1)：${parts.symptom_level || "未入力"}
-- 全体の体調(Q1)：${parts.general_level || "未入力"}
-- 生活リズムの整い具合(Q2)：
-  ・睡眠：${parts.sleep || "未入力"}
-  ・食事：${parts.meal || "未入力"}
-  ・ストレス：${parts.stress || "未入力"}
-- セルフケア実施状況(Q3)：
-  ・習慣：${parts.habits || "未入力"}
-  ・呼吸法：${parts.breathing || "未入力"}
-  ・ストレッチ：${parts.stretch || "未入力"}
-  ・ツボ：${parts.tsubo || "未入力"}
-  ・漢方：${parts.kampo || "未入力"}
-- 動作テストの変化(Q4)：${parts.motion_level || "未入力"}
-- セルフケアで困ったこと（Q5）：${parts.q5_answer || "未入力"}
+- 首を後ろに倒す／左右に回す → 肺経／大腸経（首前面ライン）
+- 腕をバンザイする → 心経／小腸経（腕の内側ライン）
+- 立って前屈する → 腎経／膀胱経（体背面ライン）
+- 腰を左右にねじるor側屈 → 肝経／胆経（体側ライン）
+- 上体をそらす → 脾経／胃経（腹部・太もも前面ライン）
+
+注意：
+- advice.habits, breathing, stretch, tsubo, kampo はすべてMyととのうガイドの内容です。
+- Q3の「継続中」項目はしっかり称賛し、「未着手」「時々」には励ましと改善ヒントを。
+- Q5が A〜E の場合は、共感と気持ちに寄り添うフォローを加えてください。
 `;
-}
 
-async function sendFollowupResponse(userId, followupAnswers) {
+  const userPrompt = `
+【主訴】${symptom}
+
+【Myととのうガイド（前回診断ベース）】
+- 習慣：${advice?.habits || "未登録"}
+- 呼吸法：${advice?.breathing || "未登録"}
+- ストレッチ：${advice?.stretch || "未登録"}
+- ツボケア：${advice?.tsubo || "未登録"}
+- 漢方薬：${advice?.kampo || "未登録"}
+
+【初回の動作テスト】${motion}
+
+【今回の定期チェック診断結果】
+Q1. 「${symptom}」のつらさ：${followupAnswers.Q1.symptom}
+　　全体の体調：${followupAnswers.Q1.general}
+Q2. 睡眠：${followupAnswers.Q2.sleep} ／ 食事：${followupAnswers.Q2.meal} ／ ストレス：${followupAnswers.Q2.stress}
+Q3. セルフケア実施状況：
+　- 習慣：${followupAnswers.Q3.habits}
+　- 呼吸法：${followupAnswers.Q3.breathing}
+　- ストレッチ：${followupAnswers.Q3.stretch}
+　- ツボ：${followupAnswers.Q3.tsubo}
+　- 漢方薬：${followupAnswers.Q3.kampo}
+Q4. 動作テストの改善度：${followupAnswers.Q4}
+Q5. セルフケアで困ったこと：${followupAnswers.Q5}
+`;
+
   try {
-    const context = await supabaseMemoryManager.getContext(userId);
-
-    // 🔄 Q1〜Q5などの回答を優先してマージ
-    const promptParts = {
-      ...followupAnswers,
-      ...context,
-    };
-
-    const prompt = buildPrompt(promptParts);
-
     const chatCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        {
-          role: "system",
-          content: `
-あなたは東洋医学に詳しい、親しみやすく優しい性格のセルフケア伴走AI「トトノエちゃん」です。
-ユーザーが初回診断と定期チェックを通して、少しずつ整っていけるよう励ましながらコメントしてください。
-
-以下の点を必ず意識してください：
-- 初回診断での「体質タイプ」「傾向」「ととのうガイド（5項目）」を活かし、体質改善のヒントを提案すること
-- 今回の定期チェック診断での体調の変化やセルフケア実施状況を踏まえて、できていることを褒めること
-- 「このまま○○を続けるといいよ」「次は△△をやってみて」など、前向きで具体的な1アクションを提案すること
-- 「一緒に少しずつ整えていこうね」「大丈夫、ちゃんと進んでるよ」といった安心感のある言葉で締めくくること
-
-テンプレートではなく、その人の状況に応じたオーダーメイドのコメントを出してください。
-`,
-        },
-        { role: "user", content: prompt },
+        { role: "system", content: systemPrompt.trim() },
+        { role: "user", content: userPrompt.trim() }
       ],
-      temperature: 0.9,
-      max_tokens: 1200,
+      temperature: 0.7
     });
 
-    const gptComment = chatCompletion.choices?.[0]?.message?.content || "解析に失敗しました。";
-
-    return {
-      gptComment,
-    };
-  } catch (err) {
-    console.error("❌ フォローアップ解析エラー:", err);
-    return {
-      gptComment: "再診コメントの生成に失敗しました。",
-      statusMessage: "エラーが発生しました。しばらくしてからお試しください。",
-    };
+    const replyText = chatCompletion.choices?.[0]?.message?.content || "";
+    return replyText;
+  } catch (error) {
+    console.error("❌ OpenAI 応答エラー:", error);
+    return null;
   }
 }
 
-module.exports = {
-  sendFollowupResponse,
-};
+module.exports = { sendFollowupComment };
