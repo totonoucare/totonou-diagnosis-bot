@@ -117,8 +117,8 @@ async function handleFollowup(event, client, userId) {
 
       let header = '';
       switch (question.id) {
-        case 'Q1': header = '📝 主訴の改善度（自己評価）'; break;
-        case 'Q2': header = '🛌 生活習慣の状況'; break;
+        case 'Q1': header = '📝 症状と体調の変化'; break;
+        case 'Q2': header = '🛌 生活リズムの整い具合'; break;
         case 'Q3': header = '🧘 セルフケアの実施状況'; break;
         default: header = '✅ 回答を確認しました'; break;
       }
