@@ -7,7 +7,6 @@
  * @returns {{ rawData: Object, promptParts: Object }}
  */
 function generateFollowupResult(answers, context = {}) {
-  // 🔹そのまま保存したい回答の生データ
   const rawData = {
     symptom_level: parseInt(answers.symptom) || null,
     general_level: parseInt(answers.general) || null,
@@ -23,36 +22,39 @@ function generateFollowupResult(answers, context = {}) {
     q5_answer: answers.q5_answer || null,
   };
 
-  const adviceArray = Array.isArray(context.advice) ? context.advice : [];
+  const advice = context.advice || {};
 
   const promptParts = {
-    // 🩺 前回診断情報（context由来）
+    // 初回情報（Myととのうガイド）
     symptom: context.symptom || "未登録",
     motion: context.motion || "未登録",
-    typeName: context.type || "未登録",
-    traits: context.trait || "未登録",
-    flowIssue: context.flowType || "未登録",
-    organBurden: context.organType || "未登録",
-    scores: context.scores || [],
-    adviceCards: adviceArray,
-
-    // 📝 フォローアップ回答（Q1〜Q5）
-    symptomChange: {
-      symptom: rawData.symptom_level,
-      general: rawData.general_level
+    advice: {
+      habits: advice.habits || "未登録",
+      breathing: advice.breathing || "未登録",
+      stretch: advice.stretch || "未登録",
+      tsubo: advice.tsubo || "未登録",
+      kampo: advice.kampo || "未登録",
     },
-    lifestyleChange: {
+
+    // Q1〜Q5（今回の定期チェック診断）
+    Q1: {
+      symptom: rawData.symptom_level,
+      general: rawData.general_level,
+    },
+    Q2: {
       sleep: rawData.sleep,
       meal: rawData.meal,
-      stress: rawData.stress
+      stress: rawData.stress,
     },
-    habits: rawData.habits || "未実施",
-    breathing: rawData.breathing || "未実施",
-    stretch: rawData.stretch || "未実施",
-    tsubo: rawData.tsubo || "未実施",
-    kampo: rawData.kampo || "未使用",
-    motionChange: rawData.motion_level,
-    careTrouble: rawData.q5_answer
+    Q3: {
+      habits: rawData.habits || "未実施",
+      breathing: rawData.breathing || "未実施",
+      stretch: rawData.stretch || "未実施",
+      tsubo: rawData.tsubo || "未実施",
+      kampo: rawData.kampo || "未使用",
+    },
+    Q4: rawData.motion_level,
+    Q5: rawData.q5_answer || "F", // 特になしをデフォに
   };
 
   return { rawData, promptParts };
