@@ -6,7 +6,7 @@ const { sendFollowupResponse } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
- * @param {string} userId - ユーザーID（＝LINEのuserId）
+ * @param {string} userId - ユーザーID（＝SupabaseのUUID）
  * @param {Array|string|object} answers - ユーザーの回答（形式に応じて処理分岐）
  * @returns {Promise<Object|null>} - GPTコメント付きの再診結果 or null（未登録者）
  */
@@ -19,9 +19,6 @@ async function handleFollowupAnswers(userId, answers) {
       console.log(`⛔️ ユーザー ${userId} はサブスク未登録のため再診不可`);
       return null;
     }
-
-    // ✅ context（初回診断結果）を取得
-    const context = await supabaseMemoryManager.getContext(userId);
 
     // 🧩 answers の形式チェック＆解析
     let parsedAnswers = {};
@@ -67,33 +64,19 @@ async function handleFollowupAnswers(userId, answers) {
     }
 
     // 🎯 再診結果の生成
+    const context = await supabaseMemoryManager.getContext(userId);
     const result = generateFollowupResult(parsedAnswers, context);
 
     // 💾 Supabaseへ保存
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
-    // 🤖 GPTコメント生成（null安全対応）
-    const gptResponse = await sendFollowupResponse({
-      lineId: userId,
-      context,
-      followupAnswers: result.rawData
-    });
-
-    if (!gptResponse) {
-      console.warn("GPT応答がnullでした");
-      return {
-        ...result,
-        gptComment: "診断コメントの生成に失敗しました。時間をおいて再試行してください。",
-        statusMessage: "",
-      };
-    }
-
-    const { gptComment, statusMessage } = gptResponse;
+    // 🤖 GPTコメント生成（userIdで送信）
+    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
     return {
       ...result,
-      gptComment,
-      statusMessage,
+      gptComment: gptComment || "診断コメントの生成に失敗しました。時間をおいて再試行してください。",
+      statusMessage: statusMessage || "",
     };
   } catch (err) {
     console.error("❌ 再診処理中にエラー:", err);
