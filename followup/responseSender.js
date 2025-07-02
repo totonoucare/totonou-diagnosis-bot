@@ -137,7 +137,7 @@ Q5. セルフケアで困ったこと：${followupAnswers?.q5_answer || "未入�
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.7,
+      temperature: 0.9,
     });
 
     const replyText = chatCompletion.choices?.[0]?.message?.content?.trim() || "";
