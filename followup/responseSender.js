@@ -112,7 +112,7 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 `.trim();
 
     const userPrompt = `
-【主訴】${symptom || "未登録"}
+【主訴】${symptomJapanese || "未登録"}
 
 【Myととのうガイド（前回診断ベース）】
 - 習慣：${adviceParsed.habits || "未登録"}
