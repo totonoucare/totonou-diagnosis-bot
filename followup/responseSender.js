@@ -1,6 +1,3 @@
-なるほど！では、変換マップを加えて全文上書きコピペ用コード書いて。
-変換マップの追加以外はいじらないでね。いまの挙動を保ちたい
-
 // followup/responseSender.js
 
 const OpenAI = require("openai");
@@ -30,6 +27,20 @@ function extractAdviceFields(adviceArray) {
   };
 }
 
+// 🗾 英語→日本語 主訴変換マップ
+const symptomMap = {
+  "stomach": "胃腸の調子",
+  "sleep": "睡眠障害・集中力低下",
+  "pain": "肩こり・腰痛・関節痛",
+  "mood": "イライラや不安感",
+  "cold": "冷え・のぼせ・むくみ",
+  "skin": "頭皮や肌トラブル",
+  "pollen": "花粉症や鼻炎",
+  "women": "女性特有のお悩み",
+  "common": "なんとなく不調・不定愁訴",
+};
+
+
 /**
  * フォローアップ回答と過去のcontextからGPTコメントを生成する
  * @param {string} userId - SupabaseのUUID（users.id）
@@ -58,6 +69,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
     // adviceが配列かどうかを判定して整形
     const adviceParsed = Array.isArray(advice) ? extractAdviceFields(advice) : advice || {};
+    const symptomJapanese = symptomMap[symptom] || symptom || "未登録";
 
     const systemPrompt = `
 あなたは東洋医学に基づいたセルフケア支援の専門家です。
@@ -130,7 +142,7 @@ Q5. セルフケアで困ったこと：${followupAnswers?.q5_answer || "未入�
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.7,
+      temperature: 0.9,
     });
 
     const replyText = chatCompletion.choices?.[0]?.message?.content?.trim() || "";
