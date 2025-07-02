@@ -1,3 +1,6 @@
+なるほど！では、変換マップを加えて全文上書きコピペ用コード書いて。
+変換マップの追加以外はいじらないでね。いまの挙動を保ちたい
+
 // followup/responseSender.js
 
 const OpenAI = require("openai");
@@ -27,19 +30,6 @@ function extractAdviceFields(adviceArray) {
   };
 }
 
-// 🗾 英語→日本語 主訴変換マップ
-const symptomMap = {
-  "stomach": "胃腸の調子",
-  "sleep": "睡眠改善・集中力",
-  "pain": "肩こり・腰痛・関節痛",
-  "mood": "イライラや不安感",
-  "cold": "のぼせ・冷え・むくみ",
-  "skin": "頭皮や肌の健康",
-  "pollen": "花粉症や鼻炎",
-  "women": "女性特有のお悩み",
-  "common": "なんとなく不調・不定愁訴",
-};
-
 /**
  * フォローアップ回答と過去のcontextからGPTコメントを生成する
  * @param {string} userId - SupabaseのUUID（users.id）
@@ -48,6 +38,7 @@ const symptomMap = {
  */
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
+    // ✅ userId（UUID）から lineId を取得
     const users = await supabaseMemoryManager.getSubscribedUsers();
     const user = users.find((u) => u.id === userId);
     if (!user || !user.line_id) {
@@ -55,6 +46,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
     }
     const lineId = user.line_id;
 
+    // 🧠 context（初回診断の情報）を取得
     const context = await supabaseMemoryManager.getContext(lineId);
 
     if (!context || !followupAnswers) {
@@ -63,8 +55,9 @@ async function sendFollowupResponse(userId, followupAnswers) {
     }
 
     const { advice, motion, symptom } = context;
+
+    // adviceが配列かどうかを判定して整形
     const adviceParsed = Array.isArray(advice) ? extractAdviceFields(advice) : advice || {};
-    const symptomJapanese = symptomMap[symptom] || symptom || "未登録";
 
     const systemPrompt = `
 あなたは東洋医学に基づいたセルフケア支援の専門家です。
@@ -106,7 +99,7 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 `.trim();
 
     const userPrompt = `
-【主訴】${symptomJapanese}
+【主訴】${symptom || "未登録"}
 
 【Myととのうガイド（前回診断ベース）】
 - 習慣：${adviceParsed.habits || "未登録"}
@@ -118,7 +111,7 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 【初回の動作テスト】${motion || "未登録"}
 
 【今回の定期チェック診断結果】
-Q1. 「${symptomJapanese}」のつらさ：${followupAnswers?.symptom_level || "未入力"}
+Q1. 「${symptom || "未入力"}」のつらさ：${followupAnswers?.symptom_level || "未入力"}
 　　全体の体調：${followupAnswers?.general_level || "未入力"}
 Q2. 睡眠：${followupAnswers?.sleep_level || "未入力"} ／ 食事：${followupAnswers?.meal_level || "未入力"} ／ ストレス：${followupAnswers?.stress_level || "未入力"}
 Q3. セルフケア実施状況：
@@ -137,7 +130,7 @@ Q5. セルフケアで困ったこと：${followupAnswers?.q5_answer || "未入�
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.9,
+      temperature: 0.7,
     });
 
     const replyText = chatCompletion.choices?.[0]?.message?.content?.trim() || "";
