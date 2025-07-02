@@ -1,18 +1,29 @@
 // followup/responseSender.js
+
 const OpenAI = require("openai");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function sendFollowupResponse({ lineId, context, followupAnswers }) {
-  if (!context || !followupAnswers) {
-    console.error("❌ context または followupAnswers が不足しています。");
-    return null;
-  }
+/**
+ * フォローアップ回答と過去のcontextからGPTコメントを生成する
+ * @param {string} userId - SupabaseのUUID（line_idではない）
+ * @param {object} followupAnswers - フォローアップ診断の回答データ
+ * @returns {Promise<{gptComment: string, statusMessage: string} | null>}
+ */
+async function sendFollowupResponse(userId, followupAnswers) {
+  try {
+    // 🧠 context（初回診断内容）をSupabaseから取得
+    const context = await supabaseMemoryManager.getContext(userId);
 
-  const { advice, motion, symptom } = context;
+    if (!context || !followupAnswers) {
+      console.error("❌ context または followupAnswers が不足しています。");
+      return null;
+    }
 
-  const systemPrompt = `
+    const { advice, motion, symptom } = context;
+
+    const systemPrompt = `
 あなたは東洋医学に基づいたセルフケア支援の専門家です。
 
 ユーザーの前回診断で作成された「Myととのうガイド（体質・巡りに基づいたセルフケア提案）」を参考に、
@@ -54,9 +65,9 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 - advice.habits, breathing, stretch, tsubo, kampo はすべてMyととのうガイドの内容です。
 - Q3の「継続中」項目はしっかり称賛し、「未着手」「時々」には励ましと改善ヒントを。
 - Q5が A〜E の場合は、共感と気持ちに寄り添うフォローを加えてください。
-`;
+`.trim();
 
-  const userPrompt = `
+    const userPrompt = `
 【主訴】${symptom}
 
 【Myととのうガイド（前回診断ベース）】
@@ -80,23 +91,22 @@ Q3. セルフケア実施状況：
 　- 漢方薬：${followupAnswers.Q3?.kampo || "未入力"}
 Q4. 動作テストの改善度：${followupAnswers.Q4 || "未入力"}
 Q5. セルフケアで困ったこと：${followupAnswers.Q5 || "未入力"}
-`;
+`.trim();
 
-  try {
     const chatCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: systemPrompt.trim() },
-        { role: "user", content: userPrompt.trim() }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
-      temperature: 0.7
+      temperature: 0.7,
     });
 
     const replyText = chatCompletion.choices?.[0]?.message?.content?.trim() || "";
 
     return {
       gptComment: replyText,
-      statusMessage: "", // 将来的に必要なら挿入
+      statusMessage: "", // 任意で追加できる項目
     };
   } catch (error) {
     console.error("❌ OpenAI 応答エラー:", error);
