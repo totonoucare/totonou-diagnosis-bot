@@ -80,17 +80,17 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 【初回の動作テスト】${motion}
 
 【今回の定期チェック診断結果】
-Q1. 「${symptom}」のつらさ：${followupAnswers.Q1?.symptom || "未入力"}
-　　全体の体調：${followupAnswers.Q1?.general || "未入力"}
-Q2. 睡眠：${followupAnswers.Q2?.sleep || "未入力"} ／ 食事：${followupAnswers.Q2?.meal || "未入力"} ／ ストレス：${followupAnswers.Q2?.stress || "未入力"}
+Q1. 「${symptom}」のつらさ：${followupAnswers?.Q1?.symptom || "未入力"}
+　　全体の体調：${followupAnswers?.Q1?.general || "未入力"}
+Q2. 睡眠：${followupAnswers?.Q2?.sleep || "未入力"} ／ 食事：${followupAnswers?.Q2?.meal || "未入力"} ／ ストレス：${followupAnswers?.Q2?.stress || "未入力"}
 Q3. セルフケア実施状況：
-　- 習慣：${followupAnswers.Q3?.habits || "未入力"}
-　- 呼吸法：${followupAnswers.Q3?.breathing || "未入力"}
-　- ストレッチ：${followupAnswers.Q3?.stretch || "未入力"}
-　- ツボ：${followupAnswers.Q3?.tsubo || "未入力"}
-　- 漢方薬：${followupAnswers.Q3?.kampo || "未入力"}
-Q4. 動作テストの改善度：${followupAnswers.Q4 || "未入力"}
-Q5. セルフケアで困ったこと：${followupAnswers.Q5 || "未入力"}
+　- 習慣：${followupAnswers?.Q3?.habits || "未入力"}
+　- 呼吸法：${followupAnswers?.Q3?.breathing || "未入力"}
+　- ストレッチ：${followupAnswers?.Q3?.stretch || "未入力"}
+　- ツボ：${followupAnswers?.Q3?.tsubo || "未入力"}
+　- 漢方薬：${followupAnswers?.Q3?.kampo || "未入力"}
+Q4. 動作テストの改善度：${followupAnswers?.Q4 || "未入力"}
+Q5. セルフケアで困ったこと：${followupAnswers?.Q5 || "未入力"}
 `.trim();
 
     const chatCompletion = await openai.chat.completions.create({
@@ -106,7 +106,7 @@ Q5. セルフケアで困ったこと：${followupAnswers.Q5 || "未入力"}
 
     return {
       gptComment: replyText,
-      statusMessage: "", // 任意で追加できる項目
+      statusMessage: "",
     };
   } catch (error) {
     console.error("❌ OpenAI 応答エラー:", error);
