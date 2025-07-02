@@ -48,7 +48,7 @@ function replacePlaceholders(template, context = {}) {
     .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
 }
 
-async function handleFollowup(event, client, lineId) {
+async function handleFollowup(event, client, userId) {
   try {
     let message = "";
 
@@ -61,22 +61,22 @@ async function handleFollowup(event, client, lineId) {
     }
 
     if (message === '定期チェック診断') {
-      const userRecord = await supabaseMemoryManager.getUser(lineId);
+      const userRecord = await supabaseMemoryManager.getUser(userId);
       if (!userRecord || !userRecord.subscribed) {
         return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
       }
 
-      userSession[lineId] = { step: 1, answers: {} };
+      userSession[userId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
-      const context = await supabaseMemoryManager.getContext(lineId);
+      const context = await supabaseMemoryManager.getContext(userId);
       return [buildFlexMessage(q1, context)];
     }
 
-    if (!userSession[lineId]) {
+    if (!userSession[userId]) {
       return [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }];
     }
 
-    const session = userSession[lineId];
+    const session = userSession[userId];
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
@@ -101,7 +101,7 @@ async function handleFollowup(event, client, lineId) {
       delete session.partialAnswers;
       session.step++;
 
-      const context = await supabaseMemoryManager.getContext(lineId);
+      const context = await supabaseMemoryManager.getContext(userId);
       const summary = question.options.map(opt => {
         const key = opt.id;
         const label = replacePlaceholders(multiLabels[key] || key, context);
@@ -116,7 +116,7 @@ async function handleFollowup(event, client, lineId) {
       };
       const header = headerMap[question.id] || '✅ 回答を確認しました';
 
-      await client.pushMessage(lineId, {
+      await client.pushMessage(userId, {
         type: 'text',
         text: `✅ ${header} を確認しました！\n\n${summary}`
       });
@@ -140,11 +140,11 @@ async function handleFollowup(event, client, lineId) {
       session.answers[keyName] = value;
       session.step++;
 
-      const context = await supabaseMemoryManager.getContext(lineId);
+      const context = await supabaseMemoryManager.getContext(userId);
 
       if (question.id === "Q4") {
         const label = replacePlaceholders(multiLabels[question.id], context);
-        await client.pushMessage(lineId, {
+        await client.pushMessage(userId, {
           type: 'text',
           text: `✅ ${label} → ${value}`
         });
@@ -161,7 +161,7 @@ async function handleFollowup(event, client, lineId) {
         };
         const readable = q5TextMap[value?.split("=")[1]] || "不明";
         const label = replacePlaceholders(multiLabels[question.id], context);
-        await client.pushMessage(lineId, {
+        await client.pushMessage(userId, {
           type: 'text',
           text: `✅ ${label} → ${readable}`
         });
@@ -170,27 +170,25 @@ async function handleFollowup(event, client, lineId) {
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const context = await supabaseMemoryManager.getContext(lineId);
+      const context = await supabaseMemoryManager.getContext(userId);
       if (!context?.symptom || !context?.type) {
         console.warn("⚠️ context 情報が不完全です");
       }
 
-      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
+      await supabaseMemoryManager.setFollowupAnswers(userId, answers);
 
       const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
-        await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
+        await supabaseMemoryManager.updateUserFields(userId, { motion_level: parseInt(motionLevel) });
       }
 
-      await client.pushMessage(lineId, {
+      await client.pushMessage(userId, {
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
       });
 
-      const uuid = await supabaseMemoryManager.getUserIdFromLineId(lineId);
-      const result = await handleFollowupAnswers(uuid, answers);
-
-      delete userSession[lineId];
+      const result = await handleFollowupAnswers(userId, answers);
+      delete userSession[userId];
 
       return [{
         type: 'text',
@@ -199,7 +197,7 @@ async function handleFollowup(event, client, lineId) {
     }
 
     const nextQuestion = questionSets[session.step - 1];
-    const context = await supabaseMemoryManager.getContext(lineId);
+    const context = await supabaseMemoryManager.getContext(userId);
     return [buildFlexMessage(nextQuestion, context)];
 
   } catch (err) {
@@ -238,5 +236,5 @@ function buildFlexMessage(question, context = {}) {
 }
 
 module.exports = Object.assign(handleFollowup, {
-  hasSession: (lineId) => !!userSession[lineId]
+  hasSession: (userId) => !!userSession[userId]
 });
