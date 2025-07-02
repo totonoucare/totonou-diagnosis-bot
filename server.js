@@ -66,29 +66,46 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
       // ✅ フォローアップ診断（再診スタート or セッション中）
-      if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(userId)) {
-        try {
-          const messages = await handleFollowup(event, client, userId);
+if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(userId)) {
+  try {
+    // lineId = Uxxxxxxxx
+    const lineId = event.source?.userId;
 
-          // 👇診断中かどうかを確認して、誘導文の出し分け
-          if (Array.isArray(messages) && messages.length > 0) {
-            await client.replyMessage(event.replyToken, messages);
-          } else if (!handleFollowup.hasSession(userId)) {
-            await client.replyMessage(event.replyToken, {
-              type: "text",
-              text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
-            });
-          }
-        } catch (err) {
-          console.error("❌ handleFollowup エラー:", err);
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: "再診処理中にエラーが発生しました。もう一度お試しください。",
-          });
-        }
-        return;
-      }
+    // UUIDを取得
+    const { data: userRow, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("line_id", lineId)
+      .single();
 
+    if (error || !userRow) {
+      console.error("❌ ユーザー情報が見つかりません:", error || "not found");
+      await client.replyMessage(event.replyToken, {
+        type: "text",
+        text: "ユーザー情報の取得に失敗しました。再度お試しください。",
+      });
+      return;
+    }
+
+    const messages = await handleFollowup(event, client, userRow.id); // ← UUID渡す
+
+    if (Array.isArray(messages) && messages.length > 0) {
+      await client.replyMessage(event.replyToken, messages);
+    } else if (!handleFollowup.hasSession(userRow.id)) {
+      await client.replyMessage(event.replyToken, {
+        type: "text",
+        text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
+      });
+    }
+  } catch (err) {
+    console.error("❌ handleFollowup エラー:", err);
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: "再診処理中にエラーが発生しました。もう一度お試しください。",
+    });
+  }
+  return;
+}
       // ✅ 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(userId);
