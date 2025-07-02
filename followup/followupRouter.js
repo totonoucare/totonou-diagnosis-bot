@@ -6,22 +6,22 @@ const { sendFollowupResponse } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
- * @param {string} userId - ユーザーID（＝SupabaseのUUID）
+ * @param {string} userId - SupabaseのUUID（users.id）
  * @param {Array|string|object} answers - ユーザーの回答（形式に応じて処理分岐）
  * @returns {Promise<Object|null>} - GPTコメント付きの再診結果 or null（未登録者）
  */
 async function handleFollowupAnswers(userId, answers) {
   try {
-    // 🔍 Supabaseから該当ユーザー情報を取得
-    const user = await supabaseMemoryManager.getUser(userId);
-
-    if (!user || !user.subscribed) {
-      console.log(`⛔️ ユーザー ${userId} はサブスク未登録のため再診不可`);
-      return null;
+    // 🔁 lineId 取得
+    const allUsers = await supabaseMemoryManager.getSubscribedUsers();
+    const userEntry = allUsers.find(u => u.id === userId);
+    if (!userEntry || !userEntry.line_id) {
+      throw new Error(`❌ userId に対応する line_id が見つかりません: ${userId}`);
     }
+    const lineId = userEntry.line_id;
 
-    // ✅ context（初回診断結果）を取得
-    const context = await supabaseMemoryManager.getContext(userId);
+    // 📡 context取得（lineId使用）
+    const context = await supabaseMemoryManager.getContext(lineId);
 
     // 🧩 answers の形式チェック＆解析
     let parsedAnswers = {};
@@ -67,35 +67,13 @@ async function handleFollowupAnswers(userId, answers) {
     }
 
     // 🎯 再診結果の生成
-const result = generateFollowupResult(parsedAnswers, context);
+    const result = generateFollowupResult(parsedAnswers, context);
 
-// 💾 Supabaseへ保存
-await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
+    // 💾 Supabaseへ保存（lineId使用）
+    await supabaseMemoryManager.setFollowupAnswers(lineId, parsedAnswers);
 
-// ✅ sendFollowupResponseに渡すためにネスト構造に変換
-const nestedAnswers = {
-  Q1: {
-    symptom: parsedAnswers.symptom_level,
-    general: parsedAnswers.general_level,
-  },
-  Q2: {
-    sleep: parsedAnswers.sleep_level,
-    meal: parsedAnswers.meal_level,
-    stress: parsedAnswers.stress_level,
-  },
-  Q3: {
-    habits: parsedAnswers.habits,
-    breathing: parsedAnswers.breathing,
-    stretch: parsedAnswers.stretch,
-    tsubo: parsedAnswers.tsubo,
-    kampo: parsedAnswers.kampo,
-  },
-  Q4: parsedAnswers.motion_level,
-  Q5: parsedAnswers.q5_answer
-};
-
-// 🤖 GPTコメント生成
-const { gptComment, statusMessage } = await sendFollowupResponse(userId, nestedAnswers);
+    // 🤖 GPTコメント生成（userIdはUUIDのまま使用OK）
+    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
     return {
       ...result,
