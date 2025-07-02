@@ -1,4 +1,3 @@
-全文上書きコード書いて
 // followup/index.js
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
