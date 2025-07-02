@@ -6,22 +6,17 @@ const { sendFollowupResponse } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
- * @param {string} userId - SupabaseのUUID（users.id）
+ * @param {string} lineId - LINEユーザーの一意なID（supabaseMemoryManagerが要求するID）
  * @param {Array|string|object} answers - ユーザーの回答（形式に応じて処理分岐）
- * @returns {Promise<Object|null>} - GPTコメント付きの再診結果 or null（未登録者）
+ * @returns {Promise<Object>} - GPTコメント付きの再診結果
  */
-async function handleFollowupAnswers(userId, answers) {
+async function handleFollowupAnswers(lineId, answers) {
   try {
-    // 🔁 lineId 取得
-    const allUsers = await supabaseMemoryManager.getSubscribedUsers();
-    const userEntry = allUsers.find(u => u.id === userId);
-    if (!userEntry || !userEntry.line_id) {
-      throw new Error(`❌ userId に対応する line_id が見つかりません: ${userId}`);
-    }
-    const lineId = userEntry.line_id;
+    const cleanLineId = lineId.trim();
 
     // 📡 context取得（lineId使用）
-    const context = await supabaseMemoryManager.getContext(lineId);
+    const context = await supabaseMemoryManager.getContext(cleanLineId);
+    if (!context) throw new Error(`❌ context取得失敗: lineId = ${cleanLineId}`);
 
     // 🧩 answers の形式チェック＆解析
     let parsedAnswers = {};
@@ -34,18 +29,16 @@ async function handleFollowupAnswers(userId, answers) {
               parsedAnswers.motion_level = parseInt(value);
               break;
             case "Q5":
-              if (value.startsWith("q5_answer=")) {
-                parsedAnswers.q5_answer = value.split("=")[1];
-              } else {
-                parsedAnswers.q5_answer = value;
-              }
+              parsedAnswers.q5_answer = value.startsWith("q5_answer=")
+                ? value.split("=")[1]
+                : value;
               break;
             case "symptom":
             case "general":
             case "sleep":
             case "meal":
             case "stress":
-              parsedAnswers[key + "_level"] = parseInt(value);
+              parsedAnswers[key] = parseInt(value);
               break;
             case "habits":
             case "breathing":
@@ -70,9 +63,15 @@ async function handleFollowupAnswers(userId, answers) {
     const result = generateFollowupResult(parsedAnswers, context);
 
     // 💾 Supabaseへ保存（lineId使用）
-    await supabaseMemoryManager.setFollowupAnswers(lineId, parsedAnswers);
+    await supabaseMemoryManager.setFollowupAnswers(cleanLineId, parsedAnswers);
 
-    // 🤖 GPTコメント生成（userIdはUUIDのまま使用OK）
+    // 🤖 GPTコメント生成（userIdの取得は内部で行う）
+    const subscribedUsers = await supabaseMemoryManager.getSubscribedUsers();
+    const matchedUser = subscribedUsers.find((u) => u.line_id === cleanLineId);
+    const userId = matchedUser?.id;
+
+    if (!userId) throw new Error(`❌ userIdが取得できません: lineId=${cleanLineId}`);
+
     const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
     return {
