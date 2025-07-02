@@ -7,14 +7,22 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
  * フォローアップ回答と過去のcontextからGPTコメントを生成する
- * @param {string} userId - SupabaseのUUID（line_idではない）
+ * @param {string} userId - SupabaseのUUID（users.id）
  * @param {object} followupAnswers - フォローアップ診断の回答データ
  * @returns {Promise<{gptComment: string, statusMessage: string} | null>}
  */
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
-    // 🧠 context（初回診断内容）をSupabaseから取得
-    const context = await supabaseMemoryManager.getContext(userId);
+    // ✅ userId（UUID）から lineId を取得
+    const userRecord = await supabaseMemoryManager.getSubscribedUsers();
+    const user = userRecord.find(u => u.id === userId);
+    if (!user || !user.line_id) {
+      throw new Error(`❌ userId: ${userId} に対応する line_id が見つかりません`);
+    }
+    const lineId = user.line_id;
+
+    // 🧠 context（初回診断内容）を Supabase から取得（lineId ベース）
+    const context = await supabaseMemoryManager.getContext(lineId);
 
     if (!context || !followupAnswers) {
       console.error("❌ context または followupAnswers が不足しています。");
@@ -60,11 +68,6 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 - 立って前屈する → 腎経／膀胱経（体背面ライン）
 - 腰を左右にねじるor側屈 → 肝経／胆経（体側ライン）
 - 上体をそらす → 脾経／胃経（腹部・太もも前面ライン）
-
-注意：
-- advice.habits, breathing, stretch, tsubo, kampo はすべてMyととのうガイドの内容です。
-- Q3の「継続中」項目はしっかり称賛し、「未着手」「時々」には励ましと改善ヒントを。
-- Q5が A〜E の場合は、共感と気持ちに寄り添うフォローを加えてください。
 `.trim();
 
     const userPrompt = `
