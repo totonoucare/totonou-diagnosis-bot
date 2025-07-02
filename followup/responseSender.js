@@ -3,7 +3,7 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function sendFollowupComment({ lineId, context, followupAnswers }) {
+async function sendFollowupResponse({ lineId, context, followupAnswers }) {
   if (!context || !followupAnswers) {
     console.error("❌ context または followupAnswers が不足しています。");
     return null;
@@ -99,4 +99,4 @@ Q5. セルフケアで困ったこと：${followupAnswers.Q5}
   }
 }
 
-module.exports = { sendFollowupComment };
+module.exports = { sendFollowupResponse };
