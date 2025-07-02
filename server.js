@@ -20,7 +20,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
   const results = await Promise.all(
     events.map(async (event) => {
-      const lineId = event.source?.userId?.trim();
+      const lineId = event.source?.userId;
       let userMessage = null;
 
       if (event.type === "message" && event.message.type === "text") {
@@ -68,7 +68,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       // ✅ フォローアップ診断（再診スタート or セッション中）
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
-          const messages = await handleFollowup(event, client, lineId); // ✅ UUIDでなく lineId を渡す
+          const messages = await handleFollowup(event, client, lineId); // ← UUIDではなくlineIdを渡す
 
           if (Array.isArray(messages) && messages.length > 0) {
             await client.replyMessage(event.replyToken, messages);
