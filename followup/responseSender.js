@@ -124,9 +124,9 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 【初回の動作テスト】${motion || "未登録"}
 
 【今回の定期チェック診断結果】
-Q1. 「${symptom || "未入力"}」のつらさ：${followupAnswers?.symptom_level || "未入力"}
+Q1. 「${symptomJapanese}」のつらさ：${followupAnswers?.symptom_level || "未入力"}
 　　全体の体調：${followupAnswers?.general_level || "未入力"}
-Q2. 睡眠：${followupAnswers?.sleep_level || "未入力"} ／ 食事：${followupAnswers?.meal_level || "未入力"} ／ ストレス：${followupAnswers?.stress_level || "未入力"}
+Q2. 睡眠：${followupAnswers?.sleep || "未入力"} ／ 食事：${followupAnswers?.meal || "未入力"} ／ ストレス：${followupAnswers?.stress || "未入力"}
 Q3. セルフケア実施状況：
 　- 習慣：${followupAnswers?.habits || "未入力"}
 　- 呼吸法：${followupAnswers?.breathing || "未入力"}
