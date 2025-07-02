@@ -14,14 +14,14 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
     // ✅ userId（UUID）から lineId を取得
-    const userRecord = await supabaseMemoryManager.getSubscribedUsers();
-    const user = userRecord.find(u => u.id === userId);
+    const users = await supabaseMemoryManager.getSubscribedUsers();
+    const user = users.find((u) => u.id === userId);
     if (!user || !user.line_id) {
       throw new Error(`❌ userId: ${userId} に対応する line_id が見つかりません`);
     }
     const lineId = user.line_id;
 
-    // 🧠 context（初回診断内容）を Supabase から取得（lineId ベース）
+    // 🧠 context（初回診断の情報）を取得
     const context = await supabaseMemoryManager.getContext(lineId);
 
     if (!context || !followupAnswers) {
@@ -71,7 +71,7 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 `.trim();
 
     const userPrompt = `
-【主訴】${symptom}
+【主訴】${symptom || "未登録"}
 
 【Myととのうガイド（前回診断ベース）】
 - 習慣：${advice?.habits || "未登録"}
@@ -80,20 +80,20 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 - ツボケア：${advice?.tsubo || "未登録"}
 - 漢方薬：${advice?.kampo || "未登録"}
 
-【初回の動作テスト】${motion}
+【初回の動作テスト】${motion || "未登録"}
 
 【今回の定期チェック診断結果】
-Q1. 「${symptom}」のつらさ：${followupAnswers?.Q1?.symptom || "未入力"}
-　　全体の体調：${followupAnswers?.Q1?.general || "未入力"}
-Q2. 睡眠：${followupAnswers?.Q2?.sleep || "未入力"} ／ 食事：${followupAnswers?.Q2?.meal || "未入力"} ／ ストレス：${followupAnswers?.Q2?.stress || "未入力"}
+Q1. 「${symptom || "未入力"}」のつらさ：${followupAnswers?.symptom_level || "未入力"}
+　　全体の体調：${followupAnswers?.general_level || "未入力"}
+Q2. 睡眠：${followupAnswers?.sleep_level || "未入力"} ／ 食事：${followupAnswers?.meal_level || "未入力"} ／ ストレス：${followupAnswers?.stress_level || "未入力"}
 Q3. セルフケア実施状況：
-　- 習慣：${followupAnswers?.Q3?.habits || "未入力"}
-　- 呼吸法：${followupAnswers?.Q3?.breathing || "未入力"}
-　- ストレッチ：${followupAnswers?.Q3?.stretch || "未入力"}
-　- ツボ：${followupAnswers?.Q3?.tsubo || "未入力"}
-　- 漢方薬：${followupAnswers?.Q3?.kampo || "未入力"}
-Q4. 動作テストの改善度：${followupAnswers?.Q4 || "未入力"}
-Q5. セルフケアで困ったこと：${followupAnswers?.Q5 || "未入力"}
+　- 習慣：${followupAnswers?.habits || "未入力"}
+　- 呼吸法：${followupAnswers?.breathing || "未入力"}
+　- ストレッチ：${followupAnswers?.stretch || "未入力"}
+　- ツボ：${followupAnswers?.tsubo || "未入力"}
+　- 漢方薬：${followupAnswers?.kampo || "未入力"}
+Q4. 動作テストの改善度：${followupAnswers?.motion_level || "未入力"}
+Q5. セルフケアで困ったこと：${followupAnswers?.q5_answer || "未入力"}
 `.trim();
 
     const chatCompletion = await openai.chat.completions.create({
@@ -113,7 +113,10 @@ Q5. セルフケアで困ったこと：${followupAnswers?.Q5 || "未入力"}
     };
   } catch (error) {
     console.error("❌ OpenAI 応答エラー:", error);
-    return null;
+    return {
+      gptComment: "GPT応答時にエラーが発生しました。時間を置いて再度お試しください。",
+      statusMessage: "",
+    };
   }
 }
 
