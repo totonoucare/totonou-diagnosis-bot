@@ -20,6 +20,9 @@ async function handleFollowupAnswers(userId, answers) {
       return null;
     }
 
+    // ✅ context（初回診断結果）を取得
+    const context = await supabaseMemoryManager.getContext(userId);
+
     // 🧩 answers の形式チェック＆解析
     let parsedAnswers = {};
     if (Array.isArray(answers)) {
@@ -64,7 +67,6 @@ async function handleFollowupAnswers(userId, answers) {
     }
 
     // 🎯 再診結果の生成
-    const context = await supabaseMemoryManager.getContext(userId);
     const result = generateFollowupResult(parsedAnswers, context);
 
     // 💾 Supabaseへ保存
