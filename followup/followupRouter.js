@@ -35,9 +35,9 @@ async function handleFollowupAnswers(userId, answers) {
               break;
             case "Q5":
               if (value.startsWith("q5_answer=")) {
-                parsedAnswers.q5_answer = value.split("=")[1];  // ← "A" だけ取り出す
+                parsedAnswers.q5_answer = value.split("=")[1];
               } else {
-                parsedAnswers.q5_answer = value;  // ← 念のため
+                parsedAnswers.q5_answer = value;
               }
               break;
             case "symptom":
@@ -72,8 +72,23 @@ async function handleFollowupAnswers(userId, answers) {
     // 💾 Supabaseへ保存
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
-    // 🤖 GPTコメント生成
-    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
+    // 🤖 GPTコメント生成（null安全対応）
+    const gptResponse = await sendFollowupResponse({
+      lineId: userId,
+      context,
+      followupAnswers: result.rawData
+    });
+
+    if (!gptResponse) {
+      console.warn("GPT応答がnullでした");
+      return {
+        ...result,
+        gptComment: "診断コメントの生成に失敗しました。時間をおいて再試行してください。",
+        statusMessage: "",
+      };
+    }
+
+    const { gptComment, statusMessage } = gptResponse;
 
     return {
       ...result,
