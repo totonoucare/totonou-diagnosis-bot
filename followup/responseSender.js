@@ -6,6 +6,23 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
+ * GPTに渡すためにadviceを整形する
+ */
+function formatAdvice(advice) {
+  if (!advice) return "未登録";
+
+  return [
+    advice.habits ? `【${advice.habits.header || "習慣"}】\n${advice.habits.body}` : null,
+    advice.breathing ? `【${advice.breathing.header || "呼吸法"}】\n${advice.breathing.body}` : null,
+    advice.stretch ? `【${advice.stretch.header || "ストレッチ"}】\n${advice.stretch.body}` : null,
+    advice.tsubo ? `【${advice.tsubo.header || "ツボケア"}】\n${advice.tsubo.body}` : null,
+    advice.kampo ? `【${advice.kampo.header || "漢方薬"}】\n${advice.kampo.body}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
  * フォローアップ回答と過去のcontextからGPTコメントを生成する
  * @param {string} userId - SupabaseのUUID（users.id）
  * @param {object} followupAnswers - フォローアップ診断の回答データ
@@ -30,6 +47,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
     }
 
     const { advice, motion, symptom } = context;
+    const adviceText = formatAdvice(advice);
 
     const systemPrompt = `
 あなたは東洋医学に基づいたセルフケア支援の専門家です。
@@ -74,11 +92,9 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 【主訴】${symptom || "未登録"}
 
 【Myととのうガイド（前回診断ベース）】
-- 習慣：${advice?.habits || "未登録"}
-- 呼吸法：${advice?.breathing || "未登録"}
-- ストレッチ：${advice?.stretch || "未登録"}
-- ツボケア：${advice?.tsubo || "未登録"}
-- 漢方薬：${advice?.kampo || "未登録"}
+以下のアドバイス内容をできるだけ引用・活用して、今回の結果と比較・評価してください。
+
+${adviceText || "未登録"}
 
 【初回の動作テスト】${motion || "未登録"}
 
