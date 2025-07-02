@@ -94,13 +94,8 @@ async function handleFollowup(event, client, userId) {
       if (!session.partialAnswers) session.partialAnswers = {};
       session.partialAnswers[key] = answer;
 
-      const remaining = question.options
-        .map(sub => sub.id)
-        .filter(k => !(k in session.partialAnswers));
-
-      if (remaining.length > 0) {
-        return [];
-      }
+      const remaining = question.options.map(sub => sub.id).filter(k => !(k in session.partialAnswers));
+      if (remaining.length > 0) return [];
 
       Object.assign(session.answers, session.partialAnswers);
       delete session.partialAnswers;
@@ -114,13 +109,12 @@ async function handleFollowup(event, client, userId) {
         return `・${label} → ${value}`;
       }).join('\n');
 
-      let header = '';
-      switch (question.id) {
-        case 'Q1': header = '📝 症状と体調の変化'; break;
-        case 'Q2': header = '🛌 生活リズムの整い具合'; break;
-        case 'Q3': header = '🧘 セルフケアの実施状況'; break;
-        default: header = '✅ 回答を確認しました'; break;
-      }
+      const headerMap = {
+        Q1: '📝 症状と体調の変化',
+        Q2: '🛌 生活リズムの整い具合',
+        Q3: '🧘 セルフケアの実施状況'
+      };
+      const header = headerMap[question.id] || '✅ 回答を確認しました';
 
       await client.pushMessage(userId, {
         type: 'text',
@@ -133,14 +127,11 @@ async function handleFollowup(event, client, userId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      const keyName = question.id === "Q5"
-        ? "q5_answer"
-        : question.id === "Q4"
-        ? "motion_level"
-        : question.id;
+      const keyName = question.id === "Q5" ? "q5_answer" :
+                      question.id === "Q4" ? "motion_level" :
+                      question.id;
 
       let value = message;
-
       if (question.id === "Q4" && value.startsWith("Q4=")) {
         const num = parseInt(value.split("=")[1]);
         value = isNaN(num) ? null : num;
@@ -149,9 +140,10 @@ async function handleFollowup(event, client, userId) {
       session.answers[keyName] = value;
       session.step++;
 
+      const context = await supabaseMemoryManager.getContext(userId);
+
       if (question.id === "Q4") {
-        const context = await supabaseMemoryManager.getContext(userId);
-        const label = replacePlaceholders(multiLabels[question.id] || question.id, context);
+        const label = replacePlaceholders(multiLabels[question.id], context);
         await client.pushMessage(userId, {
           type: 'text',
           text: `✅ ${label} → ${value}`
@@ -168,8 +160,7 @@ async function handleFollowup(event, client, userId) {
           F: "特になし"
         };
         const readable = q5TextMap[value?.split("=")[1]] || "不明";
-        const context = await supabaseMemoryManager.getContext(userId);
-        const label = replacePlaceholders(multiLabels[question.id] || question.id, context);
+        const label = replacePlaceholders(multiLabels[question.id], context);
         await client.pushMessage(userId, {
           type: 'text',
           text: `✅ ${label} → ${readable}`
@@ -180,7 +171,6 @@ async function handleFollowup(event, client, userId) {
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(userId);
-
       if (!context?.symptom || !context?.type) {
         console.warn("⚠️ context 情報が不完全です");
       }
@@ -189,14 +179,12 @@ async function handleFollowup(event, client, userId) {
 
       const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
-        await supabaseMemoryManager.updateUserFields(userId, {
-          motion_level: parseInt(motionLevel)
-        });
+        await supabaseMemoryManager.updateUserFields(userId, { motion_level: parseInt(motionLevel) });
       }
 
       await client.pushMessage(userId, {
         type: 'text',
-        text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。',
+        text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
       });
 
       const result = await handleFollowupAnswers(userId, answers);
@@ -204,7 +192,7 @@ async function handleFollowup(event, client, userId) {
 
       return [{
         type: 'text',
-        text: '📋【今回の定期チェック診断結果】\n' + result.gptComment
+        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
       }];
     }
 
