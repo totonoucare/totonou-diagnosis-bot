@@ -2,7 +2,7 @@
 
 const generateFollowupResult = require("./resultGenerator");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
-const { sendFollowupComment } = require("./responseSender");
+const { sendFollowupResponse } = require("./responseSender");
 
 /**
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
@@ -73,7 +73,7 @@ async function handleFollowupAnswers(userId, answers) {
     await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
     // 🤖 GPTコメント生成
-    const { gptComment, statusMessage } = await sendFollowupComment(userId, result.rawData);
+    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
 
     return {
       ...result,
