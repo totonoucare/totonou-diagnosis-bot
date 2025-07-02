@@ -6,20 +6,25 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
- * GPTに渡すためにadviceを整形する
+ * advice 配列から各項目を抽出してオブジェクトに変換する
+ * @param {Array} adviceArray - contextsテーブルのadvice配列
+ * @returns {Object} - { habits, breathing, stretch, tsubo, kampo }
  */
-function formatAdvice(advice) {
-  if (!advice) return "未登録";
+function extractAdviceFields(adviceArray) {
+  if (!Array.isArray(adviceArray)) return {};
 
-  return [
-    advice.habits ? `【${advice.habits.header || "習慣"}】\n${advice.habits.body}` : null,
-    advice.breathing ? `【${advice.breathing.header || "呼吸法"}】\n${advice.breathing.body}` : null,
-    advice.stretch ? `【${advice.stretch.header || "ストレッチ"}】\n${advice.stretch.body}` : null,
-    advice.tsubo ? `【${advice.tsubo.header || "ツボケア"}】\n${advice.tsubo.body}` : null,
-    advice.kampo ? `【${advice.kampo.header || "漢方薬"}】\n${advice.kampo.body}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const getByHeader = (keyword) => {
+    const item = adviceArray.find(a => a.header.includes(keyword));
+    return item ? item.body : "未登録";
+  };
+
+  return {
+    habits: getByHeader("体質改善習慣"),
+    breathing: getByHeader("呼吸法"),
+    stretch: getByHeader("ストレッチ"),
+    tsubo: getByHeader("ツボ"),
+    kampo: getByHeader("漢方薬"),
+  };
 }
 
 /**
@@ -47,7 +52,9 @@ async function sendFollowupResponse(userId, followupAnswers) {
     }
 
     const { advice, motion, symptom } = context;
-    const adviceText = formatAdvice(advice);
+
+    // adviceが配列かどうかを判定して整形
+    const adviceParsed = Array.isArray(advice) ? extractAdviceFields(advice) : advice || {};
 
     const systemPrompt = `
 あなたは東洋医学に基づいたセルフケア支援の専門家です。
@@ -92,9 +99,11 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 【主訴】${symptom || "未登録"}
 
 【Myととのうガイド（前回診断ベース）】
-以下のアドバイス内容をできるだけ引用・活用して、今回の結果と比較・評価してください。
-
-${adviceText || "未登録"}
+- 習慣：${adviceParsed.habits || "未登録"}
+- 呼吸法：${adviceParsed.breathing || "未登録"}
+- ストレッチ：${adviceParsed.stretch || "未登録"}
+- ツボケア：${adviceParsed.tsubo || "未登録"}
+- 漢方薬：${adviceParsed.kampo || "未登録"}
 
 【初回の動作テスト】${motion || "未登録"}
 
