@@ -27,6 +27,19 @@ function extractAdviceFields(adviceArray) {
   };
 }
 
+// 🗾 英語→日本語 主訴変換マップ
+const symptomMap = {
+  "stomach": "胃腸の調子",
+  "sleep": "睡眠改善・集中力",
+  "pain": "肩こり・腰痛・関節痛",
+  "mood": "イライラや不安感",
+  "cold": "体温バランス・むくみ",
+  "skin": "頭皮や肌の健康",
+  "pollen": "花粉症や鼻炎",
+  "women": "女性特有のお悩み",
+  "common": "なんとなく不調・不定愁訴",
+};
+
 /**
  * フォローアップ回答と過去のcontextからGPTコメントを生成する
  * @param {string} userId - SupabaseのUUID（users.id）
@@ -55,6 +68,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
     // adviceが配列かどうかを判定して整形
     const adviceParsed = Array.isArray(advice) ? extractAdviceFields(advice) : advice || {};
+    const symptomJapanese = symptomMap[symptom] || symptom || "未登録";
 
     const systemPrompt = `
 あなたは東洋医学に基づいたセルフケア支援の専門家です。
