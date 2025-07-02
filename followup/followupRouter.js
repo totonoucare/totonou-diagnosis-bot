@@ -67,13 +67,35 @@ async function handleFollowupAnswers(userId, answers) {
     }
 
     // 🎯 再診結果の生成
-    const result = generateFollowupResult(parsedAnswers, context);
+const result = generateFollowupResult(parsedAnswers, context);
 
-    // 💾 Supabaseへ保存
-    await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
+// 💾 Supabaseへ保存
+await supabaseMemoryManager.setFollowupAnswers(userId, parsedAnswers);
 
-    // 🤖 GPTコメント生成（userIdで送信）
-    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
+// ✅ sendFollowupResponseに渡すためにネスト構造に変換
+const nestedAnswers = {
+  Q1: {
+    symptom: parsedAnswers.symptom_level,
+    general: parsedAnswers.general_level,
+  },
+  Q2: {
+    sleep: parsedAnswers.sleep_level,
+    meal: parsedAnswers.meal_level,
+    stress: parsedAnswers.stress_level,
+  },
+  Q3: {
+    habits: parsedAnswers.habits,
+    breathing: parsedAnswers.breathing,
+    stretch: parsedAnswers.stretch,
+    tsubo: parsedAnswers.tsubo,
+    kampo: parsedAnswers.kampo,
+  },
+  Q4: parsedAnswers.motion_level,
+  Q5: parsedAnswers.q5_answer
+};
+
+// 🤖 GPTコメント生成
+const { gptComment, statusMessage } = await sendFollowupResponse(userId, nestedAnswers);
 
     return {
       ...result,
