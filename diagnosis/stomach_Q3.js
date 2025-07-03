@@ -4,7 +4,7 @@ module.exports = async function stomach_Q3() {
   const flex = MessageBuilder({
     altText: '【質問3】お腹の働きについて',
     header: '【Q3】お腹の働きについて',
-    body: `Q3：最近のお身体の状態で最もよく当てはまる傾向は\n\nA：口が渇く／唇が荒れる／便が硬い\nB：食欲はあまりない／軟便・下痢ぎみ\nC：どちらも特にない`,
+    body: `Q3：次のうち、気になる状態を多く（または強く）含む選択肢はどれですか？\n\nA：目が疲れやすい／肌や髪が乾燥しがち／不安になりやすい\nB：階段や坂で息が切れる／声が小さい・張れない\nC：特に気になるものはない`,
     buttons: [
       { label: 'A', data: 'stomach_Q3_A' },
       { label: 'B', data: 'stomach_Q3_B' },
