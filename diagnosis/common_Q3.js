@@ -4,7 +4,7 @@ module.exports = async function common_Q3() {
   const flex = MessageBuilder({
     altText: '【質問3】体力やお身体の状態について',
     header: '【Q3】体力やお身体の状態について',
-    body: `Q3：次のうち、当てはまる状態をより多く（または強く）含む選択肢はどれですか？\n\nA：肌・髪が乾燥／夢が多い／めまい・立ちくらみ\nB：疲れやすい／息切れしやすい／声に力がない\nC：どれもあまり感じない`,
+    body: `Q3：次のうち、気になる状態を多く（または強く）含む選択肢はどれですか？\n\nA：顔色が悪い／髪や肌の乾燥／不安感がある\nB：疲れやすい／息切れしやすい／話すとすぐ疲れる\nC：どれも気になるほどではない`,
     buttons: [
       { label: 'A', data: 'common_Q3_A' },
       { label: 'B', data: 'common_Q3_B' },
