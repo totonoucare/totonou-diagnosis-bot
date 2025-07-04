@@ -243,7 +243,7 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
   }
 }
 
-function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計画') {
+function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうガイド') {
   const bubbles = cards.map((card) => ({
     type: 'bubble',
     size: 'mega',
