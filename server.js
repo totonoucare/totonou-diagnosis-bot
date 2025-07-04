@@ -114,8 +114,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       // ❓どの条件にも該当しない入力
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: `ありがとうございます😊
-スタンダード会員様へのご相談には24時間以内にお返事しますね！しばらくお待ちください🙇`,
+        text: `メッセージありがとうございます😊
+スタンダード会員様へのご相談には24時間以内にお返事しますね！
+お問い合わせやエラー報告にも迅速にお返事・ご対応いたします。
+しばらくお待ちください。`,
       });
     })
   );
