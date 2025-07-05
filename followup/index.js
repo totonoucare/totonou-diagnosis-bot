@@ -4,8 +4,6 @@ const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 const symptomLabels = {
   stomach: '胃腸の調子',
   sleep: '睡眠改善・集中力',
@@ -103,26 +101,6 @@ async function handleFollowup(event, client, lineId) {
       delete session.partialAnswers;
       session.step++;
 
-      const context = await supabaseMemoryManager.getContext(lineId);
-      const summary = question.options.map(opt => {
-        const key = opt.id;
-        const label = replacePlaceholders(multiLabels[key] || key, context);
-        const value = session.answers[key];
-        return `・${label} → ${value}`;
-      }).join('\n');
-
-      const headerMap = {
-        Q1: '📝 症状と体調の変化',
-        Q2: '🛌 生活リズムの整い具合',
-        Q3: '🧘 セルフケアの実施状況'
-      };
-      const header = headerMap[question.id] || '✅ 回答を確認しました';
-
-      await client.pushMessage(lineId, {
-        type: 'text',
-        text: `✅ ${header} を確認しました！\n\n${summary}`
-      });
-
     } else {
       const validDataValues = question.options.map(opt => opt.data);
       if (!validDataValues.includes(message)) {
@@ -141,33 +119,6 @@ async function handleFollowup(event, client, lineId) {
 
       session.answers[keyName] = value;
       session.step++;
-
-      const context = await supabaseMemoryManager.getContext(lineId);
-
-      if (question.id === "Q4") {
-        const label = replacePlaceholders(multiLabels[question.id], context);
-        await client.pushMessage(lineId, {
-          type: 'text',
-          text: `✅ ${label} → ${value}`
-        });
-      }
-
-      if (question.id === "Q5") {
-        const q5TextMap = {
-          A: "やり方が分からなかった",
-          B: "効果を感じなかった",
-          C: "時間が取れなかった",
-          D: "体に合わない気がした",
-          E: "モチベーションが続かなかった",
-          F: "特になし"
-        };
-        const readable = q5TextMap[value?.split("=")[1]] || "不明";
-        const label = replacePlaceholders(multiLabels[question.id], context);
-        await client.pushMessage(lineId, {
-          type: 'text',
-          text: `✅ ${label} → ${readable}`
-        });
-      }
     }
 
     if (session.step > questionSets.length) {
@@ -200,14 +151,11 @@ async function handleFollowup(event, client, lineId) {
 
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
-
-    // Q2 の直前にだけ sleep を入れる
-    if (session.step === 2) {
-      console.log('⏱️ Q2送信前にsleep(1200)');
-      await sleep(1200);
-    }
-
-    return [buildFlexMessage(nextQuestion, context)];
+    return [{
+      type: 'flex',
+      altText: replacePlaceholders(nextQuestion.header, context),
+      contents: buildFlexMessage(nextQuestion, context).contents
+    }];
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
