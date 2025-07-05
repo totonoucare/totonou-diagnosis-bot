@@ -116,10 +116,11 @@ async function handleFollowup(event, client, lineId) {
       };
       const header = headerMap[question.id] || '✅ 回答を確認しました';
 
-      return [{
+      await client.pushMessage(lineId, {
         type: 'text',
         text: `✅ ${header} を確認しました！\n\n${summary}`
-      }];
+      });
+
     } else {
       const validDataValues = question.options.map(opt => opt.data);
       if (!validDataValues.includes(message)) {
@@ -143,10 +144,10 @@ async function handleFollowup(event, client, lineId) {
 
       if (question.id === "Q4") {
         const label = replacePlaceholders(multiLabels[question.id], context);
-        return [{
+        await client.pushMessage(lineId, {
           type: 'text',
           text: `✅ ${label} → ${value}`
-        }];
+        });
       }
 
       if (question.id === "Q5") {
@@ -160,10 +161,10 @@ async function handleFollowup(event, client, lineId) {
         };
         const readable = q5TextMap[value?.split("=")[1]] || "不明";
         const label = replacePlaceholders(multiLabels[question.id], context);
-        return [{
+        await client.pushMessage(lineId, {
           type: 'text',
           text: `✅ ${label} → ${readable}`
-        }];
+        });
       }
     }
 
@@ -181,13 +182,18 @@ async function handleFollowup(event, client, lineId) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      return [
-        { type: 'text', text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。' },
-        {
-          type: 'text',
-          text: `📋【今回の定期チェック診断結果】\n${(await handleFollowupAnswers(lineId, answers))?.gptComment || "（解析コメント取得に失敗しました）"}`
-        }
-      ];
+      await client.pushMessage(lineId, {
+        type: 'text',
+        text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
+      });
+
+      const result = await handleFollowupAnswers(lineId, answers);
+      delete userSession[lineId];
+
+      return [{
+        type: 'text',
+        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+      }];
     }
 
     const nextQuestion = questionSets[session.step - 1];
