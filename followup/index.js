@@ -70,7 +70,9 @@ async function handleFollowup(event, client, lineId) {
       userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
       const context = await supabaseMemoryManager.getContext(lineId);
-      return [buildFlexMessage(q1, context)];
+      await sleep(500);
+      await client.pushMessage(lineId, buildFlexMessage(q1, context));
+      return [];
     }
 
     if (!userSession[lineId]) {
