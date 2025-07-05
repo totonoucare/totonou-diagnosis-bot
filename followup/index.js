@@ -4,6 +4,8 @@ const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
 const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const symptomLabels = {
   stomach: '胃腸の調子',
   sleep: '睡眠改善・集中力',
@@ -198,6 +200,13 @@ async function handleFollowup(event, client, lineId) {
 
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
+
+    // Q2 の直前にだけ sleep を入れる
+    if (session.step === 2) {
+      console.log('⏱️ Q2送信前にsleep(1200)');
+      await sleep(1200);
+    }
+
     return [buildFlexMessage(nextQuestion, context)];
 
   } catch (err) {
