@@ -50,6 +50,7 @@ function replacePlaceholders(template, context = {}) {
 
 async function handleFollowup(event, client, lineId) {
   try {
+    const replyToken = event.replyToken;
     let message = "";
 
     if (event.type === 'message' && event.message.type === 'text') {
@@ -57,23 +58,23 @@ async function handleFollowup(event, client, lineId) {
     } else if (event.type === 'postback' && event.postback.data) {
       message = event.postback.data.trim();
     } else {
-      return [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }];
+      return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
       if (!userRecord || !userRecord.subscribed) {
-        return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
+        return client.replyMessage(replyToken, [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }]);
       }
 
       userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
       const context = await supabaseMemoryManager.getContext(lineId);
-      return [buildFlexMessage(q1, context)];
+      return client.replyMessage(replyToken, [buildFlexMessage(q1, context)]);
     }
 
     if (!userSession[lineId]) {
-      return [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }];
+      return client.replyMessage(replyToken, [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }]);
     }
 
     const session = userSession[lineId];
@@ -83,19 +84,19 @@ async function handleFollowup(event, client, lineId) {
     if (question.isMulti && Array.isArray(question.options)) {
       const parts = message.split(':');
       if (parts.length !== 2) {
-        return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
+        return client.replyMessage(replyToken, [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }]);
       }
 
       const [key, answer] = parts;
       if (!question.options.find(opt => opt.id === key)) {
-        return [{ type: 'text', text: '不正な選択肢です。ボタンから選んでください。' }];
+        return client.replyMessage(replyToken, [{ type: 'text', text: '不正な選択肢です。ボタンから選んでください。' }]);
       }
 
       if (!session.partialAnswers) session.partialAnswers = {};
       session.partialAnswers[key] = answer;
 
       const remaining = question.options.map(sub => sub.id).filter(k => !(k in session.partialAnswers));
-      if (remaining.length > 0) return [];
+      if (remaining.length > 0) return;
 
       Object.assign(session.answers, session.partialAnswers);
       delete session.partialAnswers;
@@ -104,7 +105,7 @@ async function handleFollowup(event, client, lineId) {
     } else {
       const validDataValues = question.options.map(opt => opt.data);
       if (!validDataValues.includes(message)) {
-        return [{ type: 'text', text: '選択肢からお選びください。' }];
+        return client.replyMessage(replyToken, [{ type: 'text', text: '選択肢からお選びください。' }]);
       }
 
       const keyName = question.id === "Q5" ? "q5_answer" :
@@ -135,34 +136,34 @@ async function handleFollowup(event, client, lineId) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      await client.pushMessage(lineId, {
+      await client.replyMessage(replyToken, [{
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
-      });
+      }]);
 
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      return [{
+      return client.pushMessage(lineId, [{
         type: 'text',
         text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-      }];
+      }]);
     }
 
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
-    return [{
+    return client.replyMessage(replyToken, [{
       type: 'flex',
       altText: replacePlaceholders(nextQuestion.header, context),
       contents: buildFlexMessage(nextQuestion, context).contents
-    }];
+    }]);
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
-    return [{
+    return client.replyMessage(event.replyToken, [{
       type: 'text',
       text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。'
-    }];
+    }]);
   }
 }
 
