@@ -144,6 +144,8 @@ async function handleFollowup(event, client, lineId) {
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
+      await new Promise(resolve => setTimeout(resolve, 1000)); // ← ここで1秒待つ
+
       return client.pushMessage(lineId, [{
         type: 'text',
         text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
