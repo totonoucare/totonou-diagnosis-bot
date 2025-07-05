@@ -116,15 +116,10 @@ async function handleFollowup(event, client, lineId) {
       };
       const header = headerMap[question.id] || '✅ 回答を確認しました';
 
-      const nextQuestion = questionSets[session.step - 1];
-      const flex = buildFlexMessage(nextQuestion, context);
-      await client.pushMessage(lineId, [
-        {
-          type: 'text',
-          text: `✅ ${header} を確認しました！\n\n${summary}`
-        },
-        flex
-      ]);
+      await client.pushMessage(lineId, {
+        type: 'text',
+        text: `✅ ${header} を確認しました！\n\n${summary}`
+      });
 
     } else {
       const validDataValues = question.options.map(opt => opt.data);
@@ -146,8 +141,14 @@ async function handleFollowup(event, client, lineId) {
       session.step++;
 
       const context = await supabaseMemoryManager.getContext(lineId);
-      let label = replacePlaceholders(multiLabels[question.id], context);
-      let readable = value;
+
+      if (question.id === "Q4") {
+        const label = replacePlaceholders(multiLabels[question.id], context);
+        await client.pushMessage(lineId, {
+          type: 'text',
+          text: `✅ ${label} → ${value}`
+        });
+      }
 
       if (question.id === "Q5") {
         const q5TextMap = {
@@ -158,23 +159,22 @@ async function handleFollowup(event, client, lineId) {
           E: "モチベーションが続かなかった",
           F: "特になし"
         };
-        readable = q5TextMap[value?.split("=")[1]] || "不明";
-      }
-
-      const nextQuestion = questionSets[session.step - 1];
-      const flex = buildFlexMessage(nextQuestion, context);
-      await client.pushMessage(lineId, [
-        {
+        const readable = q5TextMap[value?.split("=")[1]] || "不明";
+        const label = replacePlaceholders(multiLabels[question.id], context);
+        await client.pushMessage(lineId, {
           type: 'text',
           text: `✅ ${label} → ${readable}`
-        },
-        flex
-      ]);
+        });
+      }
     }
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(lineId);
+      if (!context?.symptom || !context?.type) {
+        console.warn("⚠️ context 情報が不完全です");
+      }
+
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
       const motionLevel = answers['motion_level'];
@@ -196,7 +196,10 @@ async function handleFollowup(event, client, lineId) {
       }];
     }
 
-    return [];
+    const nextQuestion = questionSets[session.step - 1];
+    const context = await supabaseMemoryManager.getContext(lineId);
+    return [buildFlexMessage(nextQuestion, context)];
+
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
     return [{
