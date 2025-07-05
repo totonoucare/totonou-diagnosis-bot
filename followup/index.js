@@ -144,7 +144,7 @@ async function handleFollowup(event, client, lineId) {
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      await new Promise(resolve => setTimeout(resolve, 1000)); // ← ここで1秒待つ
+      await new Promise(resolve => setTimeout(resolve, 2200)); // ← ここで1秒待つ
 
       return client.pushMessage(lineId, [{
         type: 'text',
