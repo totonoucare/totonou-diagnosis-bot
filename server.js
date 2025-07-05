@@ -34,7 +34,6 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ サブスク登録リクエスト
       if (userMessage === "サブスク希望") {
         try {
           const { error } = await supabase
@@ -65,13 +64,25 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ フォローアップ診断（再診スタート or セッション中）
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
-          const messages = await handleFollowup(event, client, lineId); // ← UUIDではなくlineIdを渡す
+          const messages = await handleFollowup(event, client, lineId);
 
           if (Array.isArray(messages) && messages.length > 0) {
-            await client.replyMessage(event.replyToken, messages);
+            const hasPushOnly = messages.some(m => m?.pushOnly);
+
+            if (hasPushOnly) {
+              // 分割して送信（pushOnlyだけ pushMessage）
+              for (const m of messages) {
+                if (m.pushOnly) {
+                  await client.pushMessage(lineId, m.message);
+                } else {
+                  await client.replyMessage(event.replyToken, [m]);
+                }
+              }
+            } else {
+              await client.replyMessage(event.replyToken, messages);
+            }
           } else if (!handleFollowup.hasSession(lineId)) {
             await client.replyMessage(event.replyToken, {
               type: "text",
@@ -88,7 +99,6 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -96,7 +106,6 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 診断セッション中
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -104,14 +113,12 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ その他の追加コマンド（ととのうガイドなど）
       const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
       if (extraResult) {
         await client.replyMessage(event.replyToken, extraResult.messages);
         return;
       }
 
-      // ❓どの条件にも該当しない入力
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `メッセージありがとうございます😊
