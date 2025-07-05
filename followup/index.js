@@ -40,17 +40,15 @@ const multiLabels = {
 };
 
 const userSession = {};
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function replacePlaceholders(template, context = {}) {
-  return (template || '').replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
-                         .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
+  return template?.replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
+                  .replace(/\{\{motion\}\}/g, context.motion || '特定の動作') || '';
 }
 
 async function handleFollowup(event, client, lineId) {
   try {
     let message = "";
-
     if (event.type === 'message' && event.message.type === 'text') {
       message = event.message.text.trim();
     } else if (event.type === 'postback' && event.postback.data) {
@@ -61,13 +59,12 @@ async function handleFollowup(event, client, lineId) {
 
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || !userRecord.subscribed) {
+      if (!userRecord?.subscribed) {
         return [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }];
       }
-
       userSession[lineId] = { step: 1, answers: {} };
-      const q1 = questionSets[0];
       const context = await supabaseMemoryManager.getContext(lineId);
+      const q1 = questionSets[0];
       return [buildFlexMessage(q1, context)];
     }
 
@@ -79,46 +76,30 @@ async function handleFollowup(event, client, lineId) {
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    if (question.isMulti && Array.isArray(question.options)) {
+    if (question.isMulti) {
       const parts = message.split(':');
-      if (parts.length !== 2) {
-        return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
-      }
-
+      if (parts.length !== 2) return [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }];
       const [key, answer] = parts;
       if (!question.options.find(opt => opt.id === key)) {
         return [{ type: 'text', text: '不正な選択肢です。ボタンから選んでください。' }];
       }
-
-      if (!session.partialAnswers) session.partialAnswers = {};
+      session.partialAnswers ??= {};
       session.partialAnswers[key] = answer;
-
       const remaining = question.options.map(sub => sub.id).filter(k => !(k in session.partialAnswers));
       if (remaining.length > 0) return [];
-
       Object.assign(session.answers, session.partialAnswers);
       delete session.partialAnswers;
       session.step++;
 
       const context = await supabaseMemoryManager.getContext(lineId);
       const summary = question.options.map(opt => {
-        const key = opt.id;
-        const label = replacePlaceholders(multiLabels[key] || key, context);
-        const value = session.answers[key];
-        return `・${label} → ${value}`;
+        const label = replacePlaceholders(multiLabels[opt.id] || opt.id, context);
+        return `・${label} → ${session.answers[opt.id]}`;
       }).join('\n');
 
-      const headerMap = {
-        Q1: '📝 症状と体調の変化',
-        Q2: '🛌 生活リズムの整い具合',
-        Q3: '🧘 セルフケアの実施状況'
-      };
-      const header = headerMap[question.id] || '✅ 回答を確認しました';
-
-      await sleep(2000);
       await client.pushMessage(lineId, {
         type: 'text',
-        text: `✅ ${header} を確認しました！\n\n${summary}`
+        text: `✅ ${replacePlaceholders(question.header, context)} を確認しました！\n\n${summary}`
       });
 
     } else {
@@ -127,32 +108,24 @@ async function handleFollowup(event, client, lineId) {
         return [{ type: 'text', text: '選択肢からお選びください。' }];
       }
 
-      const keyName = question.id === "Q5" ? "q5_answer" :
-                      question.id === "Q4" ? "motion_level" :
-                      question.id;
-
+      const key = question.id === "Q5" ? "q5_answer" : question.id === "Q4" ? "motion_level" : question.id;
       let value = message;
-      if (question.id === "Q4" && value.startsWith("Q4=")) {
-        const num = parseInt(value.split("=")[1]);
-        value = isNaN(num) ? null : num;
+      if (key === "motion_level" && value.startsWith("Q4=")) {
+        const parsed = parseInt(value.split("=")[1]);
+        value = isNaN(parsed) ? null : parsed;
       }
-
-      session.answers[keyName] = value;
+      session.answers[key] = value;
       session.step++;
 
       const context = await supabaseMemoryManager.getContext(lineId);
+      const label = replacePlaceholders(multiLabels[question.id], context);
 
       if (question.id === "Q4") {
-        const label = replacePlaceholders(multiLabels[question.id], context);
-        await sleep(2000);
-        await client.pushMessage(lineId, {
-          type: 'text',
-          text: `✅ ${label} → ${value}`
-        });
+        await client.pushMessage(lineId, { type: 'text', text: `✅ ${label} → ${value}` });
       }
 
       if (question.id === "Q5") {
-        const q5TextMap = {
+        const map = {
           A: "やり方が分からなかった",
           B: "効果を感じなかった",
           C: "時間が取れなかった",
@@ -160,59 +133,47 @@ async function handleFollowup(event, client, lineId) {
           E: "モチベーションが続かなかった",
           F: "特になし"
         };
-        const readable = q5TextMap[value?.split("=")[1]] || "不明";
-        const label = replacePlaceholders(multiLabels[question.id], context);
-        await sleep(2000);
-        await client.pushMessage(lineId, {
-          type: 'text',
-          text: `✅ ${label} → ${readable}`
-        });
+        const readable = map[value?.split("=")[1]] || "不明";
+        await client.pushMessage(lineId, { type: 'text', text: `✅ ${label} → ${readable}` });
       }
     }
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(lineId);
-
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
       const motionLevel = answers['motion_level'];
-      if (motionLevel && /^[1-5]$/.test(motionLevel)) {
+      if (/^[1-5]$/.test(motionLevel)) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      await sleep(2000);
       await client.pushMessage(lineId, {
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
       });
 
+      await new Promise(r => setTimeout(r, 300)); // 300ms sleep
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      await sleep(2000);
       await client.pushMessage(lineId, {
         type: 'text',
         text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
       });
-
       return [];
     }
 
-    const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
-    return [buildFlexMessage(nextQuestion, context)];
+    return [buildFlexMessage(questionSets[session.step - 1], context)];
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
-    return [{
-      type: 'text',
-      text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。'
-    }];
+    return [{ type: 'text', text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。' }];
   }
 }
 
 function buildFlexMessage(question, context = {}) {
-  if (question.isMulti && Array.isArray(question.options)) {
+  if (question.isMulti) {
     return buildMultiQuestionFlex({
       altText: replacePlaceholders(question.header, context),
       header: replacePlaceholders(question.header, context),
