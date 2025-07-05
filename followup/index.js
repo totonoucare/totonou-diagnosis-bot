@@ -125,9 +125,6 @@ async function handleFollowup(event, client, lineId) {
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(lineId);
-      if (!context?.symptom || !context?.type) {
-        console.warn("⚠️ context 情報が不完全です");
-      }
 
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
@@ -136,20 +133,24 @@ async function handleFollowup(event, client, lineId) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      await client.replyMessage(replyToken, [{
-        type: 'text',
-        text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
-      }]);
-
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      await new Promise(resolve => setTimeout(resolve, 2200)); // ← ここで1秒待つ
+      const comment = `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`;
 
-      return client.pushMessage(lineId, [{
-        type: 'text',
-        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-      }]);
+      try {
+        // replyMessage で返信を試みる
+        return await client.replyMessage(replyToken, [{
+          type: 'text',
+          text: comment
+        }]);
+      } catch (err) {
+        console.warn("⚠️ replyMessage 失敗。pushMessage にフォールバックします:", err.statusCode || err);
+        return await client.pushMessage(lineId, [{
+          type: 'text',
+          text: comment
+        }]);
+      }
     }
 
     const nextQuestion = questionSets[session.step - 1];
