@@ -138,19 +138,11 @@ async function handleFollowup(event, client, lineId) {
 
       const comment = `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`;
 
-      try {
-        // replyMessage で返信を試みる
-        return await client.replyMessage(replyToken, [{
-          type: 'text',
-          text: comment
-        }]);
-      } catch (err) {
-        console.warn("⚠️ replyMessage 失敗。pushMessage にフォールバックします:", err.statusCode || err);
-        return await client.pushMessage(lineId, [{
-          type: 'text',
-          text: comment
-        }]);
-      }
+      // GPTコメントは pushMessage で送る（replyToken の期限回避）
+      return await client.pushMessage(lineId, [{
+        type: 'text',
+        text: comment
+      }]);
     }
 
     const nextQuestion = questionSets[session.step - 1];
