@@ -172,6 +172,8 @@ async function handleFollowup(event, client, lineId) {
       }
     }
 
+// ...（前半は変更なし）
+
     if (session.step > questionSets.length) {
       const answers = session.answers;
       const context = await supabaseMemoryManager.getContext(lineId);
@@ -186,7 +188,7 @@ async function handleFollowup(event, client, lineId) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      await sleep(300);
+      await sleep(500);
       await client.pushMessage(lineId, {
         type: 'text',
         text: '🧠 お体の変化をAIが解析中です...\nちょっとだけお待ちくださいね。'
@@ -195,7 +197,7 @@ async function handleFollowup(event, client, lineId) {
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      await sleep(300);
+      await sleep(500);
       await client.pushMessage(lineId, {
         type: 'text',
         text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
@@ -206,7 +208,9 @@ async function handleFollowup(event, client, lineId) {
 
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
-    return [buildFlexMessage(nextQuestion, context)];
+    await sleep(500);
+    await client.pushMessage(lineId, buildFlexMessage(nextQuestion, context));
+    return [];
 
   } catch (err) {
     console.error('❌ followup/index.js エラー:', err);
