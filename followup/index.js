@@ -139,7 +139,7 @@ async function handleFollowup(event, client, lineId) {
       const replyMessages = [
         {
           type: 'text',
-          text: '🧠 お体の変化をAIが解析中です...'
+          text: '🧠解析が完了しました！\nお待たせしました🙇'
         },
         {
           type: 'text',
