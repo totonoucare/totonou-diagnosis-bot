@@ -292,7 +292,6 @@ function buildCarouselFlex(cards, altText = '診断結果とセルフケア提�
   return buildAdviceCarouselFlex(cards, altText);
 }
 
-// ✅ 4日ごとリマインドで使用するFlex
 function buildReminderFlex() {
   return {
     type: 'flex',
@@ -347,6 +346,61 @@ function buildReminderFlex() {
   };
 }
 
+function buildTrialStartFlex() {
+  return {
+    type: 'flex',
+    altText: '🎁 無料トライアル開始ボタン',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '🎁 無料トライアルを始める',
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#758A6D',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: '紹介が完了した方は、下のボタンを押して無料体験を始めましょう！',
+            wrap: true,
+            color: '#333333',
+            size: 'md',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'button',
+            action: {
+              type: 'postback',
+              label: '紹介完了',
+              data: 'trial_intro_done',
+              displayText: '紹介完了',
+            },
+            style: 'primary',
+            color: '#758A6D',
+          },
+        ],
+      },
+    },
+  };
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
@@ -356,4 +410,5 @@ module.exports = {
   buildCarouselFlex,
   buildFollowupQuestionFlex,
   buildReminderFlex,
+  buildTrialStartFlex, // ✅ ここを追加
 };
