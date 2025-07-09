@@ -4,7 +4,7 @@ const diagnosis = require("./diagnosis/index");
 const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
-const stripeWebhook = require("./stripeWebhook"); // ← 追加
+const stripeWebhook = require("./stripeWebhook");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,7 +16,7 @@ const config = {
 
 const client = new line.Client(config);
 
-// Stripe Webhook を先に登録（※生の body を扱うので他より先に）
+// Stripe Webhook（⚠️最優先で定義）
 app.use("/", stripeWebhook);
 
 // LINE Webhook
@@ -39,7 +39,34 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ サブスク登録希望（Stripeへの誘導のみ）
+      // ✅ 紹介トライアル導入（trial_intro_done）
+      if (userMessage === "トライアル紹介完了") {
+        try {
+          const { data, error } = await supabase
+            .from("users")
+            .update({
+              trial_intro_done: true,
+              trial_intro_at: new Date().toISOString(),
+            })
+            .eq("line_id", lineId);
+
+          if (error) throw error;
+
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "🎁ご紹介ありがとうございます！\n8日間の無料トライアルがスタートしました！",
+          });
+        } catch (err) {
+          console.error("❌ trial_intro_done 登録エラー:", err);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "トライアル登録時にエラーが発生しました。もう一度お試しください。",
+          });
+        }
+        return;
+      }
+
+      // ✅ サブスク希望（Stripe案内）
       if (userMessage === "サブスク希望") {
         try {
           await client.replyMessage(event.replyToken, {
@@ -60,7 +87,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ フォローアップ診断（再診スタート or セッション中）
+      // ✅ 定期チェック診断（再診 or 継続中）
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
           const messages = await handleFollowup(event, client, lineId);
@@ -106,7 +133,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ❓どの条件にも該当しない入力
+      // ❓その他のメッセージ
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `メッセージありがとうございます😊
@@ -120,7 +147,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
   res.json(results);
 });
 
-// 確認用エンドポイント
+// 確認エンドポイント
 app.get("/", (req, res) => {
   res.send("Totonou Diagnosis Bot is running.");
 });
