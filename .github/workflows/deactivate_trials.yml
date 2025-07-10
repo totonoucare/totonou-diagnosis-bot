@@ -1,0 +1,28 @@
+name: Deactivate expired trial users
+
+on:
+  schedule:
+    - cron: '10 1 * * *' # JST 10:10（UTC 01:10）
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 リポジトリをチェックアウト
+        uses: actions/checkout@v3
+
+      - name: 🟢 Node.js をセットアップ
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 📦 依存関係をインストール
+        run: npm install
+
+      - name: 🚫 トライアル無効化スクリプトを実行
+        run: node utils/deactivateTrials.js
+
+      - name: ✅ 実行完了ログ
+        run: echo "deactivateTrials.js 実行完了"
