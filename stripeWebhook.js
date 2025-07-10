@@ -2,11 +2,17 @@
 const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { markSubscribed } = require("./supabaseMemoryManager");
-const supabase = require("./supabaseClient"); // ← 追加：Supabase直アクセス用
+const supabase = require("./supabaseClient"); // ← Supabase直アクセス用
 
 const router = express.Router();
 
-// Stripe Webhookのエンドポイント（生のbodyが必要）
+// JST現在時刻（ISO文字列）を取得
+function getJSTISOStringNow() {
+  const now = new Date();
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return jstNow.toISOString();
+}
+
 router.post(
   "/webhook/stripe",
   express.raw({ type: "application/json" }),
@@ -36,20 +42,23 @@ router.post(
         }
 
         try {
-          // ① Supabaseでsubscribedをtrueにする（既存）
+          // ① Supabaseでsubscribedをtrueにする
           await markSubscribed(lineId);
           console.log(`✅ サブスク登録完了: ${lineId}`);
 
-          // ② trial_intro_done を false に更新（追加）
+          // ② trial_intro_done を false に、trial_ended_at を現在JSTに更新
           const { error: updateError } = await supabase
             .from("users")
-            .update({ trial_intro_done: false })
+            .update({
+              trial_intro_done: false,
+              trial_ended_at: getJSTISOStringNow(), // ← JSTタイムスタンプを記録
+            })
             .eq("line_id", lineId);
 
           if (updateError) {
-            console.error("⚠️ trial_intro_done 更新失敗:", updateError);
+            console.error("⚠️ trial_intro_done / trial_ended_at 更新失敗:", updateError);
           } else {
-            console.log(`🔄 trial_intro_done を false に更新: ${lineId}`);
+            console.log(`🔄 trial_intro_done: false & trial_ended_at 記録: ${lineId}`);
           }
 
         } catch (err) {
@@ -60,7 +69,7 @@ router.post(
       }
 
       case "invoice.paid": {
-        // 継続課金成功イベント（必要に応じて）
+        // 将来対応：継続課金確認用
         break;
       }
 
