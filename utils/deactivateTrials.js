@@ -18,6 +18,13 @@ function getDaysSince(dateInput) {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
+// JST現在時刻（ISO文字列）を取得
+function getJSTISOStringNow() {
+  const now = new Date();
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return jstNow.toISOString();
+}
+
 async function deactivateExpiredTrials() {
   const { data, error } = await supabase
     .from('users')
@@ -40,13 +47,16 @@ async function deactivateExpiredTrials() {
   for (const user of expiredUsers) {
     const { error: updateError } = await supabase
       .from('users')
-      .update({ trial_intro_done: false })
+      .update({
+        trial_intro_done: false,
+        trial_ended_at: getJSTISOStringNow(), // ← JSTで記録
+      })
       .eq('id', user.id);
 
     if (updateError) {
       console.error(`❌ ユーザーID ${user.id} の更新失敗:`, updateError);
     } else {
-      console.log(`✅ ユーザーID ${user.id} を trial_intro_done: false に更新`);
+      console.log(`✅ ユーザーID ${user.id} を trial_intro_done: false に更新（終了日時も記録）`);
     }
   }
 }
