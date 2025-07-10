@@ -10,7 +10,7 @@ console.log('🚀 トライアル用リマインダー実行開始');
 async function getTrialUsers() {
   const { data, error } = await supabase
     .from('users')
-    .select('id, line_id, trial_intro_done, trial_started_at, subscribed')
+    .select('id, line_id, trial_intro_done, trial_intro_at, subscribed')
     .eq('trial_intro_done', true)
     .eq('subscribed', false);
 
@@ -23,6 +23,7 @@ async function getTrialUsers() {
 
 // JST補正を入れた日数差計算
 function getDaysSince(dateInput) {
+  if (!dateInput) return null;
   const baseDate = new Date(dateInput);
   const now = new Date();
 
@@ -44,22 +45,20 @@ async function sendTrialReminders() {
 
     for (const user of users) {
       console.log(`\n🔍 チェックユーザー: ${user.line_id}`);
-      if (!user.trial_started_at) {
-        console.warn('⚠️ trial_started_at 未設定スキップ');
+      if (!user.trial_intro_at) {
+        console.warn('⚠️ trial_intro_at 未設定スキップ');
         continue;
       }
 
-      const days = getDaysSince(user.trial_started_at);
+      const days = getDaysSince(user.trial_intro_at);
       console.log(`📆 経過日数: ${days}`);
 
       // ✅ 各種日付条件に基づいて送信処理
       if (days === 4 || days === 12) {
-        // 定期チェック診断リマインド（4日目、12日目）
         const flex = buildReminderFlex();
         await line.client.pushMessage(user.line_id, flex);
         console.log(`✅ Flexメッセージ送信完了（${days}日目）`);
       } else if (days === 7) {
-        // 本登録案内 + アンケート導線（前日リマインド）
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
@@ -70,12 +69,10 @@ async function sendTrialReminders() {
         });
         console.log('✅ 7日目アンケート案内送信完了');
       } else if (days === 8 || days === 16) {
-        // GPTアドバイス送信（8日目、16日目）
         const msg = await generateGPTMessage(user.line_id);
         await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
         console.log(`✅ GPTアドバイス送信完了（${days}日目）`);
       } else if (days === 15) {
-        // 本登録案内
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
@@ -84,11 +81,6 @@ async function sendTrialReminders() {
             '▶ 月額580円／880円のプランをご用意しています📱\nhttps://〜〜（登録案内URL）',
         });
         console.log('✅ 15日目本登録案内送信完了');
-      } else if (days === 16) {
-        // 応援メッセージ第2弾（GPT生成）
-        const msg = await generateGPTMessage(user.line_id);
-        await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
-        console.log('✅ 16日目GPT応援コメント送信完了');
       } else {
         console.log(`⏭️ 該当日なし（days=${days}）`);
       }
