@@ -76,7 +76,7 @@ async function sendTrialReminders() {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
-            '🟢 トライアル期間が終了しました！\n\n' +
+            '🟢 トライアル期間があと1日で終了します！\n\n' +
             '引き続きケアサポートをご希望の方は、以下から本登録をお願いします。\n\n' +
             '▶ 月額580円／880円のプランをご用意しています📱\nhttps://〜〜（登録案内URL）',
         });
