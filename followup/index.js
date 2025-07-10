@@ -63,8 +63,11 @@ async function handleFollowup(event, client, lineId) {
 
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || !userRecord.subscribed) {
-        return client.replyMessage(replyToken, [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }]);
+      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+        return client.replyMessage(replyToken, [{
+          type: 'text',
+          text: 'この機能は現在ご利用いただけません。'
+        }]);
       }
 
       userSession[lineId] = { step: 1, answers: {} };
