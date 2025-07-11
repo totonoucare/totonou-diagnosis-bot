@@ -3,6 +3,12 @@ const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { markSubscribed } = require("./supabaseMemoryManager");
 const supabase = require("./supabaseClient"); // ← Supabase直アクセス用
+const line = require("@line/bot-sdk"); // ✅ LINE通知用
+
+// LINEクライアント初期化
+const client = new line.Client({
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+});
 
 const router = express.Router();
 
@@ -51,7 +57,7 @@ router.post(
             .from("users")
             .update({
               trial_intro_done: false,
-              trial_ended_at: getJSTISOStringNow(), // ← JSTタイムスタンプを記録
+              trial_ended_at: getJSTISOStringNow(),
             })
             .eq("line_id", lineId);
 
@@ -61,15 +67,24 @@ router.post(
             console.log(`🔄 trial_intro_done: false & trial_ended_at 記録: ${lineId}`);
           }
 
+          // ③ LINE通知を送信
+          await client.pushMessage(lineId, {
+            type: "text",
+            text:
+              "🎉 決済が完了しました！\n\n" +
+              "これでサブスク機能が有効になりました✨\n\n" +
+              "LINE診断や定期チェック診断、セルフケアサポートをご活用ください😊",
+          });
+          console.log(`📩 LINE通知送信完了: ${lineId}`);
         } catch (err) {
-          console.error("❌ Supabase更新処理エラー:", err);
-          return res.status(500).send("Supabase update failed");
+          console.error("❌ SupabaseまたはLINE通知処理エラー:", err);
+          return res.status(500).send("Webhook処理中にエラーが発生しました");
         }
         break;
       }
 
       case "invoice.paid": {
-        // 将来対応：継続課金確認用
+        // 今後、継続課金の確認用に実装予定
         break;
       }
 
