@@ -2,7 +2,8 @@ const questionSets = require('./questionSets');
 const {
   buildQuestionFlex,
   buildCategorySelectionFlex,
-  buildCarouselFlex
+  buildCarouselFlex,
+  buildTrialStartFlex
 } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
 const {
