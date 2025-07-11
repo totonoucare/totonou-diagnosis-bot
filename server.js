@@ -5,6 +5,7 @@ const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
+const stripeCheckout = require('./routes/stripeCheckout'); // ← ✅ 追加！
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ const client = new line.Client(config);
 
 // Stripe Webhook（⚠️最優先で定義）
 app.use("/", stripeWebhook);
+app.use('/checkout', stripeCheckout); // ← ✅ 追加！
 
 // LINE Webhook
 app.post("/webhook", line.middleware(config), async (req, res) => {
