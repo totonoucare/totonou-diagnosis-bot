@@ -156,7 +156,7 @@ async function handleExtraCommands(userId, messageText) {
 👉 今すぐ始めたい方は、ご紹介＆下記の完了ボタンを押して始めましょう！
 （紹介リンクは、メニューバー【身近な人に紹介】ボタンでご確認下さい）
 `
-            },
+            }
             trialFlex // ← Flexを最後に追加
           ]
         };
