@@ -40,7 +40,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🟢 userMessage:", userMessage);
 
       // ✅ 紹介トライアル導入（trial_intro_done）
-      if (userMessage === "トライアル紹介完了") {
+      if (event.type === "postback" && event.postback.data === "trial_intro_done") {
         try {
           const { data, error } = await supabase
             .from("users")
