@@ -89,8 +89,8 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             text: "サブスク案内の送信中にエラーが発生しました。もう一度お試しください。",
           });
         }
-  return;
-}
+        return;
+      }
 
       // ✅ 定期チェック診断（再診 or 継続中）
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
