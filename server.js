@@ -76,7 +76,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             text:
               "サブスクのご希望ありがとうございます❗️\n\n" +
               "以下のページからプランをお選びください👇\n" +
-              "https://buy.stripe.com/【あなたのURL】\n\n" +
+              "https://totonoucare.com/subscribe/\n\n" +
               "決済が完了すると自動的に機能が有効化されます🎁",
           });
         } catch (err) {
