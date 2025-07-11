@@ -8,6 +8,7 @@ const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require('./routes/stripeCheckout'); // ← ✅ 追加！
 
 const app = express();
+app.use(express.json());  // ← 必ずこれを最初に！
 const port = process.env.PORT || 3000;
 
 const config = {
