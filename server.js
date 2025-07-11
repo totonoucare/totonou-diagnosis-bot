@@ -70,14 +70,17 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
       // ✅ サブスク希望（Stripe案内）
       if (userMessage === "サブスク希望") {
+        const lineId = event.source?.userId || '';
+        const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+
         try {
           await client.replyMessage(event.replyToken, {
             type: "text",
             text:
               "サブスクのご希望ありがとうございます❗️\n\n" +
-              "以下のページからプランをお選びください👇\n" +
-              "https://totonoucare.com/subscribe/\n\n" +
-              "決済が完了すると自動的に機能が有効化されます🎁",
+              "以下のページからプランをお選びいただけます👇\n" +
+              `${subscribeUrl}\n\n` +
+              "決済が完了すると、自動的にLINE機能が有効化されます🎁",
           });
         } catch (err) {
           console.error("❌ サブスク希望返信エラー:", err);
@@ -86,8 +89,8 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             text: "サブスク案内の送信中にエラーが発生しました。もう一度お試しください。",
           });
         }
-        return;
-      }
+  return;
+}
 
       // ✅ 定期チェック診断（再診 or 継続中）
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
