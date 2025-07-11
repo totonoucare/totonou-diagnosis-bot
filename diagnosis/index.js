@@ -121,7 +121,12 @@ async function handleExtraCommands(userId, messageText) {
 
       if (!context || !context.advice) {
         return {
-          messages: [{ type: 'text', text: '診断データが見つかりませんでした。もう一度診断をお願いします。' }]
+          messages: [
+            {
+              type: 'text',
+              text: '診断データが見つかりませんでした。もう一度診断をお願いします。'
+            }
+          ]
         };
       }
 
@@ -132,7 +137,8 @@ async function handleExtraCommands(userId, messageText) {
 
       if (isFirstTime) {
         await markGuideReceived(userId); // 次回からは送らないようにマーク
-        const trialFlex = buildTrialStartFlex(); // ← ここでFlex生成
+        const trialFlex = buildTrialStartFlex(); // Flexバブルオブジェクト生成
+
         return {
           messages: [
             carousel,
@@ -154,20 +160,28 @@ async function handleExtraCommands(userId, messageText) {
 さらに今なら、LINE診断を身近な人に紹介すると8日間の無料体験がスタート🎁
 
 👉 今すぐ始めたい方は、ご紹介＆下記の完了ボタンを押して始めましょう！
-（紹介リンクは、メニューバー【身近な人に紹介】ボタンでご確認下さい）
-`
+（紹介リンクは、メニューバー【身近な人に紹介】ボタンでご確認下さい）`
             },
-            trialFlex // ← Flexを最後に追加
+            {
+              type: 'flex',
+              altText: trialFlex.altText,
+              contents: trialFlex.contents
+            }
           ]
         };
       } else {
-        return { messages: [carousel] }; // 2回目以降はカルーセルだけ
+        return {
+          messages: [carousel]
+        }; // 2回目以降はカルーセルだけ
       }
     } catch (err) {
       console.error("❌ context取得エラー:", err);
       return {
         messages: [
-          { type: 'text', text: '診断データ取得時にエラーが発生しました。もう一度お試しください。' }
+          {
+            type: 'text',
+            text: '診断データ取得時にエラーが発生しました。もう一度お試しください。'
+          }
         ]
       };
     }
