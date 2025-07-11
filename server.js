@@ -19,7 +19,7 @@ const client = new line.Client(config);
 
 // Stripe Webhook（⚠️最優先で定義）
 app.use("/", stripeWebhook);
-app.use('/checkout', stripeCheckout); // ← ✅ 追加！
+app.use('/', stripeCheckout); // ← ✅ 追加！
 
 // LINE Webhook
 app.post("/webhook", line.middleware(config), async (req, res) => {
