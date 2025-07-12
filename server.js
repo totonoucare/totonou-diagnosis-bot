@@ -182,43 +182,52 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
       // プロに相談（ここで awaiting_consult_message: true をセット）
-      if (userMessage === "LINEでプロに相談") {
-        const { data: user, error } = await supabase
-          .from("users")
-          .select("subscribed, plan_type, remaining_consultations, trial_intro_done")
-          .eq("line_id", lineId)
-          .single();
+if (userMessage === "LINEでプロに相談") {
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("subscribed, plan_type, remaining_consultations, trial_intro_done")
+    .eq("line_id", lineId)
+    .single();
 
-        if (error || !user) {
-          console.error("❌ ユーザー取得失敗:", error);
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: "ユーザー情報の取得中にエラーが発生しました。しばらくしてから再度お試しください。",
-          });
-          return;
-        }
+  if (error || !user) {
+    console.error("❌ ユーザー取得失敗:", error);
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: "ユーザー情報の取得中にエラーが発生しました。しばらくしてから再度お試しください。",
+    });
+    return;
+  }
 
-        const hasAccess = (user.subscribed && user.plan_type === "standard") || user.trial_intro_done;
+  const hasAccess = (user.subscribed && user.plan_type === "standard") || user.trial_intro_done;
 
-        if (hasAccess) {
-          await supabase
-            .from("users")
-            .update({ awaiting_consult_message: true })
-            .eq("line_id", lineId);
+  if (hasAccess) {
+    if ((user.remaining_consultations || 0) <= 0) {
+      await client.replyMessage(event.replyToken, {
+        type: "text",
+        text: `ご相談回数の上限に達しています🙏\n\nスタンダード会員様は月ごとにリセットされます。\nもう一度ご相談されたい場合は、来月までお待ちいただくか、サポートまでご連絡ください。`,
+      });
+      return;
+    }
 
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: `メッセージありがとうございます！\nご相談内容をこのトーク画面でご自由にお送りください☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
-          });
-        } else {
-          const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: `この機能は「スタンダード会員様限定」となっております🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
-          });
-        }
-        return;
-      }
+    // 相談可能なので、awaiting_consult_message を true にセット
+    await supabase
+      .from("users")
+      .update({ awaiting_consult_message: true })
+      .eq("line_id", lineId);
+
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: `メッセージありがとうございます！\nご相談内容をこのトーク画面でご自由にお送りください☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
+    });
+  } else {
+    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: `この機能は「スタンダード会員様限定」となっております🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+    });
+  }
+  return;
+}
 
       // 定期チェック診断
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
