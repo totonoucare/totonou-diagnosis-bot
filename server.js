@@ -35,7 +35,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ご案内リンク
+      // ご案内リンク集
       if (userMessage === "ご案内リンク集") {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
         const flex = {
@@ -108,12 +108,11 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             }
           }
         };
-
         await client.replyMessage(event.replyToken, flex);
         return;
       }
 
-      // 紹介テンプレ
+      // 身近な人に紹介
       if (userMessage === "身近な人に紹介") {
         const shareUrl = "https://lin.ee/UxWfJtV";
         await client.replyMessage(event.replyToken, [
@@ -134,7 +133,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 紹介トライアル記録
+      // 紹介トライアル完了
       if (event.type === "postback" && userMessage === "trial_intro_done") {
         try {
           const { error } = await supabase
@@ -182,7 +181,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // LINEでプロに相談（スタンダード会員 or 紹介トライアル）
+      // プロに相談（ここで awaiting_consult_message: true をセット）
       if (userMessage === "LINEでプロに相談") {
         const { data: user, error } = await supabase
           .from("users")
@@ -204,7 +203,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         if (hasAccess) {
           await supabase
             .from("users")
-            .update({ last_consult_triggered: new Date().toISOString() })
+            .update({ awaiting_consult_message: true })
             .eq("line_id", lineId);
 
           await client.replyMessage(event.replyToken, {
@@ -221,9 +220,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-
-
-      // ➤ 定期チェック診断
+      // 定期チェック診断
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
           const messages = await handleFollowup(event, client, lineId);
@@ -245,7 +242,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ➤ 診断スタート
+      // 診断開始
       if (userMessage === "診断開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -253,7 +250,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ➤ 診断セッション中
+      // 診断セッション中
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -261,54 +258,48 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ➤ その他メッセージ → スタンダード相談消費処理
-      const { data: user, error } = await supabase
+            // 相談：awaiting_consult_message = true のときだけ、1回カウント
+      const { data: consultUser, error: consultError } = await supabase
         .from("users")
-        .select("subscribed, plan_type, remaining_consultations, last_consult_triggered")
+        .select("awaiting_consult_message, remaining_consultations")
         .eq("line_id", lineId)
         .single();
 
-if (user && user.subscribed && user.plan_type === "standard" && user.last_consult_triggered) {
-  const lastTime = new Date(Date.parse(user.last_consult_triggered));  // ← ここ修正
-  const now = new Date();
-  const diffMinutes = (now - lastTime) / (1000 * 60);
+      if (!consultError && consultUser?.awaiting_consult_message === true) {
+        const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
 
-  if (diffMinutes < 10 && user.remaining_consultations > 0) {
-    await supabase
-      .from("users")
-      .update({
-        remaining_consultations: user.remaining_consultations - 1,
-        last_consult_triggered: null,
-      })
-      .eq("line_id", lineId);
+        await supabase
+          .from("users")
+          .update({
+            remaining_consultations: newCount,
+            awaiting_consult_message: false,
+            last_consult_triggered: new Date().toISOString(),
+          })
+          .eq("line_id", lineId);
 
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📉 残り相談回数：${user.remaining_consultations - 1}回`,
-    });
-    return;
-  }
-}
-      // ➤ その他メッセージ（デフォルト返信）
+        await client.replyMessage(event.replyToken, {
+          type: "text",
+          text: `🧾 ご相談ありがとうございます。\n内容を確認し、順次ご返信いたします。\n\n👤 残り相談回数：${newCount}回`,
+        });
+        return;
+      }
+
+      // デフォルト返信
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: `メッセージありがとうございます😊\nご相談・お問い合わせには24時間以内にお返事させていただきますね！`,
+        text: `メッセージありがとうございます😊\n\nこのアカウントでは、診断やセルフケアのご提案に特化して自動でお応えしています。\nメニューバーからご希望の案内を選んでくださいね☺️\n\nご相談・ご質問・不具合報告などの個別の内容については必要に応じて運営者が直接お返事させていただきますので、しばらくお待ちください。`,
       });
     })
   );
 
-  res.json(results);
+  res.status(200).json(results);
 });
 
-// ✅ Stripe Webhook（⚠️ raw 必須）
-app.use('/webhook/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
+// Stripe Webhook
+app.post("/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
-// ✅ Checkout 専用ルート
-app.use(express.json());
-app.use('/', stripeCheckout);
-
-// ✅ 動作確認用
-app.get("/", (req, res) => res.send("Totonou Diagnosis Bot is running."));
+// Stripe Checkout
+app.use("/create-checkout-session", stripeCheckout);
 
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
