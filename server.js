@@ -36,11 +36,11 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🟢 userMessage:", userMessage);
 
       // ご案内リンク
-      if (userMessage === "各種ご案内リンク") {
+      if (userMessage === "ご案内リンク集") {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
         const flex = {
           type: "flex",
-          altText: "各種ご案内リンク",
+          altText: "ご案内リンク集",
           contents: {
             type: "bubble",
             size: "mega",
@@ -80,7 +80,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "uri",
-                    label: "🔐 サブスク登録 / 解約",
+                    label: "🔐 継続登録 / 解約 ページ",
                     uri: subscribeUrl
                   }
                 },
