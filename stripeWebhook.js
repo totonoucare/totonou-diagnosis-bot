@@ -2,7 +2,6 @@
 const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { markSubscribed } = require("./supabaseMemoryManager");
-const supabase = require("./supabaseClient");
 const line = require("@line/bot-sdk");
 
 const client = new line.Client({
@@ -10,12 +9,6 @@ const client = new line.Client({
 });
 
 const router = express.Router();
-
-function getJSTISOStringNow() {
-  const now = new Date();
-  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return jstNow.toISOString();
-}
 
 router.post(
   "/webhook/stripe",
@@ -58,27 +51,10 @@ router.post(
               ? "light"
               : null;
 
-          const nowJST = getJSTISOStringNow();
-
-          const { error: updateError } = await supabase
-            .from("users")
-            .update({
-              subscribed: true,
-              subscribed_at: nowJST,
-              plan_type: planType,
-              trial_intro_done: false,
-              trial_ended_at: nowJST,
-              stripe_customer_id: customerId,
-            })
-            .eq("line_id", lineId);
-
-          if (updateError) {
-            console.error("❌ Supabase更新エラー:", updateError);
-          } else {
-            console.log(`✅ Supabase更新完了: ${lineId} → plan_type=${planType}`);
-          }
-
-          await markSubscribed(lineId);
+          await markSubscribed(lineId, {
+            plan_type: planType,
+            stripe_customer_id: customerId,
+          });
 
           await client.pushMessage(lineId, {
             type: "text",
@@ -87,6 +63,7 @@ router.post(
               "これでサブスク機能が有効になりました✨\n\n" +
               "LINE診断や定期チェック診断、セルフケアサポートをご活用ください😊",
           });
+
           console.log(`📩 LINE通知送信完了: ${lineId}`);
         } catch (err) {
           console.error("❌ Webhook処理エラー:", err);
