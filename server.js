@@ -70,7 +70,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "message",
-                    label: "🤝 身近な人に紹介（共有リンク表示）",
+                    label: "🤝 身近な人への紹介リンク",
                     text: "身近な人に紹介"
                   }
                 },
@@ -113,7 +113,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
       // 身近な人に紹介
-      if (userMessage === "身近な人に紹介") {
+      if (userMessage === "身近な人への紹介") {
         const shareUrl = "https://lin.ee/UxWfJtV";
         await client.replyMessage(event.replyToken, [
           {
