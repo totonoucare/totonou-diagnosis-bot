@@ -5,7 +5,7 @@ const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
-const stripeCheckout = require('./routes/stripeCheckout');
+const stripeCheckout = require("./routes/stripeCheckout");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,17 +16,18 @@ const config = {
 };
 const client = new line.Client(config);
 
-// 🔴 Stripe Webhookは express.raw() が必須
+// ✅ Stripe Webhook（express.rawを内部で使うようになってると仮定）
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
 
-// 🔵 それ以外のルート（StripeCheckoutやLINE含む）は express.json()
+// ✅ 他ルートは通常のJSON処理（Stripe Checkout含む）
 app.use(express.json());
+
+// ✅ Stripe Checkoutルート
 app.use('/', stripeCheckout);
 
-// 🟢 LINE Webhook（raw禁止！jsonで処理する）
+// ✅ LINE Webhook（middlewareが最初に来る必要あり）
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
-
   const results = await Promise.all(
     events.map(async (event) => {
       const lineId = event.source?.userId;
@@ -43,10 +44,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ 紹介トライアル導入（trial_intro_done）
-      if (event.type === "postback" && event.postback.data === "trial_intro_done") {
+      // 紹介トライアル
+      if (event.type === "postback" && userMessage === "trial_intro_done") {
         try {
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from("users")
             .update({
               trial_intro_done: true,
@@ -70,11 +71,9 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ サブスク希望（Stripe案内）
+      // サブスク希望
       if (userMessage === "サブスク希望") {
-        const lineId = event.source?.userId || '';
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-
         try {
           await client.replyMessage(event.replyToken, {
             type: "text",
@@ -94,11 +93,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 定期チェック診断（再診 or 継続中）
+      // 定期チェック診断
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
           const messages = await handleFollowup(event, client, lineId);
-
           if (Array.isArray(messages) && messages.length > 0) {
             await client.replyMessage(event.replyToken, messages);
           } else if (!handleFollowup.hasSession(lineId)) {
@@ -117,7 +115,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 診断スタート
+      // 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -125,7 +123,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 診断セッション中
+      // 診断セッション中
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -133,20 +131,19 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ その他の追加コマンド（ととのうガイドなど）
+      // その他の追加コマンド
       const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
       if (extraResult) {
         await client.replyMessage(event.replyToken, extraResult.messages);
         return;
       }
 
-      // ❓その他のメッセージ
+      // その他メッセージ
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `メッセージありがとうございます😊
 スタンダード会員様へのご相談には24時間以内にお返事しますね！
-お問い合わせやエラー報告にも迅速にお返事・ご対応いたします。
-しばらくお待ちください。`,
+お問い合わせやエラー報告にも迅速にご対応いたします。`,
       });
     })
   );
@@ -154,10 +151,8 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
   res.json(results);
 });
 
-// 確認用エンドポイント
-app.get("/", (req, res) => {
-  res.send("Totonou Diagnosis Bot is running.");
-});
+// 確認
+app.get("/", (req, res) => res.send("Totonou Diagnosis Bot is running."));
 
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
