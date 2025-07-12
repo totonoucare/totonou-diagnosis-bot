@@ -1,0 +1,28 @@
+name: Monthly Add Chats
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # UTCで1日0時＝JSTで1日9時
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  add_chats:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v3
+
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: 毎月1日の相談回数加算スクリプト実行
+        run: node utils/addMonthlyChats.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
