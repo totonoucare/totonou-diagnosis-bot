@@ -268,28 +268,27 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         .eq("line_id", lineId)
         .single();
 
-      if (user && user.subscribed && user.plan_type === "standard" && user.last_consult_triggered) {
-        const lastTime = new Date(user.last_consult_triggered);
-        const now = new Date();
-        const diffMinutes = (now - lastTime) / (1000 * 60);
+if (user && user.subscribed && user.plan_type === "standard" && user.last_consult_triggered) {
+  const lastTime = new Date(Date.parse(user.last_consult_triggered));  // ← ここ修正
+  const now = new Date();
+  const diffMinutes = (now - lastTime) / (1000 * 60);
 
-        if (diffMinutes < 10 && user.remaining_consultations > 0) {
-          await supabase
-            .from("users")
-            .update({
-              remaining_consultations: user.remaining_consultations - 1,
-              last_consult_triggered: null,
-            })
-            .eq("line_id", lineId);
+  if (diffMinutes < 10 && user.remaining_consultations > 0) {
+    await supabase
+      .from("users")
+      .update({
+        remaining_consultations: user.remaining_consultations - 1,
+        last_consult_triggered: null,
+      })
+      .eq("line_id", lineId);
 
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📉 残り相談回数：${user.remaining_consultations - 1}回`,
-          });
-          return;
-        }
-      }
-
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📉 残り相談回数：${user.remaining_consultations - 1}回`,
+    });
+    return;
+  }
+}
       // ➤ その他メッセージ（デフォルト返信）
       await client.replyMessage(event.replyToken, {
         type: "text",
