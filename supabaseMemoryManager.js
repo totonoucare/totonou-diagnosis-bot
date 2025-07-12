@@ -4,43 +4,69 @@ const CONTEXT_TABLE = 'contexts';
 const USERS_TABLE = 'users';
 const FOLLOWUP_TABLE = 'followups';
 
+// JST現在時刻（ISO文字列）を取得
+function getJSTISOStringNow() {
+  const now = new Date();
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return jstNow.toISOString();
+}
+
 // ✅ ユーザー初期化
 async function initializeUser(lineId) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
     .upsert({ line_id: cleanId }, { onConflict: ['line_id'] });
-
   if (error) throw error;
 }
 
 // ✅ ユーザー情報取得
 async function getUser(lineId) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data, error } = await supabase
     .from(USERS_TABLE)
     .select('*')
     .eq('line_id', cleanId)
     .maybeSingle();
-
   if (error) throw error;
   return data;
 }
 
-// ✅ サブスク登録フラグ + 登録日時保存
-async function markSubscribed(lineId) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
+// ✅ サブスク登録処理
+async function markSubscribed(lineId, options = {}) {
   const cleanId = lineId.trim();
+
+  const updatePayload = {
+    subscribed: true,
+    subscribed_at: getJSTISOStringNow(),
+  };
+
+  if (options.plan_type) {
+    updatePayload.plan_type = options.plan_type;
+  }
+
+  if (options.stripe_customer_id) {
+    updatePayload.stripe_customer_id = options.stripe_customer_id;
+  }
+
+  const { error } = await supabase
+    .from(USERS_TABLE)
+    .update(updatePayload)
+    .eq('line_id', cleanId);
+
+  if (error) throw error;
+}
+
+// ✅ サブスク解約処理（解約時に呼び出す）
+async function markUnsubscribed(lineId) {
+  const cleanId = lineId.trim();
+
   const { error } = await supabase
     .from(USERS_TABLE)
     .update({
-      subscribed: true,
-      subscribed_at: new Date().toISOString(),
+      subscribed: false,
+      plan_type: null,
+      stripe_customer_id: null,
     })
     .eq('line_id', cleanId);
 
@@ -49,31 +75,22 @@ async function markSubscribed(lineId) {
 
 // ✅ ガイド初回受信フラグ
 async function markGuideReceived(lineId) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { error } = await supabase
     .from(USERS_TABLE)
     .update({ guide_received: true })
     .eq('line_id', cleanId);
-
-  if (error) {
-    console.error("❌ markGuideReceived エラー:", error);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 // ✅ context保存
 async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
     .eq('line_id', cleanId)
     .maybeSingle();
-
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
   const payload = {
@@ -91,27 +108,18 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
   const { error } = await supabase
     .from(CONTEXT_TABLE)
     .insert(payload);
-
-  if (error) {
-    console.error('❌ context保存エラー:', error);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 // ✅ 最新のcontext取得
 async function getContext(lineId) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id, guide_received')
     .eq('line_id', cleanId)
     .maybeSingle();
-
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
-
-  console.log("🧾 getContext() - userRow.id:", userRow.id);
 
   const { data: context, error: contextError } = await supabase
     .from(CONTEXT_TABLE)
@@ -121,12 +129,7 @@ async function getContext(lineId) {
     .limit(1)
     .maybeSingle();
 
-  if (contextError) {
-    console.error('❌ context取得エラー:', contextError);
-    throw contextError;
-  }
-
-  console.log("📦 getContext() - context data:", context);
+  if (contextError) throw contextError;
 
   return {
     ...context,
@@ -136,15 +139,12 @@ async function getContext(lineId) {
 
 // ✅ フォローアップ回答保存
 async function setFollowupAnswers(lineId, answers) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
     .eq('line_id', cleanId)
     .maybeSingle();
-
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
   const payload = {
@@ -172,27 +172,18 @@ async function setFollowupAnswers(lineId, answers) {
   const { error } = await supabase
     .from(FOLLOWUP_TABLE)
     .insert(payload);
-
-  if (error) {
-    console.error('❌ followup_answers保存エラー:', error);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 // ✅ 最新のfollowup取得
 async function getLatestFollowup(lineId) {
-  console.log("🧪 lineId 実体:", JSON.stringify(lineId));
-  console.log("🧪 lineId .trim() 実体:", JSON.stringify(lineId.trim()));
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
     .eq('line_id', cleanId)
     .maybeSingle();
-
-  if (userError || !userRow) {
-    throw userError || new Error('ユーザーが見つかりません');
-  }
+  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
   const { data: followup, error: followupError } = await supabase
     .from(FOLLOWUP_TABLE)
@@ -202,11 +193,7 @@ async function getLatestFollowup(lineId) {
     .limit(1)
     .maybeSingle();
 
-  if (followupError) {
-    console.error('❌ 最新フォローアップ取得エラー:', followupError);
-    throw followupError;
-  }
-
+  if (followupError) throw followupError;
   return followup;
 }
 
@@ -217,11 +204,7 @@ async function getSubscribedUsers() {
     .select('id, line_id')
     .eq('subscribed', true);
 
-  if (error) {
-    console.error("❌ サブスクユーザー取得エラー:", error);
-    throw error;
-  }
-
+  if (error) throw error;
   return data || [];
 }
 
@@ -236,6 +219,7 @@ module.exports = {
   getUser,
   upsertUser: initializeUser,
   markSubscribed,
+  markUnsubscribed,
   markGuideReceived,
   saveContext,
   getContext,
