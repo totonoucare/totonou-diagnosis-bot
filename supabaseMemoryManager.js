@@ -65,6 +65,7 @@ async function markUnsubscribed(lineId) {
     .from(USERS_TABLE)
     .update({
       subscribed: false,
+      unsubscribed_at: getJSTISOStringNow(),
       plan_type: null,
       stripe_customer_id: null,
     })
