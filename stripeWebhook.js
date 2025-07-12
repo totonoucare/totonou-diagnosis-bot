@@ -2,17 +2,15 @@
 const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { markSubscribed } = require("./supabaseMemoryManager");
-const supabase = require("./supabaseClient"); // ← Supabase直アクセス用
-const line = require("@line/bot-sdk"); // ✅ LINE通知用
+const supabase = require("./supabaseClient");
+const line = require("@line/bot-sdk");
 
-// LINEクライアント初期化
 const client = new line.Client({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 });
 
 const router = express.Router();
 
-// JST現在時刻（ISO文字列）を取得
 function getJSTISOStringNow() {
   const now = new Date();
   const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -41,33 +39,47 @@ router.post(
       case "checkout.session.completed": {
         const session = event.data.object;
         const lineId = session.client_reference_id;
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
 
-        if (!lineId) {
-          console.error("❌ client_reference_idが存在しません");
-          return res.status(400).send("Missing client_reference_id");
+        if (!lineId || !subscriptionId) {
+          console.error("❌ 必須データが不足しています");
+          return res.status(400).send("Missing lineId or subscriptionId");
         }
 
         try {
-          // ① Supabaseでsubscribedをtrueにする
-          await markSubscribed(lineId);
-          console.log(`✅ サブスク登録完了: ${lineId}`);
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const priceId = subscription.items.data[0]?.price.id;
 
-          // ② trial_intro_done を false に、trial_ended_at を現在JSTに更新
+          const planType =
+            priceId === "price_1RitWqEVOs4YPHrumBOdaMVJ"
+              ? "standard"
+              : priceId === "price_1RitG7EVOs4YPHruuPtlHrpV"
+              ? "light"
+              : null;
+
+          const nowJST = getJSTISOStringNow();
+
           const { error: updateError } = await supabase
             .from("users")
             .update({
+              subscribed: true,
+              subscribed_at: nowJST,
+              plan_type: planType,
               trial_intro_done: false,
-              trial_ended_at: getJSTISOStringNow(),
+              trial_ended_at: nowJST,
+              stripe_customer_id: customerId,
             })
             .eq("line_id", lineId);
 
           if (updateError) {
-            console.error("⚠️ trial_intro_done / trial_ended_at 更新失敗:", updateError);
+            console.error("❌ Supabase更新エラー:", updateError);
           } else {
-            console.log(`🔄 trial_intro_done: false & trial_ended_at 記録: ${lineId}`);
+            console.log(`✅ Supabase更新完了: ${lineId} → plan_type=${planType}`);
           }
 
-          // ③ LINE通知を送信
+          await markSubscribed(lineId);
+
           await client.pushMessage(lineId, {
             type: "text",
             text:
@@ -77,19 +89,20 @@ router.post(
           });
           console.log(`📩 LINE通知送信完了: ${lineId}`);
         } catch (err) {
-          console.error("❌ SupabaseまたはLINE通知処理エラー:", err);
-          return res.status(500).send("Webhook処理中にエラーが発生しました");
+          console.error("❌ Webhook処理エラー:", err);
+          return res.status(500).send("Webhook内部処理中にエラーが発生しました");
         }
+
         break;
       }
 
       case "invoice.paid": {
-        // 今後、継続課金の確認用に実装予定
+        // 今後の継続課金対応などに使用予定
         break;
       }
 
       default:
-        console.log(`ℹ️ Stripe未処理イベント: ${event.type}`);
+        console.log(`ℹ️ 未処理のイベントタイプ: ${event.type}`);
     }
 
     return res.status(200).send("Webhook received");
