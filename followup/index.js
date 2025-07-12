@@ -139,23 +139,19 @@ async function handleFollowup(event, client, lineId) {
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      const replyMessages = [
-        {
-          type: 'text',
-          text: '🧠解析が完了しました！\nお待たせしました🙇'
-        },
-        {
-          type: 'text',
-          text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-        }
-      ];
+      // AI解析中は reply で返す
+      await client.replyMessage(replyToken, [{
+        type: 'text',
+        text: '🧠AIが解析中です...\nしばらくお待ちください。'
+      }]);
 
-      try {
-        return await client.replyMessage(replyToken, replyMessages);
-      } catch (err) {
-        console.warn("⚠️ replyMessage 失敗。pushMessage にフォールバックします:", err.statusCode || err);
-        return await client.pushMessage(lineId, replyMessages);
-      }
+      // GPTコメントは push で送る（有料メッセージ枠）
+      await client.pushMessage(lineId, [{
+        type: 'text',
+        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+      }]);
+
+      return;
     }
 
     const nextQuestion = questionSets[session.step - 1];
