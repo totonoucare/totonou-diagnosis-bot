@@ -36,37 +36,65 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🟢 userMessage:", userMessage);
 
       // ➤ ご案内リンク
-      if (userMessage === "各種ご案内リンク") {
-        const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-        const flex = {
-          type: "flex",
-          altText: "各種ご案内リンク",
-          contents: {
-            type: "bubble",
-            size: "mega",
-            header: {
-              type: "box",
-              layout: "vertical",
-              contents: [{ type: "text", text: "📎 ご案内リンク", weight: "bold", size: "lg" }],
-            },
-            body: {
-              type: "box",
-              layout: "vertical",
-              spacing: "md",
-              contents: [
-                {
-                  type: "text",
-                  text: `・サブスク登録/解約\n${subscribeUrl}\n\n・オンライン相談ご予約\nhttps://kenkounihari.seirin.jp/clinic/18212/reserve\n\n・ホームページ\nhttps://totonoucare.com`,
-                  wrap: true,
-                  size: "md",
-                },
-              ],
+if (userMessage === "各種ご案内リンク") {
+  const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+  const flex = {
+    type: "flex",
+    altText: "各種ご案内リンク",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "📎 ご案内リンク",
+            weight: "bold",
+            size: "lg",
+          },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          {
+            type: "button",
+            style: "link",
+            action: {
+              type: "uri",
+              label: "🔓 サブスク登録・解約",
+              uri: subscribeUrl,
             },
           },
-        };
-        await client.replyMessage(event.replyToken, flex);
-        return;
-      }
+          {
+            type: "button",
+            style: "link",
+            action: {
+              type: "uri",
+              label: "📅 オンライン相談ご予約",
+              uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve",
+            },
+          },
+          {
+            type: "button",
+            style: "link",
+            action: {
+              type: "uri",
+              label: "🌐 ホームページを見る",
+              uri: "https://totonoucare.com",
+            },
+          },
+        ],
+      },
+    },
+  };
+  await client.replyMessage(event.replyToken, flex);
+  return;
+}
 
       // ➤ 紹介テンプレ返信
       if (userMessage === "身近な人に紹介") {
