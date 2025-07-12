@@ -1,7 +1,7 @@
 // stripeWebhook.js
 const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { markSubscribed } = require("./supabaseMemoryManager");
+const { markSubscribed, markUnsubscribed, getUser } = require("./supabaseMemoryManager");
 const line = require("@line/bot-sdk");
 
 const client = new line.Client({
@@ -68,6 +68,43 @@ router.post(
         } catch (err) {
           console.error("❌ Webhook処理エラー:", err);
           return res.status(500).send("Webhook内部処理中にエラーが発生しました");
+        }
+
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+
+        try {
+          // Supabaseから対応するlineIdを探す
+          const { data: users, error } = await require("./supabaseClient")
+            .from("users")
+            .select("line_id")
+            .eq("stripe_customer_id", customerId)
+            .maybeSingle();
+
+          if (error || !users) {
+            console.error("❌ 解約対象ユーザーが見つかりません:", error);
+            return res.status(404).send("User not found");
+          }
+
+          const lineId = users.line_id;
+
+          await markUnsubscribed(lineId);
+
+          await client.pushMessage(lineId, {
+            type: "text",
+            text:
+              "📪 サブスクの解約手続きが完了しました。\n\n" +
+              "またのご利用をお待ちしております😊",
+          });
+
+          console.log(`✅ 解約処理完了: ${lineId}`);
+        } catch (err) {
+          console.error("❌ 解約処理エラー:", err);
+          return res.status(500).send("解約処理中にエラーが発生しました");
         }
 
         break;
