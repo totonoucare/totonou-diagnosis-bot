@@ -35,75 +35,75 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ➤ ご案内リンク
-if (userMessage === "各種ご案内リンク") {
-  const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-  const flex = {
-    type: "flex",
-    altText: "各種ご案内リンク",
-    contents: {
-      type: "bubble",
-      size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: "📎 ご案内リンク",
-            weight: "bold",
-            size: "lg",
-            color: "#ffffff"
+      // ご案内リンク
+      if (userMessage === "各種ご案内リンク") {
+        const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+        const flex = {
+          type: "flex",
+          altText: "各種ご案内リンク",
+          contents: {
+            type: "bubble",
+            size: "mega",
+            header: {
+              type: "box",
+              layout: "vertical",
+              contents: [
+                {
+                  type: "text",
+                  text: "📎 ご案内リンク",
+                  weight: "bold",
+                  size: "lg",
+                  color: "#ffffff"
+                }
+              ],
+              backgroundColor: "#788972",
+              paddingAll: "12px"
+            },
+            body: {
+              type: "box",
+              layout: "vertical",
+              spacing: "md",
+              contents: [
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#788972",
+                  action: {
+                    type: "uri",
+                    label: "🔐 サブスク登録 / 解約",
+                    uri: subscribeUrl
+                  }
+                },
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#788972",
+                  action: {
+                    type: "uri",
+                    label: "🖥️ オンライン相談予約",
+                    uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
+                  }
+                },
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#788972",
+                  action: {
+                    type: "uri",
+                    label: "🌐 ホームページ",
+                    uri: "https://totonoucare.com"
+                  }
+                }
+              ]
+            }
           }
-        ],
-        backgroundColor: "#788972",
-        paddingAll: "12px"
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            color: "#788972",
-            action: {
-              type: "uri",
-              label: "🔐 サブスク登録 / 解約",
-              uri: subscribeUrl
-            }
-          },
-          {
-            type: "button",
-            style: "primary",
-            color: "#788972",
-            action: {
-              type: "uri",
-              label: "🖥️ オンライン相談予約",
-              uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
-            }
-          },
-          {
-            type: "button",
-            style: "primary",
-            color: "#788972",
-            action: {
-              type: "uri",
-              label: "🌐 ホームページ",
-              uri: "https://totonoucare.com"
-            }
-          }
-        ]
+        };
+
+        await client.replyMessage(event.replyToken, flex);
+        return;
       }
-    }
-  };
 
-  await client.replyMessage(event.replyToken, flex);
-  return;
-}
-
-      // ➤ 紹介テンプレ返信
+      // 紹介テンプレ
       if (userMessage === "身近な人に紹介") {
         const shareUrl = "https://lin.ee/UxWfJtV";
         await client.replyMessage(event.replyToken, [
@@ -124,7 +124,7 @@ if (userMessage === "各種ご案内リンク") {
         return;
       }
 
-      // ➤ 紹介トライアル記録
+      // 紹介トライアル記録
       if (event.type === "postback" && userMessage === "trial_intro_done") {
         try {
           const { error } = await supabase
@@ -150,7 +150,7 @@ if (userMessage === "各種ご案内リンク") {
         return;
       }
 
-      // ➤ サブスク希望
+      // サブスク希望
       if (userMessage === "サブスク希望") {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
         try {
@@ -171,6 +171,47 @@ if (userMessage === "各種ご案内リンク") {
         }
         return;
       }
+
+      // LINEでプロに相談（スタンダード会員 or 紹介トライアル）
+      if (userMessage === "LINEでプロに相談") {
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("subscribed, plan_type, remaining_consultations, trial_intro_done")
+          .eq("line_id", lineId)
+          .single();
+
+        if (error || !user) {
+          console.error("❌ ユーザー取得失敗:", error);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "ユーザー情報の取得中にエラーが発生しました。しばらくしてから再度お試しください。",
+          });
+          return;
+        }
+
+        const hasAccess = (user.subscribed && user.plan_type === "standard") || user.trial_intro_done;
+
+        if (hasAccess) {
+          await supabase
+            .from("users")
+            .update({ last_consult_triggered: new Date().toISOString() })
+            .eq("line_id", lineId);
+
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: `メッセージありがとうございます！\n以下の内容でご相談を承ります☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\nご相談内容をこのままご自由にお送りください。`,
+          });
+        } else {
+          const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: `この機能は「スタンダード会員様限定」となっております🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+          });
+        }
+        return;
+      }
+
+
 
       // ➤ 定期チェック診断
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
@@ -210,19 +251,39 @@ if (userMessage === "各種ご案内リンク") {
         return;
       }
 
-      // ➤ その他の追加コマンド
-      const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
-      if (extraResult) {
-        await client.replyMessage(event.replyToken, extraResult.messages);
-        return;
+      // ➤ その他メッセージ → スタンダード相談消費処理
+      const { data: user, error } = await supabase
+        .from("users")
+        .select("subscribed, plan_type, remaining_consultations, last_consult_triggered")
+        .eq("line_id", lineId)
+        .single();
+
+      if (user && user.subscribed && user.plan_type === "standard" && user.last_consult_triggered) {
+        const lastTime = new Date(user.last_consult_triggered);
+        const now = new Date();
+        const diffMinutes = (now - lastTime) / (1000 * 60);
+
+        if (diffMinutes < 10 && user.remaining_consultations > 0) {
+          await supabase
+            .from("users")
+            .update({
+              remaining_consultations: user.remaining_consultations - 1,
+              last_consult_triggered: null,
+            })
+            .eq("line_id", lineId);
+
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📉 残り相談回数：${user.remaining_consultations - 1}回`,
+          });
+          return;
+        }
       }
 
-      // ➤ その他メッセージ
+      // ➤ その他メッセージ（デフォルト返信）
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: `メッセージありがとうございます😊
-スタンダード会員様へのご相談には24時間以内にお返事しますね！
-お問い合わせやエラー報告にも迅速にご対応いたします。`,
+        text: `メッセージありがとうございます😊\nご相談・お問い合わせには24時間以内にお返事させていただきますね！`,
       });
     })
   );
