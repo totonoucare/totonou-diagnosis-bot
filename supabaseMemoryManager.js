@@ -209,6 +209,30 @@ async function getSubscribedUsers() {
   return data || [];
 }
 
+// ✅ 相談回数を加算（最大30）
+async function incrementConsultationCount(lineId, amount = 5, max = 30) {
+  const cleanId = lineId.trim();
+
+  const { data, error } = await supabase
+    .from(USERS_TABLE)
+    .select('remaining_consultations')
+    .eq('line_id', cleanId)
+    .maybeSingle();
+
+  if (error || !data) throw error || new Error('ユーザーが見つかりません');
+
+  const current = data.remaining_consultations || 0;
+  const updated = Math.min(current + amount, max);
+
+  const { error: updateError } = await supabase
+    .from(USERS_TABLE)
+    .update({ remaining_consultations: updated })
+    .eq('line_id', cleanId);
+
+  if (updateError) throw updateError;
+  return updated;
+}
+
 // ✅ 将来拡張用
 async function updateUserFields(lineId, updates) {
   console.warn("⚠️ updateUserFieldsは現在未使用です。呼び出されましたが処理は行っていません。");
@@ -228,5 +252,6 @@ module.exports = {
   setFollowupAnswers,
   getLatestFollowup,
   getSubscribedUsers,
+  incrementConsultationCount,
   updateUserFields
 };
