@@ -57,13 +57,38 @@ router.post(
             stripe_customer_id: customerId,
           });
 
-          await client.pushMessage(lineId, {
-            type: "text",
-            text:
-              "🎉 決済が完了しました！\n\n" +
-              "これでサブスク機能が有効になりました✨\n\n" +
-              "LINE診断や定期チェック診断、セルフケアサポートをご活用ください😊",
-          });
+          if (planType === "standard") {
+            // 🔼 残り相談回数 +5（最大30まで）
+            const { data: user, error } = await supabase
+              .from("users")
+              .select("id, remaining_chats")
+              .eq("line_id", lineId)
+              .maybeSingle();
+            if (error || !user) throw error || new Error("ユーザーが見つかりません");
+
+            const updatedCount = Math.min((user.remaining_chats || 0) + 5, 30);
+            await supabase
+              .from("users")
+              .update({ remaining_chats: updatedCount })
+              .eq("id", user.id);
+
+            await client.pushMessage(lineId, {
+              type: "text",
+              text:
+                "🎉 スタンダードコースのご登録ありがとうございます！\n\n" +
+                "LINE相談回数が毎月5回までご利用いただけます✨\n" +
+                "（※未使用分は最大30回まで繰り越し可能）\n\n" +
+                "ととのうケアをぜひ継続してご活用ください😊",
+            });
+          } else if (planType === "light") {
+            await client.pushMessage(lineId, {
+              type: "text",
+              text:
+                "🎉 ライトコースのご登録ありがとうございます！\n\n" +
+                "LINE診断や定期チェック診断、セルフケアガイドを毎月ご活用いただけます😊\n" +
+                "気になる不調のケアにお役立てください✨",
+            });
+          }
 
           console.log(`📩 LINE通知送信完了: ${lineId}`);
         } catch (err) {
