@@ -67,7 +67,7 @@ if (userMessage === "各種ご案内リンク") {
           {
             type: "button",
             style: "primary",
-            color: "#A8BBA3",
+            color: "#788972",
             action: {
               type: "uri",
               label: "🔐 サブスク登録 / 解約",
@@ -77,7 +77,7 @@ if (userMessage === "各種ご案内リンク") {
           {
             type: "button",
             style: "primary",
-            color: "#A8BBA3",
+            color: "#788972",
             action: {
               type: "uri",
               label: "🖥️ オンライン相談予約",
@@ -87,7 +87,7 @@ if (userMessage === "各種ご案内リンク") {
           {
             type: "button",
             style: "primary",
-            color: "#A8BBA3",
+            color: "#788972",
             action: {
               type: "uri",
               label: "🌐 ホームページ",
