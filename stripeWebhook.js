@@ -1,8 +1,9 @@
 // stripeWebhook.js
 const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { markSubscribed, markUnsubscribed, getUser } = require("./supabaseMemoryManager");
+const { markSubscribed, markUnsubscribed } = require("./supabaseMemoryManager");
 const line = require("@line/bot-sdk");
+const supabase = require("./supabaseClient");
 
 const client = new line.Client({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
@@ -73,24 +74,63 @@ router.post(
         break;
       }
 
-      case "customer.subscription.deleted": {
+      case "customer.subscription.updated": {
         const subscription = event.data.object;
         const customerId = subscription.customer;
+        const priceId = subscription.items.data[0]?.price.id;
+
+        const planType =
+          priceId === "price_1RitWqEVOs4YPHrumBOdaMVJ"
+            ? "standard"
+            : priceId === "price_1RitG7EVOs4YPHruuPtlHrpV"
+            ? "light"
+            : null;
 
         try {
-          // Supabaseから対応するlineIdを探す
-          const { data: users, error } = await require("./supabaseClient")
+          const { data: user, error } = await supabase
             .from("users")
             .select("line_id")
             .eq("stripe_customer_id", customerId)
             .maybeSingle();
 
-          if (error || !users) {
+          if (error || !user) {
+            console.error("❌ plan変更対象ユーザーが見つかりません:", error);
+            return res.status(404).send("User not found");
+          }
+
+          const lineId = user.line_id;
+
+          await markSubscribed(lineId, {
+            plan_type: planType,
+            stripe_customer_id: customerId,
+          });
+
+          console.log(`✅ プラン変更に伴う更新完了: ${lineId}`);
+        } catch (err) {
+          console.error("❌ プラン変更処理エラー:", err);
+          return res.status(500).send("プラン変更処理中にエラーが発生しました");
+        }
+
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+
+        try {
+          const { data: user, error } = await supabase
+            .from("users")
+            .select("line_id")
+            .eq("stripe_customer_id", customerId)
+            .maybeSingle();
+
+          if (error || !user) {
             console.error("❌ 解約対象ユーザーが見つかりません:", error);
             return res.status(404).send("User not found");
           }
 
-          const lineId = users.line_id;
+          const lineId = user.line_id;
 
           await markUnsubscribed(lineId);
 
