@@ -258,19 +258,15 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-            // 相談：awaiting_consult_message = true のときだけ、1回カウント
+      // 相談：awaiting_consult_message = true のときだけ、1回カウント
       const { data: consultUser, error: consultError } = await supabase
         .from("users")
         .select("awaiting_consult_message, remaining_consultations")
         .eq("line_id", lineId)
         .single();
 
-      if (
-  !consultError &&
-  (consultUser?.awaiting_consult_message === true ||
-   consultUser?.awaiting_consult_message === "true")
-) {
-  const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
+      if (!consultError && consultUser?.awaiting_consult_message === true) {
+        const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
 
         await supabase
           .from("users")
