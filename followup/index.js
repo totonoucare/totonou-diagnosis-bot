@@ -1,202 +1,226 @@
-// followup/index.js
-const questionSets = require('./questionSets');
-const handleFollowupAnswers = require('./followupRouter');
-const supabaseMemoryManager = require('../supabaseMemoryManager');
-const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
-
-const symptomLabels = {
-  stomach: '胃腸の調子',
-  sleep: '睡眠改善・集中力',
-  pain: '肩こり・腰痛・関節',
-  mental: 'イライラや不安感',
-  cold: '体温バランス・むくみ',
-  skin: '頭髪や肌の健康',
-  pollen: '花粉症・鼻炎',
-  women: '女性特有のお悩み',
-  unknown: 'なんとなく不調・不定愁訴',
-};
-
-const motionLabels = {
-  A: '首を後ろに倒すor左右に回す',
-  B: '腕をバンザイする',
-  C: '前屈する',
-  D: '腰を左右にねじるor側屈',
-  E: '上体をそらす',
-};
-
-const multiLabels = {
-  symptom: "「{{symptom}}」のお悩みレベル",
-  general: "全体的な調子",
-  sleep: "睡眠の状態",
-  meal: "食事の状態",
-  stress: "ストレスの状態",
-  habits: "体質改善の習慣（温活・食事・睡眠など）",
-  breathing: "巡りととのえ呼吸法",
-  stretch: "内臓ととのえストレッチ",
-  tsubo: "ツボケア（指圧・お灸）",
-  kampo: "漢方薬の服用",
-  Q4: "動作テストの変化",
-  Q5: "セルフケアの課題"
-};
-
-const userSession = {};
-
-function replacePlaceholders(template, context = {}) {
-  if (!template || typeof template !== 'string') return '';
-  return template
-    .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
-    .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
+function MessageBuilder({ altText, header, body, buttons }) {
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: header,
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#788972',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: body,
+            wrap: true,
+            color: '#333333',
+            size: 'md',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          ...(buttons || []).map((btn) => ({
+            type: 'button',
+            action: {
+              type: 'postback',
+              label: btn.label,
+              data: btn.data,
+              displayText: btn.displayText ?? btn.label,
+            },
+            style: 'primary',
+            height: 'sm',
+            margin: 'sm',
+            color: '#828E7B',
+          })),
+        ],
+      },
+    },
+  };
 }
 
-async function handleFollowup(event, client, lineId) {
-  try {
-    const replyToken = event.replyToken;
-    let message = "";
-
-    if (event.type === 'message' && event.message.type === 'text') {
-      message = event.message.text.trim();
-    } else if (event.type === 'postback' && event.postback.data) {
-      message = event.postback.data.trim();
-    } else {
-      return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
-    }
-
-    if (message === '定期チェック診断') {
-      const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
-        return client.replyMessage(replyToken, [{
-          type: 'text',
-          text: 'この機能は現在ご利用いただけません。'
-        }]);
-      }
-
-      userSession[lineId] = { step: 1, answers: {} };
-      const q1 = questionSets[0];
-      const context = await supabaseMemoryManager.getContext(lineId);
-      return client.replyMessage(replyToken, [buildFlexMessage(q1, context)]);
-    }
-
-    if (!userSession[lineId]) {
-      return client.replyMessage(replyToken, [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }]);
-    }
-
-    const session = userSession[lineId];
-    const currentStep = session.step;
-    const question = questionSets[currentStep - 1];
-
-    if (question.isMulti && Array.isArray(question.options)) {
-      const parts = message.split(':');
-      if (parts.length !== 2) {
-        return client.replyMessage(replyToken, [{ type: 'text', text: '回答形式に誤りがあります。ボタンを使ってください。' }]);
-      }
-
-      const [key, answer] = parts;
-      if (!question.options.find(opt => opt.id === key)) {
-        return client.replyMessage(replyToken, [{ type: 'text', text: '不正な選択肢です。ボタンから選んでください。' }]);
-      }
-
-      if (!session.partialAnswers) session.partialAnswers = {};
-      session.partialAnswers[key] = answer;
-
-      const remaining = question.options.map(sub => sub.id).filter(k => !(k in session.partialAnswers));
-      if (remaining.length > 0) return;
-
-      Object.assign(session.answers, session.partialAnswers);
-      delete session.partialAnswers;
-      session.step++;
-
-    } else {
-      const validDataValues = question.options.map(opt => opt.data);
-      if (!validDataValues.includes(message)) {
-        return client.replyMessage(replyToken, [{ type: 'text', text: '選択肢からお選びください。' }]);
-      }
-
-      const keyName = question.id === "Q5" ? "q5_answer" :
-                      question.id === "Q4" ? "motion_level" :
-                      question.id;
-
-      let value = message;
-      if (question.id === "Q4" && value.startsWith("Q4=")) {
-        const num = parseInt(value.split("=")[1]);
-        value = isNaN(num) ? null : num;
-      }
-
-      session.answers[keyName] = value;
-      session.step++;
-    }
-
-    if (session.step > questionSets.length) {
-      const answers = session.answers;
-      const context = await supabaseMemoryManager.getContext(lineId);
-
-      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
-
-      const motionLevel = answers['motion_level'];
-      if (motionLevel && /^[1-5]$/.test(motionLevel)) {
-        await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
-      }
-
-      const result = await handleFollowupAnswers(lineId, answers);
-      delete userSession[lineId];
-
-      // AI解析中は reply で返す
-      await client.replyMessage(replyToken, [{
-        type: 'text',
-        text: '🧠AIが解析中です...\nしばらくお待ちください。'
-      }]);
-
-      // GPTコメントは push で送る（有料メッセージ枠）
-      await client.pushMessage(lineId, [{
-        type: 'text',
-        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-      }]);
-
-      return;
-    }
-
-    const nextQuestion = questionSets[session.step - 1];
-    const context = await supabaseMemoryManager.getContext(lineId);
-    return client.replyMessage(replyToken, [{
-      type: 'flex',
-      altText: replacePlaceholders(nextQuestion.header, context),
-      contents: buildFlexMessage(nextQuestion, context).contents
-    }]);
-
-  } catch (err) {
-    console.error('❌ followup/index.js エラー:', err);
-    return client.replyMessage(event.replyToken, [{
-      type: 'text',
-      text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。'
-    }]);
-  }
-}
-
-function buildFlexMessage(question, context = {}) {
-  if (question.isMulti && Array.isArray(question.options)) {
-    return buildMultiQuestionFlex({
-      altText: replacePlaceholders(question.header, context),
-      header: replacePlaceholders(question.header, context),
-      body: replacePlaceholders(question.body, context),
-      questions: question.options.map(opt => ({
-        key: opt.id,
-        title: replacePlaceholders(multiLabels[opt.id] || opt.label || opt.id, context),
-        items: opt.items
-      }))
-    });
-  }
-
+// カテゴリー選択用のバブル
+function buildCategorySelectionFlex() {
   return MessageBuilder({
-    altText: replacePlaceholders(question.header, context),
-    header: replacePlaceholders(question.header, context),
-    body: replacePlaceholders(question.body, context),
-    buttons: question.options.map(opt => ({
-      label: opt.label,
-      data: opt.data,
-      displayText: opt.displayText
-    }))
+    altText: '診断を開始します。どの不調が気になりますか？',
+    header: '診断スタート',
+    body: 'どの不調をととのえたいですか？1つ選んでください。',
+    buttons: [
+      { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
+      { label: '睡眠改善・集中力', data: 'sleep', displayText: '睡眠改善・集中力' },
+      { label: '肩こり・腰痛・関節', data: 'pain', displayText: '肩こり・腰痛・関節' },
+      { label: 'イライラや不安感', data: 'mental', displayText: 'イライラや不安感' },
+      { label: '体温バランス・むくみ', data: 'cold', displayText: '体温バランス・むくみ' },
+      { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
+      { label: '花粉症・鼻炎', data: 'pollen', displayText: '花粉症・鼻炎' },
+      { label: '女性特有のお悩み', data: 'women', displayText: '女性特有のお悩み' },
+      { label: 'なんとなく不調・不定愁訴', data: 'unknown', displayText: 'なんとなく不調・不定愁訴' },
+    ],
   });
 }
 
-module.exports = Object.assign(handleFollowup, {
-  hasSession: (lineId) => !!userSession[lineId]
-});
+// 通常の質問カードをビルド（Flex）
+async function buildQuestionFlex(questionFunction) {
+  try {
+    const flex = await questionFunction();
+    return flex;
+  } catch (error) {
+    console.error('❌ 質問関数の実行エラー', error);
+    return {
+      type: 'text',
+      text: 'ごめんなさい、質問の取得に失敗しました。もう一度試してください。',
+    };
+  }
+}
+
+// 複数小問対応の質問カード
+function buildMultiQuestionFlex({ altText, header, body, questions }) {
+  const questionContents = questions.flatMap((q) => [
+    {
+      type: 'text',
+      text: `🔸 ${q.title}`,
+      weight: 'bold',
+      size: 'sm',
+      margin: 'md',
+      color: '#444444',
+    },
+    {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'sm',
+      margin: 'sm',
+      contents: ['A', 'B', 'C', 'D'].map((choice) => ({
+        type: 'button',
+        action: {
+          type: 'postback',
+          label: choice,
+          data: `${q.key}:${choice}`,
+          displayText: `${q.title} → ${choice}`,
+        },
+        height: 'sm',
+        style: 'primary',
+        color: '#828E7B',
+        flex: 1,
+      })),
+    },
+  ]);
+
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: header,
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#788972',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: body,
+            wrap: true,
+            size: 'md',
+            color: '#333333',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          ...questionContents,
+        ],
+      },
+    },
+  };
+}
+
+// アドバイスカード（カルーセル）作成
+function buildAdviceCarouselFlex(cards, altText = 'AIが提案！ととのう計画') {
+  const bubbles = cards.map((card) => ({
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: card.header,
+          weight: 'bold',
+          size: 'md',
+          color: '#ffffff',
+        },
+      ],
+      backgroundColor: '#788972',
+      paddingAll: '12px',
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: card.body,
+          wrap: true,
+          color: '#333333',
+          size: 'md',
+        },
+      ],
+      spacing: 'md',
+    },
+  }));
+
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'carousel',
+      contents: bubbles,
+    },
+  };
+}
+
+// 通常のカルーセル（別名）
+function buildCarouselFlex(cards, altText = '診断結果とセルフケア提案') {
+  return buildAdviceCarouselFlex(cards, altText); // 実装は同じものを流用
+}
+
+module.exports = {
+  MessageBuilder,
+  buildCategorySelectionFlex,
+  buildQuestionFlex,
+  buildMultiQuestionFlex,
+  buildAdviceCarouselFlex,
+  buildCarouselFlex, // ← 忘れずに追加！
+};
