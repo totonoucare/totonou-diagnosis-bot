@@ -16,7 +16,7 @@ const config = {
 };
 const client = new line.Client(config);
 
-// ✅ LINE Webhook（⚠️ middlewareは express.json() より前！）
+// ✅ LINE Webhook
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
   const results = await Promise.all(
@@ -35,7 +35,61 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // 紹介トライアル
+      // ➤ ご案内リンク
+      if (userMessage === "各種ご案内リンク") {
+        const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+        const flex = {
+          type: "flex",
+          altText: "各種ご案内リンク",
+          contents: {
+            type: "bubble",
+            size: "mega",
+            header: {
+              type: "box",
+              layout: "vertical",
+              contents: [{ type: "text", text: "📎 ご案内リンク", weight: "bold", size: "lg" }],
+            },
+            body: {
+              type: "box",
+              layout: "vertical",
+              spacing: "md",
+              contents: [
+                {
+                  type: "text",
+                  text: `・サブスク登録/解約\n${subscribeUrl}\n\n・オンライン相談ご予約\nhttps://kenkounihari.seirin.jp/clinic/18212/reserve\n\n・ホームページ\nhttps://totonoucare.com`,
+                  wrap: true,
+                  size: "md",
+                },
+              ],
+            },
+          },
+        };
+        await client.replyMessage(event.replyToken, flex);
+        return;
+      }
+
+      // ➤ 紹介テンプレ返信
+      if (userMessage === "身近な人に紹介") {
+        const shareUrl = "https://lin.ee/UxWfJtV";
+        await client.replyMessage(event.replyToken, [
+          {
+            type: "text",
+            text: "ご紹介ありがとうございます✨\n👇こちら紹介文のコピペ用テンプレート文です。ぜひ参考にお使いください！😊",
+          },
+          {
+            type: "text",
+            text:
+              "最近、自分の不調の根本をAIが診断してくれるLINEツールを見つけて、\n参考になりそうだからシェアするね！\n\n体質診断→セルフケア提案まで無料であるから\n病院に行くほどじゃない不調におすすめ👍",
+          },
+          {
+            type: "text",
+            text: `🔗 LINE登録はこちら\n${shareUrl}`,
+          },
+        ]);
+        return;
+      }
+
+      // ➤ 紹介トライアル記録
       if (event.type === "postback" && userMessage === "trial_intro_done") {
         try {
           const { error } = await supabase
@@ -45,7 +99,6 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
               trial_intro_at: new Date().toISOString(),
             })
             .eq("line_id", lineId);
-
           if (error) throw error;
 
           await client.replyMessage(event.replyToken, {
@@ -62,7 +115,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // サブスク希望
+      // ➤ サブスク希望
       if (userMessage === "サブスク希望") {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
         try {
@@ -84,7 +137,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 定期チェック診断
+      // ➤ 定期チェック診断
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
           const messages = await handleFollowup(event, client, lineId);
@@ -106,7 +159,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 診断スタート
+      // ➤ 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -114,7 +167,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 診断セッション中
+      // ➤ 診断セッション中
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -122,14 +175,14 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // その他の追加コマンド
+      // ➤ その他の追加コマンド
       const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
       if (extraResult) {
         await client.replyMessage(event.replyToken, extraResult.messages);
         return;
       }
 
-      // その他メッセージ
+      // ➤ その他メッセージ
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `メッセージありがとうございます😊
@@ -145,7 +198,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 // ✅ Stripe Webhook（⚠️ raw 必須）
 app.use('/webhook/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
 
-// ✅ それ以外のルートは express.json() でOK（Checkout用）
+// ✅ Checkout 専用ルート
 app.use(express.json());
 app.use('/', stripeCheckout);
 
