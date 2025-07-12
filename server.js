@@ -5,7 +5,7 @@ const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
-const stripeCheckout = require('./routes/stripeCheckout'); // ← ✅ 追加！
+const stripeCheckout = require('./routes/stripeCheckout');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,14 +14,16 @@ const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
-
 const client = new line.Client(config);
 
-// Stripe Webhook（⚠️最優先で定義）
-app.use("/", stripeWebhook);
-app.use('/', stripeCheckout); // ← ✅ 追加！
+// 🔴 Stripe Webhookは express.raw() が必須
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
 
-// LINE Webhook
+// 🔵 それ以外のルート（StripeCheckoutやLINE含む）は express.json()
+app.use(express.json());
+app.use('/', stripeCheckout);
+
+// 🟢 LINE Webhook（raw禁止！jsonで処理する）
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
 
@@ -152,12 +154,11 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
   res.json(results);
 });
 
-// 確認エンドポイント
+// 確認用エンドポイント
 app.get("/", (req, res) => {
   res.send("Totonou Diagnosis Bot is running.");
 });
 
-// サーバー起動
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
 });
