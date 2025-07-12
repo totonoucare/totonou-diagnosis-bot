@@ -53,8 +53,11 @@ if (userMessage === "各種ご案内リンク") {
             text: "📎 ご案内リンク",
             weight: "bold",
             size: "lg",
-          },
+            color: "#ffffff"
+          }
         ],
+        backgroundColor: "#788972",
+        paddingAll: "12px"
       },
       body: {
         type: "box",
@@ -63,35 +66,39 @@ if (userMessage === "各種ご案内リンク") {
         contents: [
           {
             type: "button",
-            style: "link",
+            style: "primary",
+            color: "#A8BBA3",
             action: {
               type: "uri",
-              label: "🔓 サブスク登録・解約",
-              uri: subscribeUrl,
-            },
+              label: "🔐 サブスク登録 / 解約",
+              uri: subscribeUrl
+            }
           },
           {
             type: "button",
-            style: "link",
+            style: "primary",
+            color: "#A8BBA3",
             action: {
               type: "uri",
-              label: "📅 オンライン相談ご予約",
-              uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve",
-            },
+              label: "💬 オンライン相談予約",
+              uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
+            }
           },
           {
             type: "button",
-            style: "link",
+            style: "primary",
+            color: "#A8BBA3",
             action: {
               type: "uri",
-              label: "🌐 ホームページを見る",
-              uri: "https://totonoucare.com",
-            },
-          },
-        ],
-      },
-    },
+              label: "🏠 ホームページ",
+              uri: "https://totonoucare.com"
+            }
+          }
+        ]
+      }
+    }
   };
+
   await client.replyMessage(event.replyToken, flex);
   return;
 }
