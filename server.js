@@ -70,7 +70,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "message",
-                    label: "🤝 身近な人に紹介（共有リンク）",
+                    label: "🤝 身近な人に紹介",
                     text: "身近な人に紹介"
                   }
                 },
@@ -80,7 +80,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "uri",
-                    label: "🔐 サブスク登録 / 解約 ページ",
+                    label: "🔐 継続登録 / 解約 ページ",
                     uri: subscribeUrl
                   }
                 },
@@ -90,7 +90,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "uri",
-                    label: "🖥️ オンライン相談予約ページ",
+                    label: "🖥️ オンライン相談予約",
                     uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
                   }
                 },
@@ -279,7 +279,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
         await client.replyMessage(event.replyToken, {
           type: "text",
-          text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📉 残り相談回数：${newCount}回`,
+          text: `🧾 ご相談ありがとうございます。\n内容を確認し、順次ご返信いたします。\n\n👤 残り相談回数：${newCount}回`,
         });
         return;
       }
@@ -287,7 +287,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       // デフォルト返信
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: `メッセージありがとうございます😊\nご相談・お問い合わせには24時間以内にお返事させていただきますね！`,
+        text: `メッセージありがとうございます😊\n\nこのアカウントでは、診断やセルフケアのご提案に特化して自動でお応えしています。\nメニューバーからご希望の案内を選んでくださいね☺️\n\nご相談・ご質問・不具合報告などの個別の内容については必要に応じて運営者が直接お返事させていただきますので、しばらくお待ちください。`,
       });
     })
   );
