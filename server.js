@@ -16,16 +16,7 @@ const config = {
 };
 const client = new line.Client(config);
 
-// ✅ Stripe Webhook（express.rawを内部で使うようになってると仮定）
-app.use('/webhook/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
-
-// ✅ 他ルートは通常のJSON処理（Stripe Checkout含む）
-app.use(express.json());
-
-// ✅ Stripe Checkoutルート
-app.use('/', stripeCheckout);
-
-// ✅ LINE Webhook（middlewareが最初に来る必要あり）
+// ✅ LINE Webhook（⚠️ middlewareは express.json() より前！）
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
   const results = await Promise.all(
@@ -151,7 +142,14 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
   res.json(results);
 });
 
-// 確認
+// ✅ Stripe Webhook（⚠️ raw 必須）
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }), stripeWebhook);
+
+// ✅ それ以外のルートは express.json() でOK（Checkout用）
+app.use(express.json());
+app.use('/', stripeCheckout);
+
+// ✅ 動作確認用
 app.get("/", (req, res) => res.send("Totonou Diagnosis Bot is running."));
 
 app.listen(port, () => {
