@@ -258,31 +258,41 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // 相談：awaiting_consult_message = true のときだけ、1回カウント
-      const { data: consultUser, error: consultError } = await supabase
-        .from("users")
-        .select("awaiting_consult_message, remaining_consultations")
-        .eq("line_id", lineId)
-        .single();
+// 👤 awaiting_consult_message: true のユーザーのみ処理（多重発火防止）
+const { data: consultUser, error: consultError } = await supabase
+  .from("users")
+  .select("remaining_consultations")
+  .eq("line_id", lineId)
+  .eq("awaiting_consult_message", true)
+  .single();
 
-      if (!consultError && consultUser?.awaiting_consult_message === true) {
-        const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
+if (!consultError && consultUser) {
+  const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
 
-        await supabase
-          .from("users")
-          .update({
-            remaining_consultations: newCount,
-            awaiting_consult_message: false,
-            last_consult_triggered: new Date().toISOString(),
-          })
-          .eq("line_id", lineId);
+  const { data: updated, error: updateError } = await supabase
+    .from("users")
+    .update({
+      remaining_consultations: newCount,
+      awaiting_consult_message: false,
+      last_consult_triggered: new Date().toISOString(),
+    })
+    .eq("line_id", lineId)
+    .eq("awaiting_consult_message", true)
+    .select(); // ← 更新の反映確認にも使える
 
-        await client.replyMessage(event.replyToken, {
-          type: "text",
-          text: `🧾 ご相談ありがとうございます。\n内容を確認し、順次ご返信いたします。\n\n👤 残り相談回数：${newCount}回`,
-        });
-        return;
-      }
+  if (updateError) {
+    console.error("❌ 相談カウント更新失敗:", updateError);
+  } else if (updated?.length > 0) {
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: `🧾 ご相談ありがとうございます。\n内容を確認し、順次ご返信いたします。\n\n👤 残り相談回数：${newCount}回`,
+    });
+  } else {
+    console.warn("⚠️ awaiting_consult_message が false に戻っていた可能性：更新スキップ");
+  }
+
+  return;
+}
 
       // デフォルト返信
       await client.replyMessage(event.replyToken, {
