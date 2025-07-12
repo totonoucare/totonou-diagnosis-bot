@@ -265,8 +265,12 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         .eq("line_id", lineId)
         .single();
 
-      if (!consultError && consultUser?.awaiting_consult_message === true) {
-        const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
+      if (
+  !consultError &&
+  (consultUser?.awaiting_consult_message === true ||
+   consultUser?.awaiting_consult_message === "true")
+) {
+  const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
 
         await supabase
           .from("users")
