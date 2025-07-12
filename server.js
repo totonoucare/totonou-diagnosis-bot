@@ -70,7 +70,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "message",
-                    label: "🤝 身近な人に紹介",
+                    label: "🤝 身近な人に紹介（共有リンク表示）",
                     text: "身近な人に紹介"
                   }
                 },
@@ -80,7 +80,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "uri",
-                    label: "🔐 継続登録 / 解約 ページ",
+                    label: "🔐 サブスク登録 / 解約 ページ",
                     uri: subscribeUrl
                   }
                 },
@@ -90,7 +90,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "uri",
-                    label: "🖥️ オンライン相談予約",
+                    label: "🖥️ オンライン相談 予約ページ",
                     uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
                   }
                 },
@@ -208,7 +208,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: `メッセージありがとうございます！\n以下の内容でご相談を承ります☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\nご相談内容をこのトーク画面でご自由にお送りください。\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
+            text: `メッセージありがとうございます！\nご相談内容をこのトーク画面でご自由にお送りください☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
           });
         } else {
           const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
@@ -284,7 +284,7 @@ if (!consultError && consultUser) {
   } else if (updated?.length > 0) {
     await client.replyMessage(event.replyToken, {
       type: "text",
-      text: `🧾 ご相談ありがとうございます。\n内容を確認し、順次ご返信いたします。\n\n👤 残り相談回数：${newCount}回`,
+      text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📝 残り相談回数：${newCount}回`,
     });
   } else {
     console.warn("⚠️ awaiting_consult_message が false に戻っていた可能性：更新スキップ");
@@ -296,7 +296,7 @@ if (!consultError && consultUser) {
       // デフォルト返信
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: `メッセージありがとうございます😊\n\nこのアカウントでは、診断やセルフケアのご提案に特化して自動でお応えしています。\nメニューバーからご希望の案内を選んでくださいね☺️\n\nご相談・ご質問・不具合報告などの個別の内容については必要に応じて運営者が直接お返事させていただきますので、しばらくお待ちください。`,
+        text: `メッセージありがとうございます😊\nご相談・お問い合わせには24時間以内にお返事させていただきますね！`,
       });
     })
   );
