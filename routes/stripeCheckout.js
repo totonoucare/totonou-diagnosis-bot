@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// 💡 フロントから lineId と planType を受け取って決済リンク生成
+// ✅ HTMLフォームからの POST に対応（application/x-www-form-urlencoded）
+router.use(express.urlencoded({ extended: true }));
+
+// 💡 StripeのCheckoutセッション作成
 router.post('/create-checkout-session', async (req, res) => {
   const { lineId, planType } = req.body;
 
@@ -10,17 +13,21 @@ router.post('/create-checkout-session', async (req, res) => {
 
   if (!lineId || !planType) {
     console.warn("⚠️ lineId または planType が不足しています");
-    return res.status(400).json({ error: 'lineId または planType が不足しています' });
+    return res.status(400).send("lineId または planType が不足しています");
+  }
+
+  const priceIdMap = {
+    standard: 'price_1RitWqEVOs4YPHrumBOdaMVJ', // ← スタンダード（月額980円）
+    light: 'price_1RitG7EVOs4YPHruuPtlHrpV',    // ← ライト（月額580円）
+  };
+
+  const priceId = priceIdMap[planType];
+
+  if (!priceId) {
+    return res.status(400).send("無効なプランタイプです");
   }
 
   try {
-    const priceId =
-      planType === 'standard'
-        ? 'price_1RitWqEVOs4YPHrumBOdaMVJ' // ←スタンダード980円
-        : 'price_1RitG7EVOs4YPHruuPtlHrpV'; // ←ライト580円
-
-    console.log("💳 使用する priceId:", priceId);
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
@@ -36,14 +43,15 @@ router.post('/create-checkout-session', async (req, res) => {
     });
 
     console.log("✅ Checkoutセッション作成成功:", session.id);
-    res.json({ url: session.url });
+
+    // ✅ フォーム送信時は redirect で返すのが自然
+    return res.redirect(303, session.url);
   } catch (err) {
     console.error('❌ Checkoutセッション作成エラー:', {
       message: err.message,
       stack: err.stack,
-      raw: err,
     });
-    res.status(500).json({ error: 'Stripeセッション作成に失敗しました' });
+    return res.status(500).send("決済リンク作成に失敗しました");
   }
 });
 
