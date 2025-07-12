@@ -71,7 +71,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   action: {
                     type: "message",
                     label: "🤝 身近な人に紹介",
-                    text: "🤝 身近な人に紹介"
+                    text: "身近な人に紹介"
                   }
                 },
                 {
