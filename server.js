@@ -5,12 +5,26 @@ const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
-const stripeCheckout = require('./routes/stripeCheckout'); // ← ✅ 追加！
+const stripeCheckout = require('./routes/stripeCheckout');
 
 const app = express();
-app.use(express.json());  // ← 必ずこれを最初に！
 const port = process.env.PORT || 3000;
 
+// ✅ LINE署名検証のため rawBody を保持
+app.use((req, res, next) => {
+  let data = '';
+  req.setEncoding('utf8');
+  req.on('data', chunk => { data += chunk });
+  req.on('end', () => {
+    req.rawBody = data;
+    next();
+  });
+});
+
+// ✅ JSONパース（rawBodyより後に書く）
+app.use(express.json());
+
+// LINE設定
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.LINE_CHANNEL_SECRET,
@@ -18,11 +32,11 @@ const config = {
 
 const client = new line.Client(config);
 
-// Stripe Webhook（⚠️最優先で定義）
+// ✅ Stripe Webhook（最優先）
 app.use("/", stripeWebhook);
-app.use('/', stripeCheckout); // ← ✅ 追加！
+app.use('/', stripeCheckout);
 
-// LINE Webhook
+// ✅ LINE Webhook
 app.post("/webhook", line.middleware(config), async (req, res) => {
   const events = req.body.events;
 
@@ -42,7 +56,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ✅ 紹介トライアル導入（trial_intro_done）
+      // 🔹 紹介トライアル導入
       if (event.type === "postback" && event.postback.data === "trial_intro_done") {
         try {
           const { data, error } = await supabase
@@ -69,7 +83,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ サブスク希望（Stripe案内）
+      // 🔹 サブスク希望（Stripe案内）
       if (userMessage === "サブスク希望") {
         const lineId = event.source?.userId || '';
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
@@ -93,7 +107,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 定期チェック診断（再診 or 継続中）
+      // 🔹 定期チェック診断
       if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
         try {
           const messages = await handleFollowup(event, client, lineId);
@@ -116,7 +130,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 診断スタート
+      // 🔹 診断スタート
       if (userMessage === "診断開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -124,7 +138,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ 診断セッション中
+      // 🔹 診断セッション中
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -132,14 +146,14 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // ✅ その他の追加コマンド（ととのうガイドなど）
+      // 🔹 その他の追加コマンド
       const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
       if (extraResult) {
         await client.replyMessage(event.replyToken, extraResult.messages);
         return;
       }
 
-      // ❓その他のメッセージ
+      // ❓ その他のメッセージ
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `メッセージありがとうございます😊
@@ -153,12 +167,12 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
   res.json(results);
 });
 
-// 確認エンドポイント
+// 🔹 確認用エンドポイント
 app.get("/", (req, res) => {
   res.send("Totonou Diagnosis Bot is running.");
 });
 
-// サーバー起動
+// 🔹 サーバー起動
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
 });
