@@ -64,7 +64,16 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
               layout: "vertical",
               spacing: "md",
               contents: [
-
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#788972",
+                  action: {
+                    type: "message",
+                    label: "🔐 身近な人に紹介",
+                    text: "🔐 身近な人に紹介"
+                  }
+                },
                 {
                   type: "button",
                   style: "primary",
