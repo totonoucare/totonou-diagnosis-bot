@@ -80,7 +80,7 @@ if (userMessage === "各種ご案内リンク") {
             color: "#A8BBA3",
             action: {
               type: "uri",
-              label: "💬 オンライン相談予約",
+              label: "🖥️ オンライン相談予約",
               uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
             }
           },
@@ -90,7 +90,7 @@ if (userMessage === "各種ご案内リンク") {
             color: "#A8BBA3",
             action: {
               type: "uri",
-              label: "🏠 ホームページ",
+              label: "🌐 ホームページ",
               uri: "https://totonoucare.com"
             }
           }
