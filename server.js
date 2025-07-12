@@ -209,7 +209,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: `メッセージありがとうございます！\n以下の内容でご相談を承ります☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\nご相談内容をこのままご自由にお送りください。`,
+            text: `メッセージありがとうございます！\n以下の内容でご相談を承ります☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\nご相談内容をこのトーク画面でご自由にお送りください。\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
           });
         } else {
           const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
