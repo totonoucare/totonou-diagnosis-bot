@@ -274,7 +274,6 @@ if (!consultError && consultUser) {
     .update({
       remaining_consultations: newCount,
       awaiting_consult_message: false,
-      last_consult_triggered: new Date().toISOString(),
     })
     .eq("line_id", lineId)
     .eq("awaiting_consult_message", true)
