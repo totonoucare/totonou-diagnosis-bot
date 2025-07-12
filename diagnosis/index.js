@@ -94,7 +94,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       messages: [
         {
           type: 'text',
-          text: `【📝あなたのベース体質】\n\n${result.type}\n\n【🧭体質解説と改善ナビ】\n\n${result.traits}`
+          text: `【📝あなたのベース体質】\n\n${result.type}\n\n【🧭体質解説】\n\n${result.traits}`
         },
         {
           type: 'text',
@@ -102,13 +102,12 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
         },
         {
           type: 'text',
-          text: `【🤖AIが提案！📗あなた専用Myととのうガイド】
+          text: `🧠 AIが作成！【あなた専用ととのうガイド】ができました！
 
-あなたの体質にぴったりのセルフケア法や整え習慣を  
-『Myととのうガイド』という“ミニガイド📖”にまとめてお届けします🎁
+あなたの体質にぴったりのセルフケア法や生活習慣を  
+ミニガイドにして無料でお届け中！📗✨
 
-ただいま診断特典で無料プレゼント中✨  
-メニューバーの【Myととのうガイド】をタップして、今すぐ受け取ってください♪`
+メニューバーの【ととのうガイド】をタップして、今すぐ受け取ってください🎁`
         }
       ]
     };
