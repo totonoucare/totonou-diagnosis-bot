@@ -70,8 +70,8 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#788972",
                   action: {
                     type: "message",
-                    label: "🔐 身近な人に紹介",
-                    text: "🔐 身近な人に紹介"
+                    label: "🤝 身近な人に紹介",
+                    text: "🤝 身近な人に紹介"
                   }
                 },
                 {
