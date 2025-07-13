@@ -139,20 +139,19 @@ async function handleFollowup(event, client, lineId) {
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      // AI解析中は reply で返す
+      // 🧠 解析中メッセージを reply で即返す
       await client.replyMessage(replyToken, [{
         type: 'text',
         text: '🧠AIが解析中です...\nしばらくお待ちください。'
       }]);
 
-      // GPTコメントは push で送る（有料メッセージ枠）
-      await client.pushMessage(lineId, [{
-        type: 'text',
-        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-      }]);
-
-      return;
-    }
+      // 🔁 少し時間をおいてから結果を push（2秒待機）
+      setTimeout(async () => {
+        await client.pushMessage(lineId, [{
+          type: 'text',
+          text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+        }]);
+      }, 2000); // ←ミリ秒単位。2秒後に送信
 
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
