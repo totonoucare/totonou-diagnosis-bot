@@ -267,6 +267,13 @@ if (userMessage === "LINEでプロに相談") {
         return;
       }
 
+// 診断以外のコマンド（ととのうガイドなど）
+const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
+if (extraResult && extraResult.messages) {
+  await client.replyMessage(event.replyToken, extraResult.messages);
+  return;
+}
+
 // 👤 awaiting_consult_message: true のユーザーのみ処理（多重発火防止）
 const { data: consultUser, error: consultError } = await supabase
   .from("users")
