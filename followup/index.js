@@ -61,14 +61,15 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-    if (message === '定期チェック診断') {
-      const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
-        return client.replyMessage(replyToken, [{
-          type: 'text',
-          text: 'この機能は現在ご利用いただけません。'
-        }]);
-      }
+if (message === '定期チェック診断') {
+  const userRecord = await supabaseMemoryManager.getUser(lineId);
+  if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+    await client.replyMessage(replyToken, [{
+      type: 'text',
+      text: 'この機能は現在ご利用いただけません。サブスク登録、または無料お試しをご利用ください🙇'
+    }]);
+    return null;
+  }
 
       userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
