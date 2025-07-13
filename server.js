@@ -230,26 +230,32 @@ if (userMessage === "LINEでプロに相談") {
 }
 
       // 定期チェック診断
-      if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
-        try {
-          const messages = await handleFollowup(event, client, lineId);
-          if (Array.isArray(messages) && messages.length > 0) {
-            await client.replyMessage(event.replyToken, messages);
-          } else if (!handleFollowup.hasSession(lineId)) {
-            await client.replyMessage(event.replyToken, {
-              type: "text",
-              text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
-            });
-          }
-        } catch (err) {
-          console.error("❌ handleFollowup エラー:", err);
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: "再診処理中にエラーが発生しました。もう一度お試しください。",
-          });
-        }
-        return;
-      }
+if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
+  try {
+    const messages = await handleFollowup(event, client, lineId);
+
+    if (messages === null) {
+      // 利用不可ユーザー
+      return;
+    }
+
+    if (Array.isArray(messages) && messages.length > 0) {
+      await client.replyMessage(event.replyToken, messages);
+    } else if (!handleFollowup.hasSession(lineId)) {
+      await client.replyMessage(event.replyToken, {
+        type: "text",
+        text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
+      });
+    }
+  } catch (err) {
+    console.error("❌ handleFollowup エラー:", err);
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: "再診処理中にエラーが発生しました。もう一度お試しください。",
+    });
+  }
+  return;
+}
 
       // 診断開始
       if (userMessage === "診断開始") {
