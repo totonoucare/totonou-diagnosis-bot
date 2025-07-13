@@ -127,7 +127,6 @@ async function handleFollowup(event, client, lineId) {
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const finalContext = await supabaseMemoryManager.getContext(lineId);
 
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
@@ -136,21 +135,29 @@ async function handleFollowup(event, client, lineId) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      // 🧠 解析中を即 reply
+      // 🧠 解析中メッセージを reply
       await client.replyMessage(replyToken, [{
         type: 'text',
         text: '🧠AIが解析中です...\nしばらくお待ちください。'
       }]);
 
-      // GPTコメント取得 → 2秒後 push
-      setTimeout(async () => {
-        const result = await handleFollowupAnswers(lineId, answers);
-        await client.pushMessage(lineId, [{
-          type: 'text',
-          text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-        }]);
-        delete userSession[lineId]; // セッション削除はここでOK
-      }, 2000);
+      // GPT処理 → 終わり次第 push
+      handleFollowupAnswers(lineId, answers)
+        .then(async (result) => {
+          await client.pushMessage(lineId, [{
+            type: 'text',
+            text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+          }]);
+          delete userSession[lineId];
+        })
+        .catch(async (err) => {
+          console.error("❌ GPTコメント生成失敗:", err);
+          await client.pushMessage(lineId, [{
+            type: 'text',
+            text: '診断コメントの生成中にエラーが発生しました。'
+          }]);
+          delete userSession[lineId];
+        });
 
       return;
     }
