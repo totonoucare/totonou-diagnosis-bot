@@ -110,7 +110,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
             },
             {
               type: 'text',
-              text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀',
+              text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀\n※メニュー内「ととのうガイド」でも再確認できます！',
               size: 'sm',
               wrap: true
             },
