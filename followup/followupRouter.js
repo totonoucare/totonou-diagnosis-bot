@@ -66,8 +66,8 @@ async function handleFollowupAnswers(lineId, answers) {
     await supabaseMemoryManager.setFollowupAnswers(cleanLineId, parsedAnswers);
 
     // 🤖 GPTコメント生成（userIdの取得は内部で行う）
-    const subscribedUsers = await supabaseMemoryManager.getSubscribedUsers();
-    const matchedUser = subscribedUsers.find((u) => u.line_id === cleanLineId);
+    const gptAccessUsers = await supabaseMemoryManager.getUsersWithGPTAccess();
+    const matchedUser = gptAccessUsers.find((u) => u.line_id === cleanLineId);
     const userId = matchedUser?.id;
 
     if (!userId) throw new Error(`❌ userIdが取得できません: lineId=${cleanLineId}`);
