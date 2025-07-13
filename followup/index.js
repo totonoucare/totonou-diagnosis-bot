@@ -64,7 +64,10 @@ async function handleFollowup(event, client, lineId) {
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
       if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
-        return client.replyMessage(replyToken, [{ type: 'text', text: 'この機能はサブスク登録中、またはお試し診断を完了された方のみご利用いただけます。' }]);
+        return client.replyMessage(replyToken, [{
+          type: 'text',
+          text: 'この機能は現在ご利用いただけません。'
+        }]);
       }
 
       userSession[lineId] = { step: 1, answers: {} };
@@ -136,20 +139,19 @@ async function handleFollowup(event, client, lineId) {
       const result = await handleFollowupAnswers(lineId, answers);
       delete userSession[lineId];
 
-      const comment = `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`;
+      // AI解析中は reply で返す
+      await client.replyMessage(replyToken, [{
+        type: 'text',
+        text: '🧠AIが解析中です...\nしばらくお待ちください。'
+      }]);
 
-      try {
-        return await client.replyMessage(replyToken, [{
-          type: 'text',
-          text: comment
-        }]);
-      } catch (err) {
-        console.warn("⚠️ replyMessage 失敗。pushMessage にフォールバックします:", err.statusCode || err);
-        return await client.pushMessage(lineId, [{
-          type: 'text',
-          text: comment
-        }]);
-      }
+      // GPTコメントは push で送る（有料メッセージ枠）
+      await client.pushMessage(lineId, [{
+        type: 'text',
+        text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+      }]);
+
+      return;
     }
 
     const nextQuestion = questionSets[session.step - 1];
