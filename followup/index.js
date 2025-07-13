@@ -66,7 +66,7 @@ if (message === '定期チェック診断') {
   if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
     await client.replyMessage(replyToken, [{
       type: 'text',
-      text: 'この機能は現在ご利用いただけません。サブスク登録、または無料お試しをご利用ください🙇'
+      text: 'この機能はサブスク会員様、もしくは無料お試し会員様限定となっています🙏\n\n登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
     }]);
     return null;
   }
