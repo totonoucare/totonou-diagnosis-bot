@@ -153,7 +153,7 @@ async function handleExtraCommands(userId, messageText) {
 📩 「1人では続かない」という方には,,,習慣化サブスクサービスをご用意！
 
 詳しくはこちら💁
-https://totonoucare.com/subscribe/?line_id=${lineId}
+https://totonoucare.com/subscribe/#menu
 
 さらに今なら、
 LINE診断を身近な人に紹介すると、スタンダードコースの8日間無料体験がスタート🎁
