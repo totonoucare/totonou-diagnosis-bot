@@ -10,7 +10,7 @@ const {
   saveContext,
   getContext,
   initializeUser,
-  markGuideReceived  // ← これを追加！
+  markGuideReceived
 } = require('../supabaseMemoryManager');
 
 const userSessions = {};
@@ -90,6 +90,45 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
     delete userSessions[userId];
 
+    // 🆕 Flexバブルで「ととのうガイド」誘導ボタンを作成
+    const guideFlex = {
+      type: 'flex',
+      altText: 'ととのうガイドのご案内',
+      contents: {
+        type: 'bubble',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'md',
+          contents: [
+            {
+              type: 'text',
+              text: '🧠 あなた専用の「ととのうガイド」が完成しました📗✨',
+              weight: 'bold',
+              size: 'md',
+              wrap: true
+            },
+            {
+              type: 'text',
+              text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀',
+              size: 'sm',
+              wrap: true
+            },
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#788972',
+              action: {
+                type: 'message',
+                label: '🧭 ととのうガイドを見る',
+                text: 'ととのうガイド'
+              }
+            }
+          ]
+        }
+      }
+    };
+
     return {
       messages: [
         {
@@ -100,15 +139,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
           type: 'text',
           text: `【🌀巡りの傾向】\n\n${result.flowIssue}\n\n【🫁内臓への負担傾向】\n\n${result.organBurden}`
         },
-        {
-          type: 'text',
-          text: `🧠 AIが作成！【あなた専用ととのうガイド】が出来上がりました！
-
-あなたの体質にぴったりのセルフケア法や生活習慣を  
-ミニガイドにして無料でお届け中！📗✨
-
-メニューバーの【ととのうガイド】をタップして、今すぐ受け取ってください🎁`
-        }
+        guideFlex
       ]
     };
   }
@@ -131,13 +162,11 @@ async function handleExtraCommands(userId, messageText) {
       }
 
       const carousel = buildCarouselFlex(context.advice);
-
-      // 初回のみプロモーション文を送る
       const isFirstTime = !context.guide_received;
 
       if (isFirstTime) {
-        await markGuideReceived(userId); // 次回からは送らないようにマーク
-        const trialFlex = buildTrialStartFlex(); // Flexバブルオブジェクト生成
+        await markGuideReceived(userId);
+        const trialFlex = buildTrialStartFlex();
 
         return {
           messages: [
@@ -150,7 +179,7 @@ async function handleExtraCommands(userId, messageText) {
 
 ここからは、【ととのうガイド】をもとに、「実践→振り返り」のサイクルを無理なく続けていくことがポイントです！🎯
 
-📩 「1人では続かない」という方には,,,習慣化サブスクサービスをご用意！
+📩 「1人では続かない」という方には、、、習慣化サブスクサービスをご用意！
 
 詳しくはこちら💁
 https://totonoucare.com/subscribe/#menu
@@ -171,7 +200,7 @@ LINE診断を身近な人に紹介すると、スタンダードコースの8日
       } else {
         return {
           messages: [carousel]
-        }; // 2回目以降はカルーセルだけ
+        };
       }
     } catch (err) {
       console.error("❌ context取得エラー:", err);
