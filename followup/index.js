@@ -63,8 +63,8 @@ async function handleFollowup(event, client, lineId) {
 
     if (message === '定期チェック診断') {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || !userRecord.subscribed) {
-        return client.replyMessage(replyToken, [{ type: 'text', text: 'この機能は「サブスク希望」を送信いただいた方のみご利用いただけます。' }]);
+      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+        return client.replyMessage(replyToken, [{ type: 'text', text: 'この機能はサブスク登録中、またはお試し診断を完了された方のみご利用いただけます。' }]);
       }
 
       userSession[lineId] = { step: 1, answers: {} };
@@ -139,7 +139,6 @@ async function handleFollowup(event, client, lineId) {
       const comment = `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`;
 
       try {
-        // replyMessage で返信を試みる
         return await client.replyMessage(replyToken, [{
           type: 'text',
           text: comment
