@@ -235,7 +235,7 @@ if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(li
     const messages = await handleFollowup(event, client, lineId);
 
     if (messages === null) {
-      // 利用不可ユーザー
+      // 未登録または未サブスクユーザーなど ⇒ メッセージ送信済みなので return だけ
       return;
     }
 
