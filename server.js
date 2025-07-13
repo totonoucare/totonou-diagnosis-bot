@@ -7,7 +7,15 @@ const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
 
+const cors = require("cors"); // ← 追加
+
 const app = express();
+
+// ✅ ここでCORSを許可
+app.use(cors({
+  origin: "https://totonoucare.com",
+}));
+
 const port = process.env.PORT || 3000;
 
 const config = {
