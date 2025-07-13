@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// ✅ HTMLフォームからの POST に対応（application/x-www-form-urlencoded）
+// ✅ JSONまたはフォームのPOST両方に対応
 router.use(express.urlencoded({ extended: true }));
+router.use(express.json()); // fetch()対応
 
-// 💡 StripeのCheckoutセッション作成
+// 💳 Stripe Checkoutセッション作成エンドポイント
 router.post('/create-checkout-session', async (req, res) => {
   const { lineId, planType } = req.body;
 
@@ -13,7 +14,7 @@ router.post('/create-checkout-session', async (req, res) => {
 
   if (!lineId || !planType) {
     console.warn("⚠️ lineId または planType が不足しています");
-    return res.status(400).send("lineId または planType が不足しています");
+    return res.status(400).json({ error: "lineId または planType が不足しています" });
   }
 
   const priceIdMap = {
@@ -24,7 +25,7 @@ router.post('/create-checkout-session', async (req, res) => {
   const priceId = priceIdMap[planType];
 
   if (!priceId) {
-    return res.status(400).send("無効なプランタイプです");
+    return res.status(400).json({ error: "無効なプランタイプです" });
   }
 
   try {
@@ -44,14 +45,14 @@ router.post('/create-checkout-session', async (req, res) => {
 
     console.log("✅ Checkoutセッション作成成功:", session.id);
 
-    // ✅ フォーム送信時は redirect で返すのが自然
-    return res.redirect(303, session.url);
+    // ✅ JSON形式で決済URLを返す
+    return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error('❌ Checkoutセッション作成エラー:', {
       message: err.message,
       stack: err.stack,
     });
-    return res.status(500).send("決済リンク作成に失敗しました");
+    return res.status(500).json({ error: "決済リンク作成に失敗しました" });
   }
 });
 
