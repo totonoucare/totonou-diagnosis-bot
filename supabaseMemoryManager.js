@@ -198,12 +198,13 @@ async function getLatestFollowup(lineId) {
   return followup;
 }
 
-// ✅ サブスク登録ユーザー一覧取得
+// ✅ GPT診断コメントを生成対象とするユーザー一覧を取得
+// trial_intro_done = true または subscribed = true のユーザーを取得
 async function getSubscribedUsers() {
   const { data, error } = await supabase
     .from(USERS_TABLE)
     .select('id, line_id')
-    .eq('subscribed', true);
+    .or('subscribed.eq.true,trial_intro_done.eq.true');
 
   if (error) throw error;
   return data || [];
