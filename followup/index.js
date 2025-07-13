@@ -127,7 +127,7 @@ async function handleFollowup(event, client, lineId) {
 
     if (session.step > questionSets.length) {
       const answers = session.answers;
-      const context = await supabaseMemoryManager.getContext(lineId);
+      const finalContext = await supabaseMemoryManager.getContext(lineId);
 
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
@@ -136,29 +136,31 @@ async function handleFollowup(event, client, lineId) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      const result = await handleFollowupAnswers(lineId, answers);
-      delete userSession[lineId];
-
-      // 🧠 解析中メッセージを reply で即返す
+      // 🧠 解析中を即 reply
       await client.replyMessage(replyToken, [{
         type: 'text',
         text: '🧠AIが解析中です...\nしばらくお待ちください。'
       }]);
 
-      // 🔁 少し時間をおいてから結果を push（2秒待機）
+      // GPTコメント取得 → 2秒後 push
       setTimeout(async () => {
+        const result = await handleFollowupAnswers(lineId, answers);
         await client.pushMessage(lineId, [{
           type: 'text',
           text: `📋【今回の定期チェック診断結果】\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
         }]);
-      }, 2000); // ←ミリ秒単位。2秒後に送信
+        delete userSession[lineId]; // セッション削除はここでOK
+      }, 2000);
+
+      return;
+    }
 
     const nextQuestion = questionSets[session.step - 1];
-    const context = await supabaseMemoryManager.getContext(lineId);
+    const nextContext = await supabaseMemoryManager.getContext(lineId);
     return client.replyMessage(replyToken, [{
       type: 'flex',
-      altText: replacePlaceholders(nextQuestion.header, context),
-      contents: buildFlexMessage(nextQuestion, context).contents
+      altText: replacePlaceholders(nextQuestion.header, nextContext),
+      contents: buildFlexMessage(nextQuestion, nextContext).contents
     }]);
 
   } catch (err) {
