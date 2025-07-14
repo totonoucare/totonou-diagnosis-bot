@@ -11,8 +11,9 @@ const client = new line.Client({
 
 const router = express.Router();
 
+// ✅ 修正ポイント：ルートを "/" に変更（server.jsと一致させるため）
 router.post(
-  "/webhook/stripe",
+  "/",
   express.raw({ type: "application/json" }),
   async (req, res) => {
     const sig = req.headers["stripe-signature"];
@@ -58,7 +59,6 @@ router.post(
           });
 
           if (planType === "standard") {
-            // 🔼 残り相談回数 +5（最大30まで）
             const { data: user, error } = await supabase
               .from("users")
               .select("id, remaining_chats")
