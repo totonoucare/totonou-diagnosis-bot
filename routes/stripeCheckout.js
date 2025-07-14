@@ -1,3 +1,5 @@
+// routes/stripeCheckout.js
+
 const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -5,8 +7,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // ✅ HTMLフォームからの POST に対応（application/x-www-form-urlencoded）
 router.use(express.urlencoded({ extended: true }));
 
-// 💡 StripeのCheckoutセッション作成
-router.post('/create-checkout-session', async (req, res) => {
+// ✅ POST /create-checkout-session に対応するため、router.post('/') に修正
+router.post('/', async (req, res) => {
   const { lineId, planType } = req.body;
 
   console.log("📩 リクエスト受信:", { lineId, planType });
@@ -24,6 +26,7 @@ router.post('/create-checkout-session', async (req, res) => {
   const priceId = priceIdMap[planType];
 
   if (!priceId) {
+    console.warn("⚠️ 無効なプランタイプ:", planType);
     return res.status(400).send("無効なプランタイプです");
   }
 
