@@ -29,7 +29,7 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
       scores: [score1, score2, score3],
       adviceCards: [
         {
-          header: "診断エラー",
+          header: "分析エラー",
           body: "スコアの組み合わせが未定義か、内部エラーが発生しています。",
         }
       ]
