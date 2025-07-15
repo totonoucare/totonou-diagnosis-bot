@@ -37,7 +37,7 @@ const symptomMap = {
   "skin": "頭皮や肌トラブル",
   "pollen": "花粉症や鼻炎",
   "women": "女性特有のお悩み",
-  "common": "なんとなく不調・不定愁訴",
+  "common": "なんとなく不調・その他",
 };
 
 
@@ -57,7 +57,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
     }
     const lineId = user.line_id;
 
-    // 🧠 context（初回診断の情報）を取得
+    // 🧠 context（初回体質ケア分析の情報）を取得
     const context = await supabaseMemoryManager.getContext(lineId);
 
     if (!context || !followupAnswers) {
@@ -114,7 +114,7 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
     const userPrompt = `
 【お悩み】${symptomJapanese || "未登録"}
 
-【Myととのうガイド（体質ケア分析ベース）】
+【ととのうケアガイド（体質ケア分析ベース）】
 - 習慣：${adviceParsed.habits || "未登録"}
 - 呼吸法：${adviceParsed.breathing || "未登録"}
 - ストレッチ：${adviceParsed.stretch || "未登録"}
