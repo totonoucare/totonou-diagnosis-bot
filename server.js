@@ -273,7 +273,7 @@ if (userMessage === "定期チェックナビ" || handleFollowup.hasSession?.(li
         return;
       }
 
-// 分析以外のコマンド（ととのうガイドなど）
+// 分析以外のコマンド（ととのうケアガイドなど）
 const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
 if (extraResult && extraResult.messages) {
   await client.replyMessage(event.replyToken, extraResult.messages);
