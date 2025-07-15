@@ -78,7 +78,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 今回の定期チェックナビの結果（Q1〜Q5）を踏まえて、状態の変化やアドバイスをまとめてください。
 
 診断コメントには以下の視点を含めてください：
-1. 初回体質ケア分析の内容と比較した体調の変化（お悩みの度合い・全体的な体調）→ Q1より
+1. 初回体質ケア分析時のお悩み（symptom）のレベルを5と比較した、お悩みの改善度合いおよび全体的な体調の変化→ Q1より
 2. 生活習慣の整い度合いと改善点 → Q2と advice.habits より
 3. 各セルフケア実施状況と定着レベル → Q3と advice より
 4. 経絡ストレッチ（Q4）と「motion」に基づくライン改善の観察 → motion + Q4 + advice.stretch を照合
@@ -143,7 +143,7 @@ Q5. セルフケアで困ったこと：${followupAnswers?.q5_answer || "未入�
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 1.1,
+      temperature: 0.9,
     });
 
     const replyText = chatCompletion.choices?.[0]?.message?.content?.trim() || "";
