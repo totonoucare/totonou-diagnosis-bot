@@ -61,9 +61,9 @@ function injectContext(template, context = {}) {
 
 function buildCategorySelectionFlex() {
   return MessageBuilder({
-    altText: '診断を開始します。どの不調が気になりますか？',
-    header: '診断スタート',
-    body: 'どの不調をととのえたいですか？1つ選んでください。',
+    altText: '分析を開始します。どの不調が気になりますか？',
+    header: '分析スタート！',
+    body: 'どんなお悩みをととのえたいですか？1つ選んでください。',
     buttons: [
       { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
       { label: '睡眠改善・集中力', data: 'sleep', displayText: '睡眠改善・集中力' },
@@ -73,7 +73,7 @@ function buildCategorySelectionFlex() {
       { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
       { label: '花粉症・鼻炎', data: 'pollen', displayText: '花粉症・鼻炎' },
       { label: '女性特有のお悩み', data: 'women', displayText: '女性特有のお悩み' },
-      { label: 'なんとなく不調・不定愁訴', data: 'unknown', displayText: 'なんとなく不調・不定愁訴' },
+      { label: 'なんとなく不調・その他', data: 'unknown', displayText: 'なんとなく不調・その他' },
     ],
   });
 }
@@ -243,7 +243,7 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
   }
 }
 
-function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうガイド') {
+function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうケアガイド') {
   const bubbles = cards.map((card) => ({
     type: 'bubble',
     size: 'mega',
@@ -288,14 +288,14 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
   };
 }
 
-function buildCarouselFlex(cards, altText = '診断結果とセルフケア提案') {
+function buildCarouselFlex(cards, altText = '分析結果とセルフケア提案') {
   return buildAdviceCarouselFlex(cards, altText);
 }
 
 function buildReminderFlex() {
   return {
     type: 'flex',
-    altText: '📅 定期チェック診断のご案内',
+    altText: '📅 定期チェックナビのご案内',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -305,7 +305,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '📅 定期チェック診断',
+            text: '📅 定期チェックナビ',
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
@@ -321,7 +321,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '前回の診断から、セルフケアの調子はいかがですか❓\n『定期チェック診断』で、ととのい具合の確認とケアの見直しをいつでもサポートしますよ🌿',
+            text: '前回から、セルフケアの調子はいかがですか❓\n『定期チェックナビ』で、ととのい具合の確認とケアの見直し提案をいつでもサポートしますよ🌿',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -334,8 +334,8 @@ function buildReminderFlex() {
             type: 'button',
             action: {
               type: 'message',
-              label: '定期チェック診断',
-              text: '定期チェック診断',
+              label: '定期チェックナビ',
+              text: '定期チェックナビ',
             },
             style: 'primary',
             color: '#758A6D',
