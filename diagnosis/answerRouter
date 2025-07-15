@@ -47,7 +47,7 @@ function handleAnswers(userAnswers, category) {
     default: organ = "不明";      motion = "特定の動作"; break;
   }
 
-  // Q0 → 主訴（session.selectedCategoryを引数categoryとして受け取る）
+  // Q0 → お悩み（session.selectedCategoryを引数categoryとして受け取る）
   const symptom = category || "不明な不調";
 
   // ✅ 診断ロジック呼び出し（symptomとmotionを追加）
