@@ -61,12 +61,12 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-if (message === '定期チェック診断') {
+if (message === '定期チェックナビ') {
   const userRecord = await supabaseMemoryManager.getUser(lineId);
   if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
     await client.replyMessage(replyToken, [{
       type: 'text',
-      text: 'この機能はサブスク会員様、もしくは無料お試し会員様限定となっています🙏\n\n登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
+      text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
     }]);
     return null;
   }
@@ -175,7 +175,7 @@ if (message === '定期チェック診断') {
     console.error('❌ followup/index.js エラー:', err);
     return client.replyMessage(event.replyToken, [{
       type: 'text',
-      text: '診断中にエラーが発生しました。もう一度「定期チェック診断」と送って再開してください。'
+      text: '診断中にエラーが発生しました。もう一度「定期チェックナビ」と送って再開してください。'
     }]);
   }
 }
