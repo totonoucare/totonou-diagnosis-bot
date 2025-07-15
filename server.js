@@ -123,7 +123,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           {
             type: "text",
             text:
-              "最近、自分の不調の根本をAIが診断してくれるLINEツールを見つけて、\n参考になりそうだからシェアするね！\n\n体質診断→セルフケア提案まで無料であるから\n病院に行くほどじゃない不調におすすめ👍",
+              "最近、自分の不調の根本をAIが診断してくれるLINEツールを見つけて、\n参考になりそうだからシェアするね！\n\n体質分析→セルフケア提案まで無料であるから\n病院に行くほどじゃない不調におすすめ👍",
           },
           {
             type: "text",
@@ -147,7 +147,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: "🎁ご紹介ありがとうございます！\n8日間の無料トライアルがスタートしました！\n\n⏰定期的なリマインドで、習慣改善やセルフケアを継続サポートしていきますね😊\n\n📉また、変化を見るためにメニュー内『定期チェック診断』の週1回受診をオススメしています！\nこちらからも診断促しリマインドを入れるので、ぜひ受診してくださいね💪\n\n何かあれば『LINEでプロに相談』で気軽にご相談ください🧑‍⚕️",
+            text: "🎁ご紹介ありがとうございます！\n8日間の無料トライアルがスタートしました！\n\n⏰定期的なリマインドで、習慣改善やセルフケアを継続サポートしていきますね😊\n\n📉また、変化を見るためにメニュー内『定期チェックナビ』の週1回利用をオススメしています！\nこちらからも促しリマインドを入れるので、ぜひ活用してくださいね💪\n\n何かあれば『LINEでプロに相談』で気軽にご相談ください🧑‍⚕️",
           });
         } catch (err) {
           console.error("❌ trial_intro_done 登録エラー:", err);
@@ -244,7 +244,7 @@ if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(li
     } else if (!handleFollowup.hasSession(lineId)) {
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: "定期チェック診断を始めるには、メニューバーの【定期チェック診断】をタップしてください。",
+        text: "定期チェックナビを始めるには、メニューバーの【定期チェックナビ】をタップしてください。",
       });
     }
   } catch (err) {
@@ -258,7 +258,7 @@ if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(li
 }
 
       // 診断開始
-      if (userMessage === "診断開始") {
+      if (userMessage === "分析開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
         await client.replyMessage(event.replyToken, flex);
