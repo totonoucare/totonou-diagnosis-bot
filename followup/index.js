@@ -6,14 +6,14 @@ const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder
 
 const symptomLabels = {
   stomach: '胃腸の調子',
-  sleep: '睡眠改善・集中力',
+  sleep: '睡眠・集中力',
   pain: '肩こり・腰痛・関節',
   mental: 'イライラや不安感',
   cold: '体温バランス・むくみ',
   skin: '頭髪や肌の健康',
   pollen: '花粉症・鼻炎',
   women: '女性特有のお悩み',
-  unknown: 'なんとなく不調・その他',
+  unknown: 'なんとなく不調・不定愁訴',
 };
 
 const motionLabels = {
