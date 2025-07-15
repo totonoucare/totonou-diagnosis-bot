@@ -121,7 +121,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
               action: {
                 type: 'message',
                 label: '🧭 ととのうケアガイドを見る',
-                text: 'ととのうガイド'
+                text: 'ととのうケアガイド'
               }
             }
           ]
@@ -146,7 +146,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 }
 
 async function handleExtraCommands(userId, messageText) {
-  if (messageText.includes("ととのうガイド")) {
+  if (messageText.includes("ととのうケアガイド")) {
     try {
       const context = await getContext(userId);
 
@@ -177,7 +177,7 @@ async function handleExtraCommands(userId, messageText) {
 
 ととのう体質ケア分析、おつかれさまでした！
 
-ここからは、【ととのうガイド】をもとに、「実践→振り返り」のサイクルを無理なく続けていくことがポイントです！🎯
+ここからは、【ととのうケアガイド】をもとに、「実践→振り返り」のサイクルを無理なく続けていくことがポイントです！🎯
 
 📩 「1人では続かない」という方には、、、習慣化サブスクサービスをご用意！
 
