@@ -66,14 +66,14 @@ function buildCategorySelectionFlex() {
     body: 'どんなお悩みをととのえたいですか？1つ選んでください。',
     buttons: [
       { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
-      { label: '睡眠改善・集中力', data: 'sleep', displayText: '睡眠改善・集中力' },
-      { label: '肩こり・腰痛・関節痛', data: 'pain', displayText: '肩こり・腰痛・関節' },
+      { label: '睡眠・集中力', data: 'sleep', displayText: '睡眠・集中力' },
+      { label: '肩こり・腰痛・関節痛', data: 'pain', displayText: '肩こり・腰痛・関節痛' },
       { label: 'イライラや不安感', data: 'mental', displayText: 'イライラや不安感' },
       { label: '体温バランス・むくみ', data: 'cold', displayText: '体温バランス・むくみ' },
       { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
       { label: '花粉症・鼻炎', data: 'pollen', displayText: '花粉症・鼻炎' },
       { label: '女性特有のお悩み', data: 'women', displayText: '女性特有のお悩み' },
-      { label: 'なんとなく不調・その他', data: 'unknown', displayText: 'なんとなく不調・その他' },
+      { label: 'なんとなく不調・不定愁訴', data: 'unknown', displayText: 'なんとなく不調・不定愁訴' },
     ],
   });
 }
