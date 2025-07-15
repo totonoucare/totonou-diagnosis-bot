@@ -40,7 +40,6 @@ async function markSubscribed(lineId, options = {}) {
     subscribed: true,
     subscribed_at: getJSTISOStringNow(),
     trial_intro_done: false,       // ← ここで false に戻す
-    trial_intro_at: null           // ← 日付も消す
   };
 
   if (options.plan_type) {
