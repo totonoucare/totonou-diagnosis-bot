@@ -74,11 +74,11 @@ async function sendFollowupResponse(userId, followupAnswers) {
     const systemPrompt = `
 あなたは東洋医学専門の鍼灸師・医薬品登録販売者が監修したセルフケア支援の専門家AI「トトノウくん」です。
 
-ユーザーの初回診断で作成された「Myととのうガイド（体質・巡りに基づいたセルフケア提案）」を参考に、
-今回の定期チェック診断の結果（Q1〜Q5）を踏まえて、状態の変化やアドバイスをまとめてください。
+ユーザーの初回体質ケア分析で作成された「ととのうケアガイド（体質・巡りに基づいたセルフケア提案）」を参考に、
+今回の定期チェックナビの結果（Q1〜Q5）を踏まえて、状態の変化やアドバイスをまとめてください。
 
 診断コメントには以下の視点を含めてください：
-1. 前回診断内容と比較した体調の変化（主訴症状・全体的体調）→ Q1より
+1. 初回体質ケア分析の内容と比較した体調の変化（お悩みの度合い・全体的な体調）→ Q1より
 2. 生活習慣の整い度合いと改善点 → Q2と advice.habits より
 3. 各セルフケア実施状況と定着レベル → Q3と advice より
 4. 経絡ストレッチ（Q4）と「motion」に基づくライン改善の観察 → motion + Q4 + advice.stretch を照合
@@ -112,9 +112,9 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 `.trim();
 
     const userPrompt = `
-【主訴】${symptomJapanese || "未登録"}
+【お悩み】${symptomJapanese || "未登録"}
 
-【Myととのうガイド（前回診断ベース）】
+【Myととのうガイド（体質ケア分析ベース）】
 - 習慣：${adviceParsed.habits || "未登録"}
 - 呼吸法：${adviceParsed.breathing || "未登録"}
 - ストレッチ：${adviceParsed.stretch || "未登録"}
@@ -123,7 +123,7 @@ motion に応じて、以下の経絡ラインに注目してコメントして�
 
 【初回の動作テスト】${motion || "未登録"}
 
-【今回の定期チェック診断結果】
+【今回の定期チェックナビ結果】
 Q1. 「${symptomJapanese}」のつらさ：${followupAnswers?.symptom_level || "未入力"}
 　　全体の体調：${followupAnswers?.general_level || "未入力"}
 Q2. 睡眠：${followupAnswers?.sleep || "未入力"} ／ 食事：${followupAnswers?.meal || "未入力"} ／ ストレス：${followupAnswers?.stress || "未入力"}
