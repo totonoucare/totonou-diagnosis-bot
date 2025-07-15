@@ -229,8 +229,8 @@ if (userMessage === "LINEでプロに相談") {
   return;
 }
 
-      // 定期チェック診断
-if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(lineId)) {
+      // 定期チェックナビ
+if (userMessage === "定期チェックナビ" || handleFollowup.hasSession?.(lineId)) {
   try {
     const messages = await handleFollowup(event, client, lineId);
 
@@ -257,7 +257,7 @@ if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(li
   return;
 }
 
-      // 診断開始
+      // 分析開始
       if (userMessage === "分析開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -265,7 +265,7 @@ if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(li
         return;
       }
 
-      // 診断セッション中
+      // 分析セッション中
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -273,7 +273,7 @@ if (userMessage === "定期チェック診断" || handleFollowup.hasSession?.(li
         return;
       }
 
-// 診断以外のコマンド（ととのうガイドなど）
+// 分析以外のコマンド（ととのうガイドなど）
 const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
 if (extraResult && extraResult.messages) {
   await client.replyMessage(event.replyToken, extraResult.messages);
