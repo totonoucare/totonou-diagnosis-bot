@@ -61,15 +61,15 @@ router.post(
           if (planType === "standard") {
             const { data: user, error } = await supabase
               .from("users")
-              .select("id, remaining_chats")
+              .select("id, remaining_consultations")
               .eq("line_id", lineId)
               .maybeSingle();
             if (error || !user) throw error || new Error("ユーザーが見つかりません");
 
-            const updatedCount = Math.min((user.remaining_chats || 0) + 5, 30);
+            const updatedCount = Math.min((user.remaining_consultations || 0) + 5, 30);
             await supabase
               .from("users")
-              .update({ remaining_chats: updatedCount })
+              .update({ remaining_consultations: updatedCount })
               .eq("id", user.id);
 
             await client.pushMessage(lineId, {
