@@ -20,7 +20,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
   if (!session) {
     return {
-      messages: [{ type: 'text', text: '「診断開始」と送ってから始めてくださいね。' }]
+      messages: [{ type: 'text', text: '「分析開始」と送ってから始めてくださいね。' }]
     };
   }
 
@@ -90,10 +90,10 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
     delete userSessions[userId];
 
-    // 🆕 Flexバブルで「ととのうガイド」誘導ボタンを作成
+    // 🆕 Flexバブルで「ととのうケアガイド」誘導ボタンを作成
     const guideFlex = {
       type: 'flex',
-      altText: 'ととのうガイドのご案内',
+      altText: 'ととのうケアガイドのご案内',
       contents: {
         type: 'bubble',
         body: {
@@ -103,14 +103,14 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
           contents: [
             {
               type: 'text',
-              text: '🧠 あなた専用の「ととのうガイド」が完成しました📗✨',
+              text: '🧠 あなた専用の「ととのうケアガイド」が完成しました📗✨',
               weight: 'bold',
               size: 'md',
               wrap: true
             },
             {
               type: 'text',
-              text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀\n※メニュー内「ととのうガイド」でも再確認できます！',
+              text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀\n※メニュー内「ととのうケアガイド」でも再確認できます！',
               size: 'sm',
               wrap: true
             },
@@ -120,7 +120,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
               color: '#788972',
               action: {
                 type: 'message',
-                label: '🧭 ととのうガイドを見る',
+                label: '🧭 ととのうケアガイドを見る',
                 text: 'ととのうガイド'
               }
             }
@@ -175,7 +175,7 @@ async function handleExtraCommands(userId, messageText) {
               type: 'text',
               text: `🔄 「ととのう習慣」で、変わる毎日へ🌱
 
-初回診断、おつかれさまでした！
+ととのう体質ケア分析、おつかれさまでした！
 
 ここからは、【ととのうガイド】をもとに、「実践→振り返り」のサイクルを無理なく続けていくことがポイントです！🎯
 
