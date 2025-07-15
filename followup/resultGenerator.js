@@ -3,7 +3,7 @@
  * GPTへの送信に必要なプロンプト用データを構成する。
  *
  * @param {Object} answers - Q1〜Q5の回答（オブジェクト形式）
- * @param {Object} context - Supabaseに保存された診断結果＆アドバイス情報
+ * @param {Object} context - Supabaseに保存された体質ケア分析結果＆アドバイス情報
  * @returns {{ rawData: Object, promptParts: Object }}
  */
 function generateFollowupResult(answers, context = {}) {
@@ -25,7 +25,7 @@ function generateFollowupResult(answers, context = {}) {
   const advice = context.advice || {};
 
   const promptParts = {
-    // 初回情報（Myととのうガイド）
+    // 初回情報（ととのうケアガイド）
     symptom: context.symptom || "未登録",
     motion: context.motion || "未登録",
     advice: {
