@@ -327,7 +327,7 @@ if (!consultError && consultUser) {
 });
 
 // Stripe Webhook
-app.post("/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhook);
+app.use("/stripe/webhook", stripeWebhook);
 
 // Stripe Checkout
 app.use("/create-checkout-session", stripeCheckout);
