@@ -13,7 +13,7 @@ const symptomLabels = {
   skin: '頭髪や肌の健康',
   pollen: '花粉症・鼻炎',
   women: '女性特有のお悩み',
-  unknown: 'なんとなく不調・不定愁訴',
+  unknown: 'なんとなく不調・その他',
 };
 
 const motionLabels = {
@@ -78,7 +78,7 @@ if (message === '定期チェックナビ') {
     }
 
     if (!userSession[lineId]) {
-      return client.replyMessage(replyToken, [{ type: 'text', text: '再診を始めるには「定期チェック診断」と送ってください。' }]);
+      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「定期チェッナビ」と送ってください。' }]);
     }
 
     const session = userSession[lineId];
