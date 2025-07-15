@@ -6,12 +6,12 @@ const { generateGPTMessage } = require('./generateGPTMessage');
 
 console.log('🚀 リマインダー実行開始');
 
-// サブスク中のユーザー取得
-async function getSubscribedUsers() {
+// ✅ サブスク中または体験中のユーザー取得
+async function getActiveUsers() {
   const { data, error } = await supabase
     .from('users')
-    .select('id, line_id, subscribed, subscribed_at')
-    .eq('subscribed', true);
+    .select('id, line_id, subscribed, subscribed_at, trial_intro_done, trial_started_at')
+    .or('subscribed.eq.true,trial_intro_done.eq.true');
 
   if (error) {
     console.error('❌ Supabaseからのユーザー取得失敗:', error);
@@ -20,12 +20,12 @@ async function getSubscribedUsers() {
   return data;
 }
 
-// JST補正を入れた日数差計算（デバッグログ付き）
+// ✅ JST補正を入れた日数差計算（デバッグログ付き）
 function getDaysSince(dateInput) {
   const baseDate = new Date(dateInput);
   const now = new Date();
 
-  // デバッグログ追加
+  // デバッグログ
   console.log('🕒 now:', now.toISOString());
   console.log('🕒 baseDate:', baseDate.toISOString());
   console.log('📊 差分(ms):', now - baseDate);
@@ -40,22 +40,22 @@ function getDaysSince(dateInput) {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// メイン処理
+// ✅ メイン処理
 async function sendReminders() {
   try {
-    const users = await getSubscribedUsers();
-    console.log(`👥 サブスク中ユーザー数: ${users.length}`);
+    const users = await getActiveUsers();
+    console.log(`👥 リマインド対象ユーザー数: ${users.length}`);
 
     for (const user of users) {
       console.log(`\n🔍 チェックユーザー: ${user.line_id}`);
-      console.log(`🕒 subscribed_at: ${user.subscribed_at}`);
+      const baseDate = user.subscribed_at || user.trial_started_at;
 
-      if (!user.subscribed_at) {
-        console.warn('⚠️ subscribed_at 未設定スキップ');
+      if (!baseDate) {
+        console.warn('⚠️ 開始日時未設定スキップ');
         continue;
       }
 
-      const days = getDaysSince(user.subscribed_at);
+      const days = getDaysSince(baseDate);
       console.log(`📆 経過日数: ${days}`);
 
       // ✅ 初回（1日後）リマインド
