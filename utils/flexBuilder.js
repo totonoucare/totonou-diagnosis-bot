@@ -256,7 +256,7 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `📝【 ${result.type} 】`,
+            text: `📝 【 ${result.type} 】`,
             weight: 'bold',
             size: 'lg', // ← サイズUPでさらに強調
             color: '#ffffff',
@@ -269,7 +269,7 @@ function buildResultFlex(result, imageUrl) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        backgroundColor: '#F8F9F7', // ✅ 柔らか背景追加！
+        backgroundColor: '#F5f5f0', // ✅ 柔らか背景追加！
         paddingAll: '12px',         // ✅ 本文エリア全体に余白
         contents: [
           {
