@@ -12,8 +12,8 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
   } = advice;
 
   return `
-以下は、あるユーザーの最近の定期チェック診断の回答内容です。
-初回診断では体質に応じた「ととのうガイド」（5つのセルフケア）を提案しており、その進捗状況をもとにリマインドコメントを作成してください。
+以下は、あるユーザーの最近の定期チェックナビの回答内容です。
+初回の体質ケア分析では体質に応じた「ととのうケアガイド」（5つのセルフケア）を提案しており、その進捗状況をもとにリマインドコメントを作成してください。
 
 【followups テーブルのカラム定義】
 - symptom_level：1＝改善／5＝全く改善なし
@@ -34,7 +34,7 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
 　E: モチベーションが続かなかった  
 　F: 特になし
 
-【このユーザーの最新の診断データ】
+【このユーザーの最新の定期チェックナビのデータ】
 - symptom_level：${latestFollowup.symptom_level}
 - general_level：${latestFollowup.general_level}
 - sleep：${latestFollowup.sleep}
@@ -47,7 +47,7 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
 - kampo：${latestFollowup.kampo}
 - q5_answer：${latestFollowup.q5_answer}
 
-【初回診断に基づくセルフケアアドバイス（Myととのうガイド）】
+【初回の体質ケア分析に基づくセルフケアアドバイス（ととのうケアガイド）】
 1. 💡体質改善習慣: ${habits}
 2. 🧘呼吸法: ${breathing}
 3. 🤸ストレッチ: ${stretch}
@@ -59,7 +59,7 @@ function buildReminderPrompt(latestFollowup, advice = {}) {
 ・もし q5_answer に困りごとがある場合は、その悩みに寄り添うトーンで書いてください。
 ・文量は100〜200文字程度。
 ・明るく親しみやすい口調で、絵文字を1〜2個含めてください。
-・診断を受けていない場合は、Myととのうガイドだけを参考にしてください。
+・定期チェックナビを受けていない場合は、ととのうケアガイドだけを参考にしてください。
 `;
 }
 
