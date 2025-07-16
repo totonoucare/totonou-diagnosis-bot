@@ -62,7 +62,7 @@ function injectContext(template, context = {}) {
 function buildCategorySelectionFlex() {
   return MessageBuilder({
     altText: '分析を開始します。どの不調が気になりますか？',
-    header: '分析スタート！',
+    header: '🚀 分析スタート！',
     body: 'どんなお悩みをととのえたいですか？1つ選んでください。',
     buttons: [
       { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
@@ -265,7 +265,7 @@ function buildResultFlex(result, imageUrl) {
             type: 'text',
             text: `📝あなたは…${result.type}`,
             weight: 'bold',
-            size: 'lg',
+            size: 'md',
             color: '#ffffff',
           },
         ],
