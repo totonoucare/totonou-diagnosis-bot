@@ -93,44 +93,64 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     delete userSessions[userId];
 
     // 🆕 Flexバブルで「ととのうケアガイド」誘導ボタンを作成
-    const guideFlex = {
-      type: 'flex',
-      altText: 'ととのうケアガイドのご案内',
-      contents: {
-        type: 'bubble',
-        body: {
-          type: 'box',
-          layout: 'vertical',
-          spacing: 'md',
-          contents: [
-            {
-              type: 'text',
-              text: '🧠 あなた専用の「ととのうケアガイド」が完成しました📗✨',
-              weight: 'bold',
-              size: 'lg',
-              wrap: true
-            },
-            {
-              type: 'text',
-              text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀\n※メニュー内「ととのうケアガイド」でも再確認できます！',
-              size: 'md',
-              wrap: true
-            },
-            {
-              type: 'button',
-              style: 'primary',
-              color: '#788972',
-              action: {
-                type: 'message',
-                label: '🧭 ととのうケアガイドを見る',
-                text: 'ととのうケアガイド'
-              }
-            }
-          ]
+const guideFlex = {
+  type: 'flex',
+  altText: 'ととのうケアガイドのご案内',
+  contents: {
+    type: 'bubble',
+    size: 'mega',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#F8F9F7', // ✅ 背景色（柔らかグレー）
+      paddingAll: '16px',         // ✅ 全体に余白
+      spacing: 'md',
+      contents: [
+        {
+          type: 'text',
+          text: '📗 ととのうケアガイド完成！',
+          weight: 'bold',
+          size: 'md',
+          color: '#333333',
+          wrap: true
+        },
+        {
+          type: 'separator',
+          margin: 'md'
+        },
+        {
+          type: 'text',
+          text: '🧠 あなた専用のケアアドバイスができました。\nセルフケア法・生活習慣のヒントを今すぐチェックしましょう！',
+          size: 'sm',
+          color: '#333333',
+          wrap: true
+        },
+        {
+          type: 'text',
+          text: '※あとからメニュー内「ととのうケアガイド」でも確認できます。',
+          size: 'xs',
+          color: '#888888',
+          wrap: true,
+          margin: 'md'
+        },
+        {
+          type: 'separator',
+          margin: 'md'
+        },
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#758A6D',
+          action: {
+            type: 'message',
+            label: '🧭 ととのうケアガイドを見る',
+            text: 'ととのうケアガイド'
+          }
         }
-      }
-    };
-
+      ]
+    }
+  }
+};
 const imageUrl = typeImageDictionary[result.type];
 const resultFlex = buildResultFlex(result, imageUrl);
 
