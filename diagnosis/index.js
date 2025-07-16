@@ -1,9 +1,11 @@
 const questionSets = require('./questionSets');
+const typeImageDictionary = require('./typeImageDictionary');
 const {
   buildQuestionFlex,
   buildCategorySelectionFlex,
   buildCarouselFlex,
-  buildTrialStartFlex
+  buildTrialStartFlex,
+  buildResultFlex
 } = require('../utils/flexBuilder');
 const { handleAnswers } = require('./answerRouter');
 const {
@@ -129,21 +131,15 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
       }
     };
 
-    return {
-      messages: [
-        {
-          type: 'text',
-          text: `【📝あなたのベース体質】\n\n${result.type}\n\n【🧭体質解説】\n\n${result.traits}`
-        },
-        {
-          type: 'text',
-          text: `【🌀巡りの傾向】\n\n${result.flowIssue}\n\n【🫁内臓への負担傾向】\n\n${result.organBurden}`
-        },
-        guideFlex
-      ]
-    };
-  }
-}
+const imageUrl = typeImageDictionary[result.type];
+const resultFlex = buildResultFlex(result, imageUrl);
+
+return {
+  messages: [
+    resultFlex,
+    guideFlex
+  ]
+};
 
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうケアガイド")) {
