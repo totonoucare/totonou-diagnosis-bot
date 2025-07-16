@@ -1,4 +1,5 @@
 const supabase = require('../supabaseClient');
+const line = require('../line');
 
 console.log('🚫 トライアル強制終了スクリプト開始');
 
@@ -25,6 +26,18 @@ function getJSTISOStringNow() {
   return jstNow.toISOString();
 }
 
+// メッセージテンプレート（必要に応じて書き換えてOK）
+function getEndTrialMessage() {
+  return {
+    type: 'text',
+    text:
+      '📣【お知らせ】\n\n' +
+      '無料お試し期間のご利用ありがとうございました☺️\n\n' +
+      'サブスク登録のご検討もぜひお願いします🌱\n\n' +
+      'ととのう習慣を一緒につくっていきましょう！✨',
+  };
+}
+
 async function deactivateExpiredTrials() {
   const { data, error } = await supabase
     .from('users')
@@ -45,18 +58,28 @@ async function deactivateExpiredTrials() {
   console.log(`🔍 強制終了対象ユーザー数: ${expiredUsers.length}`);
 
   for (const user of expiredUsers) {
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        trial_intro_done: false,
-        trial_ended_at: getJSTISOStringNow(), // ← JSTで記録
-      })
-      .eq('id', user.id);
+    try {
+      // Supabase更新
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          trial_intro_done: false,
+          trial_ended_at: getJSTISOStringNow(),
+        })
+        .eq('id', user.id);
 
-    if (updateError) {
-      console.error(`❌ ユーザーID ${user.id} の更新失敗:`, updateError);
-    } else {
-      console.log(`✅ ユーザーID ${user.id} を trial_intro_done: false に更新（終了日時も記録）`);
+      if (updateError) {
+        console.error(`❌ ユーザーID ${user.id} の更新失敗:`, updateError);
+        continue;
+      }
+
+      console.log(`✅ trial_intro_done を false に更新（ID: ${user.id}）`);
+
+      // LINE通知送信
+      await line.client.pushMessage(user.line_id, getEndTrialMessage());
+      console.log(`📩 終了通知メッセージ送信完了（line_id: ${user.line_id}）`);
+    } catch (err) {
+      console.error(`❌ ユーザーID ${user.id} の処理中にエラー:`, err);
     }
   }
 }
