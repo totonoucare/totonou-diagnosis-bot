@@ -110,7 +110,7 @@ const guideFlex = {
           type: 'text',
           text: '📗 ととのうケアガイド完成！',
           weight: 'bold',
-          size: 'md',
+          size: 'lg',
           color: '#B78949',
           wrap: true
         },
