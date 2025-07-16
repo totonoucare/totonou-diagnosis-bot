@@ -263,7 +263,7 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `📝 あなたは【${result.type}】`,
+            text: `📝【 ${result.type} 】`,
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
