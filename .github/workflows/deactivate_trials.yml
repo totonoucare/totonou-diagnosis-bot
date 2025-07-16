@@ -8,9 +8,11 @@ on:
 jobs:
   run-script:
     runs-on: ubuntu-latest
-    env:  # ←★★ここを追加★★
+    env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+      LINE_CHANNEL_SECRET: ${{ secrets.LINE_CHANNEL_SECRET }}  # ←★これが必要！
 
     steps:
       - name: 📦 リポジトリをチェックアウト
