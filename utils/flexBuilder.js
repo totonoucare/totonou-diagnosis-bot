@@ -263,13 +263,13 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `📝あなたは…${result.type}`,
+            text: `📝 ${result.type} `,
             weight: 'bold',
-            size: 'md',
+            size: 'lg',
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#E7C586',
+        backgroundColor: '#758A6D',
         paddingAll: '12px',
       },
       body: {
