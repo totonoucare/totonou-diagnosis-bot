@@ -269,7 +269,7 @@ function buildResultFlex(result, imageUrl) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        backgroundColor: '#F8F6EC', // ✅ 柔らか背景追加！
+        backgroundColor: '#F5F5F0', // ✅ 柔らか背景追加！
         paddingAll: '12px',         // ✅ 本文エリア全体に余白
         contents: [
           {
@@ -294,7 +294,7 @@ function buildResultFlex(result, imageUrl) {
             type: 'text',
             text: '【 🧭 体質解説 】',
             weight: 'bold',
-            size: 'md',
+            size: 'sm',
             color: '#0d0d0d',
           },
           {
@@ -312,7 +312,7 @@ function buildResultFlex(result, imageUrl) {
             type: 'text',
             text: '【 🌀 巡りの傾向 】',
             weight: 'bold',
-            size: 'md',
+            size: 'sm',
             color: '#0d0d0d',
           },
           {
@@ -330,7 +330,7 @@ function buildResultFlex(result, imageUrl) {
             type: 'text',
             text: '【 🫁 内臓の負担傾向 】',
             weight: 'bold',
-            size: 'md',
+            size: 'sm',
             color: '#0d0d0d',
           },
           {
