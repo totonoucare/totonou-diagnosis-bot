@@ -61,7 +61,7 @@ async function sendTrialReminders() {
             '→ アンケートはこちら\nhttps://〜〜（あとでURL挿入）',
         });
         console.log('✅ 7日目アンケート案内送信完了');
-      } else if (days === 15) {
+      } else if (days === 16) {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${user.line_id}`;
         await line.client.pushMessage(user.line_id, {
           type: 'text',
@@ -70,7 +70,7 @@ async function sendTrialReminders() {
             '引き続きケアサポートをご希望の方は、以下のリンクから本登録をお願いします👇\n\n' +
             `▶ 月額580円／980円のプランをご用意しています📱\n${subscribeUrl}`,
         });
-        console.log('✅ 15日目本登録案内送信完了');
+        console.log('✅ 16日目本登録案内送信完了');
       } else {
         console.log(`⏭️ 該当日なし（days=${days}）`);
       }
