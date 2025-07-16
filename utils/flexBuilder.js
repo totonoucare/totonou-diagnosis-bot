@@ -263,13 +263,13 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `📝あなたは ${result.type}`,
+            text: `📝あなたは…${result.type}`,
             weight: 'bold',
             size: 'lg',
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#B78949',
         paddingAll: '12px',
       },
       body: {
@@ -279,21 +279,21 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `【体質解説】\n${result.traits}`,
+            text: `【体質解説】\n\n${result.traits}`,
             wrap: true,
             color: '#333333',
             size: 'md',
           },
           {
             type: 'text',
-            text: `【巡りの傾向】\n${result.flowIssue}`,
+            text: `【巡りの傾向】\n\n${result.flowIssue}`,
             wrap: true,
             color: '#333333',
             size: 'md',
           },
           {
             type: 'text',
-            text: `【内臓の傾向】\n${result.organBurden}`,
+            text: `【内臓の傾向】\n\n${result.organBurden}`,
             wrap: true,
             color: '#333333',
             size: 'md',
