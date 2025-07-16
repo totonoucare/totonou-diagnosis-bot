@@ -269,7 +269,7 @@ function buildResultFlex(result, imageUrl) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        backgroundColor: '#F5F5F0', // ✅ 柔らか背景追加！
+        backgroundColor: '#F8F9F7', // ✅ 柔らか背景追加！
         paddingAll: '12px',         // ✅ 本文エリア全体に余白
         contents: [
           {
@@ -302,7 +302,7 @@ function buildResultFlex(result, imageUrl) {
             text: result.traits,
             wrap: true,
             size: 'md',
-            color: '#0d0d0d',
+            color: '#333333',
           },
           {
             type: 'separator',
@@ -338,7 +338,7 @@ function buildResultFlex(result, imageUrl) {
             text: result.organBurden,
             wrap: true,
             size: 'md',
-            color: '#0d0d0d',
+            color: '#333333',
           },
         ],
       },
