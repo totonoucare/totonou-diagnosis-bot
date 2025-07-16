@@ -320,7 +320,7 @@ function buildResultFlex(result, imageUrl) {
             text: result.flowIssue,
             wrap: true,
             size: 'md',
-            color: '#0d0d0d',
+            color: '#333333',
           },
           {
             type: 'separator',
