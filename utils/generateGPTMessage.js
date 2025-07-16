@@ -84,7 +84,7 @@ async function generateGPTMessage(lineId) {
     const advice = context?.advice || {};
 
     if (!followup) {
-      return `こんにちは！最近の診断はまだ未実施のようですね😊\n\n以前お伝えしたセルフケアの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n${advice.breathing || "深く吐くことから始めてみましょう🌿"}`;
+      return `こんにちは！最近の定期チェックナビはまだ未実施のようですね😊\n\n以前お伝えしたととのうケアガイドの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n${advice.breathing || "深く吐くことから始めてみましょう🌿"}`;
     }
 
     const prompt = buildReminderPrompt(followup, advice);
@@ -94,7 +94,7 @@ async function generateGPTMessage(lineId) {
       messages: [
         {
           role: "system",
-          content: "あなたは東洋医学に詳しい親しみやすいキャラのAIで、セルフケアの習慣化を優しく支援する伴走者です。診断履歴を参考にして、問いかけ型や励ましの言葉で寄り添ってください。",
+          content: "あなたは東洋医学に詳しい親しみやすいキャラのAIで、セルフケアの習慣化を優しく支援する伴走者です。初回分析で出たユーザー専用のととのうケアガイドや定期チェックナビの履歴を参考にして、問いかけ型や励ましの言葉で寄り添ってください。",
         },
         { role: "user", content: prompt },
       ],
@@ -104,7 +104,7 @@ async function generateGPTMessage(lineId) {
 
     const gptComment = completion.choices?.[0]?.message?.content?.trim();
 
-    return gptComment || "今日も無理せず、自分のペースで“ととのう”を続けていきましょうね🌱";
+    return gptComment || "今日も無理せず、自分のペースで“ととのうケア”を続けていきましょうね🌱";
   } catch (error) {
     console.error("⚠️ GPTメッセージ生成エラー:", error);
     return "リマインドメッセージの生成に失敗しました。次回の診断で状況をお聞かせください😊";
