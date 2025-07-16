@@ -471,5 +471,6 @@ module.exports = {
   buildCarouselFlex,
   buildFollowupQuestionFlex,
   buildReminderFlex,
-  buildTrialStartFlex, // ✅ ここを追加
+  buildTrialStartFlex, 
+  buildResultFlex, 
 };
