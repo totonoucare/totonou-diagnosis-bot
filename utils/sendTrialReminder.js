@@ -55,9 +55,9 @@ async function sendTrialReminders() {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
-            '📝 無料おためしは明日まで！\n\n' +
-            'もしまだじっくり見れてない方は、ぜひ「ととのうケアガイド📗」を一度ご覧ください。\n' +
-            '簡単なアンケートに答えていただくと、さらに【7日間の延長】がもらえます😊\n\n' +
+            '📝 無料お試し第一弾は、明日まで！\n\n' +
+            'もしまだじっくり見れてない方は、ぜひ「ととのうケアガイド📗」を一度ご覧ください。\n\n' +
+            '簡単なアンケートに答えていただくと、さらに無料お試し期間を【7日間延長】いたします！😊\n\n' +
             '→ アンケートはこちら\nhttps://〜〜（あとでURL挿入）',
         });
         console.log('✅ 7日目アンケート案内送信完了');
@@ -66,7 +66,7 @@ async function sendTrialReminders() {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
-            '🟢 トライアル期間があと1日で終了します！\n\n' +
+            '🟢 トライアル期間が本日で終了します！\n\n' +
             '引き続きケアサポートをご希望の方は、以下のリンクから本登録をお願いします👇\n\n' +
             `▶ 月額580円／980円のプランをご用意しています📱\n${subscribeUrl}`,
         });
