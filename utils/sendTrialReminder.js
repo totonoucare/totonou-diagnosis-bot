@@ -51,16 +51,18 @@ async function sendTrialReminders() {
       console.log(`📆 経過日数: ${days}`);
 
       // ✅ 各種日付条件に基づいて送信処理
-      if (days === 7) {
+      if (days === 9) {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
-            '📝 無料お試し第一弾は、明日まで！\n\n' +
-            'もしまだじっくり見れてない方は、ぜひ「ととのうケアガイド📗」を一度ご覧ください。\n\n' +
-            '簡単なアンケートに答えていただくと、さらに無料お試し期間を【7日間延長】いたします！😊\n\n' +
-            '→ アンケートはこちら\nhttps://〜〜（あとでURL挿入）',
+            '📝 昨日でご利用から8日が経ちました！継続、すばらしいです✨\n\n' +
+            'お身体の変化や、気づきはありましたか？☺️\n\n' +
+            '「ととのうケアガイド📗」はいつでも見返せますので、引き続きじっくりご活用ください🌿\n\n' +
+            'もしよろしければ、今のご感想や気づきを\nアンケートで教えていただけるととても励みになります✨\n\n' +
+            '▼ アンケートはこちら\nhttps://〜〜（あとでURL挿入）\n\n' +
+            '※アンケートは任意ですので、お時間あるときにご協力いただければ幸いです☺️',
         });
-        console.log('✅ 7日目アンケート案内送信完了');
+        console.log('✅ 9日目アンケート案内送信完了');
       } else if (days === 16) {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${user.line_id}`;
         await line.client.pushMessage(user.line_id, {
