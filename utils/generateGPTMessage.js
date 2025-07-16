@@ -84,7 +84,7 @@ async function generateGPTMessage(lineId) {
     const advice = context?.advice || {};
 
     if (!followup) {
-      return `こんにちは！最近の定期チェックナビはまだ未実施のようですね😊\n\n以前お伝えしたととのうケアガイドの中から、まずは「呼吸法」だけでも、今日少し意識してみませんか？\n${advice.breathing || "深く吐くことから始めてみましょう🌿"}`;
+      return `こんにちは！最近の『定期チェックナビ』はまだ未実施のようですね😊\n\n以前お伝えした『ととのうケアガイド』の実践がまだでしたら、まずは寝る前に「経絡ストレッチ」だけでもやってみませんか❓\n${advice.stretch || "簡単にできそうなことから始めてみましょう！🌿"}`;
     }
 
     const prompt = buildReminderPrompt(followup, advice);
