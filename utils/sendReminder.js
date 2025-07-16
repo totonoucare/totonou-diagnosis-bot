@@ -10,7 +10,7 @@ console.log('🚀 リマインダー実行開始');
 async function getActiveUsers() {
   const { data, error } = await supabase
     .from('users')
-    .select('id, line_id, subscribed, subscribed_at, trial_intro_done, trial_started_at')
+    .select('id, line_id, subscribed, subscribed_at, trial_intro_done, trial_intro_at')
     .or('subscribed.eq.true,trial_intro_done.eq.true');
 
   if (error) {
@@ -48,7 +48,7 @@ async function sendReminders() {
 
     for (const user of users) {
       console.log(`\n🔍 チェックユーザー: ${user.line_id}`);
-      const baseDate = user.subscribed_at || user.trial_started_at;
+      const baseDate = user.subscribed_at || user.trial_intro_at;
 
       if (!baseDate) {
         console.warn('⚠️ 開始日時未設定スキップ');
