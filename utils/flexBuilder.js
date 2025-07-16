@@ -250,13 +250,6 @@ function buildResultFlex(result, imageUrl) {
     contents: {
       type: 'bubble',
       size: 'mega',
-      hero: {
-        type: 'image',
-        url: imageUrl,
-        size: 'full',
-        aspectRatio: '1:1',
-        aspectMode: 'cover',
-      },
       header: {
         type: 'box',
         layout: 'vertical',
@@ -272,55 +265,81 @@ function buildResultFlex(result, imageUrl) {
         backgroundColor: '#758A6D',
         paddingAll: '12px',
       },
-body: {
-  type: 'box',
-  layout: 'vertical',
-  spacing: 'md',
-  contents: [
-    {
-      type: 'text',
-      text: '【 🧭 体質解説 】',
-      weight: 'bold',
-      size: 'md',
-      color: '#333333',
-    },
-    {
-      type: 'text',
-      text: result.traits,
-      wrap: true,
-      size: 'md',
-      color: '#0d0d0d',
-    },
-    {
-      type: 'text',
-      text: '【 🌀 巡りの傾向 】',
-      weight: 'bold',
-      size: 'md',
-      color: '#333333',
-    },
-    {
-      type: 'text',
-      text: result.flowIssue,
-      wrap: true,
-      size: 'md',
-      color: '#0d0d0d',
-    },
-    {
-      type: 'text',
-      text: '【 🫁 内臓の負担傾向 】',
-      weight: 'bold',
-      size: 'md',
-      color: '#333333',
-    },
-    {
-      type: 'text',
-      text: result.organBurden,
-      wrap: true,
-      size: 'md',
-      color: '#0d0d0d',
-    },
-  ]
-},
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: '10px',
+            contents: [
+              {
+                type: 'image',
+                url: imageUrl,
+                size: 'full',
+                aspectMode: 'fit',
+                aspectRatio: '1:1'
+              }
+            ]
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'text',
+            text: '【 🧭 体質解説 】',
+            weight: 'bold',
+            size: 'md',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'text',
+            text: result.traits,
+            wrap: true,
+            size: 'md',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'text',
+            text: '【 🌀 巡りの傾向 】',
+            weight: 'bold',
+            size: 'md',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'text',
+            text: result.flowIssue,
+            wrap: true,
+            size: 'md',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'text',
+            text: '【 🫁 内臓の負担傾向 】',
+            weight: 'bold',
+            size: 'md',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'text',
+            text: result.organBurden,
+            wrap: true,
+            size: 'md',
+            color: '#0d0d0d',
+          },
+        ],
+      },
     },
   };
 }
