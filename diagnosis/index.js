@@ -107,13 +107,13 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
               type: 'text',
               text: '🧠 あなた専用の「ととのうケアガイド」が完成しました📗✨',
               weight: 'bold',
-              size: 'md',
+              size: 'lg',
               wrap: true
             },
             {
               type: 'text',
               text: 'セルフケア法・生活習慣アドバイスを今すぐチェック👀\n※メニュー内「ととのうケアガイド」でも再確認できます！',
-              size: 'sm',
+              size: 'md',
               wrap: true
             },
             {
