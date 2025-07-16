@@ -1,8 +1,5 @@
 const supabase = require('../supabaseClient');
 const line = require('../line');
-const { getLatestFollowup } = require('../supabaseMemoryManager');
-const { buildReminderFlex } = require('./flexBuilder');
-const { generateGPTMessage } = require('./generateGPTMessage');
 
 console.log('🚀 トライアル用リマインダー実行開始');
 
@@ -54,11 +51,7 @@ async function sendTrialReminders() {
       console.log(`📆 経過日数: ${days}`);
 
       // ✅ 各種日付条件に基づいて送信処理
-      if (days === 4 || days === 12) {
-        const flex = buildReminderFlex();
-        await line.client.pushMessage(user.line_id, flex);
-        console.log(`✅ Flexメッセージ送信完了（${days}日目）`);
-      } else if (days === 7) {
+      if (days === 7) {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
@@ -68,17 +61,13 @@ async function sendTrialReminders() {
             '→ アンケートはこちら\nhttps://〜〜（あとでURL挿入）',
         });
         console.log('✅ 7日目アンケート案内送信完了');
-      } else if (days === 8 || days === 16) {
-        const msg = await generateGPTMessage(user.line_id);
-        await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
-        console.log(`✅ GPTアドバイス送信完了（${days}日目）`);
       } else if (days === 15) {
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
             '🟢 トライアル期間があと1日で終了します！\n\n' +
             '引き続きケアサポートをご希望の方は、以下から本登録をお願いします。\n\n' +
-            '▶ 月額580円／880円のプランをご用意しています📱\nメニュー内の『ご案内リンク集』からご覧ください',
+            '▶ 月額580円／980円のプランをご用意しています📱\nメニュー内の『ご案内リンク集』からご覧ください',
         });
         console.log('✅ 15日目本登録案内送信完了');
       } else {
