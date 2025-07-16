@@ -111,7 +111,7 @@ const guideFlex = {
           text: '📗 ととのうケアガイド完成！',
           weight: 'bold',
           size: 'md',
-          color: '#333333',
+          color: '#0d0d0d',
           wrap: true
         },
         {
@@ -122,7 +122,7 @@ const guideFlex = {
           type: 'text',
           text: '🧠 あなた専用のケアアドバイスができました。\nセルフケア法・生活習慣のヒントを今すぐチェックしましょう！',
           size: 'sm',
-          color: '#333333',
+          color: '#0d0d0d',
           wrap: true
         },
         {
