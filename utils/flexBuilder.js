@@ -263,7 +263,7 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `📝 ${result.type}`,
+            text: `📝あなたは ${result.type}`,
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
@@ -282,21 +282,21 @@ function buildResultFlex(result, imageUrl) {
             text: `【体質解説】\n${result.traits}`,
             wrap: true,
             color: '#333333',
-            size: 'sm',
+            size: 'md',
           },
           {
             type: 'text',
             text: `【巡りの傾向】\n${result.flowIssue}`,
             wrap: true,
             color: '#333333',
-            size: 'sm',
+            size: 'md',
           },
           {
             type: 'text',
             text: `【内臓の傾向】\n${result.organBurden}`,
             wrap: true,
             color: '#333333',
-            size: 'sm',
+            size: 'md',
           },
         ],
       },
