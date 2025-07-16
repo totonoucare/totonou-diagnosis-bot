@@ -62,12 +62,13 @@ async function sendTrialReminders() {
         });
         console.log('✅ 7日目アンケート案内送信完了');
       } else if (days === 15) {
+        const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${user.line_id}`;
         await line.client.pushMessage(user.line_id, {
           type: 'text',
           text:
             '🟢 トライアル期間があと1日で終了します！\n\n' +
-            '引き続きケアサポートをご希望の方は、以下から本登録をお願いします。\n\n' +
-            '▶ 月額580円／980円のプランをご用意しています📱\nメニュー内の『ご案内リンク集』からご覧ください',
+            '引き続きケアサポートをご希望の方は、以下のリンクから本登録をお願いします👇\n\n' +
+            `▶ 月額580円／980円のプランをご用意しています📱\n${subscribeUrl}`,
         });
         console.log('✅ 15日目本登録案内送信完了');
       } else {
