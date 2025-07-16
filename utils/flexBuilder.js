@@ -295,7 +295,7 @@ function buildResultFlex(result, imageUrl) {
             text: '【 🧭 体質解説 】',
             weight: 'bold',
             size: 'sm',
-            color: '#0d0d0d',
+            color: '#B78949',
           },
           {
             type: 'text',
@@ -313,7 +313,7 @@ function buildResultFlex(result, imageUrl) {
             text: '【 🌀 巡りの傾向 】',
             weight: 'bold',
             size: 'sm',
-            color: '#0d0d0d',
+            color: '#B78949',
           },
           {
             type: 'text',
@@ -331,7 +331,7 @@ function buildResultFlex(result, imageUrl) {
             text: '【 🫁 内臓の負担傾向 】',
             weight: 'bold',
             size: 'sm',
-            color: '#0d0d0d',
+            color: '#B78949',
           },
           {
             type: 'text',
