@@ -134,12 +134,14 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 const imageUrl = typeImageDictionary[result.type];
 const resultFlex = buildResultFlex(result, imageUrl);
 
-return {
-  messages: [
-    resultFlex,
-    guideFlex
-  ]
-};
+    return {
+      messages: [
+        resultFlex,
+        guideFlex
+      ]
+    };
+  } 
+} 
 
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうケアガイド")) {
