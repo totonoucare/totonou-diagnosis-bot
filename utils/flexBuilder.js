@@ -243,6 +243,67 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
   }
 }
 
+function buildResultFlex(result, imageUrl) {
+  return {
+    type: 'flex',
+    altText: '診断結果：あなたの体質タイプ',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      hero: {
+        type: 'image',
+        url: imageUrl,
+        size: 'full',
+        aspectRatio: '1:1',
+        aspectMode: 'cover',
+      },
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: `📝 ${result.type}`,
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#758A6D',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: `【体質解説】\n${result.traits}`,
+            wrap: true,
+            color: '#333333',
+            size: 'sm',
+          },
+          {
+            type: 'text',
+            text: `【巡りの傾向】\n${result.flowIssue}`,
+            wrap: true,
+            color: '#333333',
+            size: 'sm',
+          },
+          {
+            type: 'text',
+            text: `【内臓の傾向】\n${result.organBurden}`,
+            wrap: true,
+            color: '#333333',
+            size: 'sm',
+          },
+        ],
+      },
+    },
+  };
+}
+
 function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうケアガイド') {
   const bubbles = cards.map((card) => ({
     type: 'bubble',
