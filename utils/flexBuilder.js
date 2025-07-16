@@ -13,7 +13,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             type: 'text',
             text: header,
             weight: 'bold',
-            size: 'md',
+            size: 'lg',
             color: '#ffffff',
           },
         ],
