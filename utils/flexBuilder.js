@@ -269,7 +269,7 @@ function buildResultFlex(result, imageUrl) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        backgroundColor: '#F5f5f0', // ✅ 柔らか背景追加！
+        backgroundColor: '#F8F6EC', // ✅ 柔らか背景追加！
         paddingAll: '12px',         // ✅ 本文エリア全体に余白
         contents: [
           {
