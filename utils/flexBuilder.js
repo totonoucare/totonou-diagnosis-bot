@@ -29,7 +29,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             type: 'text',
             text: body,
             wrap: true,
-            color: '#333333',
+            color: '#0d0d0d',
             size: 'md',
           },
           {
@@ -153,7 +153,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
             text: body,
             wrap: true,
             size: 'md',
-            color: '#333333',
+            color: '#0d0d0d',
           },
           {
             type: 'separator',
