@@ -47,7 +47,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             style: 'primary',
             height: 'sm',
             margin: 'sm',
-            color: '#B78949',
+            color: '#758A6D',
           })),
         ],
       },
