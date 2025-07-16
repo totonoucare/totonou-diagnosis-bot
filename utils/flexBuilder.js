@@ -246,7 +246,7 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
 function buildResultFlex(result, imageUrl) {
   return {
     type: 'flex',
-    altText: '診断結果：あなたの体質タイプ',
+    altText: '分析結果：あなたの体質タイプ',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -368,6 +368,9 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
     body: {
       type: 'box',
       layout: 'vertical',
+      backgroundColor: '#F8F9F7', // ← 柔らかいグレー
+      paddingAll: '16px',
+      spacing: 'md',
       contents: [
         {
           type: 'text',
@@ -376,8 +379,11 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
           color: '#0d0d0d',
           size: 'md',
         },
+        {
+          type: 'separator',
+          margin: 'md',
+        },
       ],
-      spacing: 'md',
     },
   }));
 
