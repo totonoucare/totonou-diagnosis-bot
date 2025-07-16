@@ -13,7 +13,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             type: 'text',
             text: header,
             weight: 'bold',
-            size: 'lg',
+            size: 'md',
             color: '#ffffff',
           },
         ],
@@ -263,43 +263,64 @@ function buildResultFlex(result, imageUrl) {
         contents: [
           {
             type: 'text',
-            text: `📝 ${result.type} `,
+            text: `📝 あなたは【${result.type}】`,
             weight: 'bold',
-            size: 'lg',
+            size: 'md',
             color: '#ffffff',
           },
         ],
         backgroundColor: '#758A6D',
         paddingAll: '12px',
       },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'md',
-        contents: [
-          {
-            type: 'text',
-            text: `【 🧭体質解説 】\n\n${result.traits}`,
-            wrap: true,
-            color: '#0d0d0d',
-            size: 'md',
-          },
-          {
-            type: 'text',
-            text: `【 🌀巡りの傾向 】\n\n${result.flowIssue}`,
-            wrap: true,
-            color: '#0d0d0d',
-            size: 'md',
-          },
-          {
-            type: 'text',
-            text: `【 🫁内臓の傾向 】\n\n${result.organBurden}`,
-            wrap: true,
-            color: '#0d0d0d',
-            size: 'md',
-          },
-        ],
-      },
+body: {
+  type: 'box',
+  layout: 'vertical',
+  spacing: 'md',
+  contents: [
+    {
+      type: 'text',
+      text: '【 🧭 体質解説 】',
+      weight: 'bold',
+      size: 'md',
+      color: '#333333',
+    },
+    {
+      type: 'text',
+      text: result.traits,
+      wrap: true,
+      size: 'md',
+      color: '#0d0d0d',
+    },
+    {
+      type: 'text',
+      text: '【 🌀 巡りの傾向 】',
+      weight: 'bold',
+      size: 'md',
+      color: '#333333',
+    },
+    {
+      type: 'text',
+      text: result.flowIssue,
+      wrap: true,
+      size: 'md',
+      color: '#0d0d0d',
+    },
+    {
+      type: 'text',
+      text: '【 🫁 内臓の負担傾向 】',
+      weight: 'bold',
+      size: 'md',
+      color: '#333333',
+    },
+    {
+      type: 'text',
+      text: result.organBurden,
+      wrap: true,
+      size: 'md',
+      color: '#0d0d0d',
+    },
+  ]
+},
     },
   };
 }
