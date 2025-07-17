@@ -20,27 +20,21 @@ async function getActiveUsers() {
   return data;
 }
 
-// ✅ JST補正つきで「日またぎ＝1日経過」とする日数カウント関数
+// ✅ JST補正なし：保存された日時（JST）をそのまま比較する日数カウント関数
 function getDaysSince(dateInput) {
-  const baseDate = new Date(dateInput);
+  const baseDate = new Date(dateInput);  // ← すでに JST なので補正不要
   const now = new Date();
 
-  // JST補正（UTC→JST +9h）
-  const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
-  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-
-  // 日付のみに丸める（時刻00:00）
-  const baseYMD = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
-  const nowYMD = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
+  // 年月日で比較（時間を無視）
+  const baseYMD = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+  const nowYMD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const diffTime = nowYMD - baseYMD;
   const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  // デバッグ出力
+  // デバッグログ
   console.log('🕒 now:', now.toISOString());
   console.log('🕒 baseDate:', baseDate.toISOString());
-  console.log('🕒 jstNow:', jstNow.toISOString());
-  console.log('🕒 jstBase:', jstBase.toISOString());
   console.log('📆 丸めた日付: nowYMD =', nowYMD.toISOString(), '| baseYMD =', baseYMD.toISOString());
   console.log('📆 日数カウント:', days);
 
