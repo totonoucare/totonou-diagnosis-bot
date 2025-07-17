@@ -20,24 +20,26 @@ async function getActiveUsers() {
   return data;
 }
 
-// ✅ JST補正を入れた日数差計算（デバッグログ付き）
+// ✅ JST日付ベースでの経過日数カウント（日またぎ判定対応）
 function getDaysSince(dateInput) {
   const baseDate = new Date(dateInput);
   const now = new Date();
 
-  // デバッグログ
-  console.log('🕒 now:', now.toISOString());
-  console.log('🕒 baseDate:', baseDate.toISOString());
-  console.log('📊 差分(ms):', now - baseDate);
-
   const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
   const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
-  const start = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
-  const end = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
+  const baseDay = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
+  const nowDay = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
 
-  const diffTime = end - start;
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const dayDiff = Math.floor((nowDay - baseDay) / msPerDay);
+
+  // ログ出力
+  console.log('🕒 now JST:', jstNow.toISOString());
+  console.log('🕒 baseDate JST:', jstBase.toISOString());
+  console.log(`📆 経過日数（日またぎカウント）: ${dayDiff}`);
+
+  return dayDiff;
 }
 
 // ✅ メイン処理
@@ -56,7 +58,6 @@ async function sendReminders() {
       }
 
       const days = getDaysSince(baseDate);
-      console.log(`📆 経過日数: ${days}`);
 
       // ✅ 初回（1日後）リマインド
       if (days === 1) {
