@@ -20,24 +20,28 @@ async function getActiveUsers() {
   return data;
 }
 
-// ✅ JST補正を入れた「日付またぎで1日カウントする」日数カウント
+// ✅ JST補正つきで「日またぎ＝1日経過」とする日数カウント関数
 function getDaysSince(dateInput) {
   const baseDate = new Date(dateInput);
   const now = new Date();
 
-  // JST補正
+  // JST補正（UTC→JST +9h）
   const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
   const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
+  // 日付のみに丸める（時刻00:00）
   const baseYMD = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
   const nowYMD = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
 
   const diffTime = nowYMD - baseYMD;
   const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  // デバッグログ
+  // デバッグ出力
   console.log('🕒 now:', now.toISOString());
   console.log('🕒 baseDate:', baseDate.toISOString());
+  console.log('🕒 jstNow:', jstNow.toISOString());
+  console.log('🕒 jstBase:', jstBase.toISOString());
+  console.log('📆 丸めた日付: nowYMD =', nowYMD.toISOString(), '| baseYMD =', baseYMD.toISOString());
   console.log('📆 日数カウント:', days);
 
   return days;
@@ -71,7 +75,7 @@ async function sendReminders() {
             '最初は「習慣改善」や「ストレッチ」など、できそうなことから焦らず、心地よく始めていきましょう🧘‍♂️🍵☺\n' +
             '『ととのうケアガイド📗』はメニューのボタンで繰り返し見返せるので何度でも利用してくださいね☺️'
         });
-        console.log(`✅ 初回リマインド送信完了`);
+        console.log('✅ 初回リマインド送信完了');
         continue;
       }
 
