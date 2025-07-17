@@ -20,23 +20,25 @@ async function getActiveUsers() {
   return data;
 }
 
-// ✅ JSTの日付としての日数差（「登録日が1日目」「翌日が2日目」と数える方式）
+// ✅ JST補正を入れた「日付またぎで1日カウントする」日数カウント
 function getDaysSince(dateInput) {
-  const jstOffset = 9 * 60 * 60 * 1000;
+  const baseDate = new Date(dateInput);
+  const now = new Date();
 
-  const base = new Date(new Date(dateInput).getTime() + jstOffset);
-  const now = new Date(Date.now() + jstOffset);
+  // JST補正
+  const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
-  const baseDay = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const baseYMD = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
+  const nowYMD = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
 
-  const diffMs = nowDay - baseDay;
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffTime = nowYMD - baseYMD;
+  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  // デバッグ出力
-  console.log('🕒 now (JST日付):', nowDay.toISOString());
-  console.log('🕒 baseDate (JST日付):', baseDay.toISOString());
-  console.log('📊 経過日数:', days);
+  // デバッグログ
+  console.log('🕒 now:', now.toISOString());
+  console.log('🕒 baseDate:', baseDate.toISOString());
+  console.log('📆 日数カウント:', days);
 
   return days;
 }
@@ -57,8 +59,9 @@ async function sendReminders() {
       }
 
       const days = getDaysSince(baseDate);
+      console.log(`📆 経過日数: ${days}`);
 
-      // ✅ 初回（登録日の翌日）に送信
+      // ✅ 初回（1日後）リマインド
       if (days === 1) {
         console.log(`🟢 初回リマインド対象: ${user.line_id}`);
         await line.client.pushMessage(user.line_id, {
@@ -68,17 +71,18 @@ async function sendReminders() {
             '最初は「習慣改善」や「ストレッチ」など、できそうなことから焦らず、心地よく始めていきましょう🧘‍♂️🍵☺\n' +
             '『ととのうケアガイド📗』はメニューのボタンで繰り返し見返せるので何度でも利用してくださいね☺️'
         });
-        console.log('✅ 初回リマインド送信完了');
+        console.log(`✅ 初回リマインド送信完了`);
         continue;
       }
 
       // ✅ 4日ごと以外はスキップ
       if (days === 0 || days % 4 !== 0) {
-        console.log(`⏭️ リマインド対象外（days=${days}）`);
+        console.log(`⏭️ リマインド対象外（days=${days})`);
         continue;
       }
 
-      // ✅ 4日ごとに Flex or GPT 交互送信
+      // ✅ 4日ごとの偶数回（8日、16日…）→ GPTメッセージ
+      // ✅ 4日ごとの奇数回（4日、12日…）→ Flexメッセージ
       const reminderCount = days / 4;
       const isEven = reminderCount % 2 === 0;
       console.log(`🔄 ${days}日目: ${isEven ? 'GPT' : 'Flex'}送信対象`);
