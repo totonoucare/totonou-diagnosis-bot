@@ -18,20 +18,25 @@ async function getTrialUsers() {
   return data;
 }
 
-// JST補正を入れた日数差計算
+// JST補正なし：保存済みの trial_intro_at はすでに JST なのでそのまま扱う
 function getDaysSince(dateInput) {
   if (!dateInput) return null;
   const baseDate = new Date(dateInput);
   const now = new Date();
 
-  const jstBase = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
-  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const baseYMD = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+  const nowYMD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const start = new Date(jstBase.getFullYear(), jstBase.getMonth(), jstBase.getDate());
-  const end = new Date(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate());
+  const diffTime = nowYMD - baseYMD;
+  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  const diffTime = end - start;
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  // デバッグログ
+  console.log('🕒 now:', now.toISOString());
+  console.log('🕒 baseDate:', baseDate.toISOString());
+  console.log('📆 丸めた日付: nowYMD =', nowYMD.toISOString(), '| baseYMD =', baseYMD.toISOString());
+  console.log('📆 日数カウント:', days);
+
+  return days;
 }
 
 // メイン処理
