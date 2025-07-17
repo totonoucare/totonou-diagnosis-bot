@@ -335,3 +335,22 @@ app.use("/create-checkout-session", stripeCheckout);
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
 });
+
+// ✅ 404対策として / にアクセスがあったときにOK返す（UptimeRobot用）
+app.get('/', (req, res) => {
+  res.send('TotonouBot is alive');
+});
+
+// ✅ それ以外の未定義ルートに対するカスタム404表示
+app.use((req, res) => {
+  res.status(404).send(`
+    <html>
+      <head><title>404 - Not Found</title></head>
+      <body style="font-family:sans-serif; padding:2rem;">
+        <h1>ページが見つかりませんでした</h1>
+        <p>このURLには対応していません。</p>
+        <a href="https://totonoucare.com">トップページへ戻る</a>
+      </body>
+    </html>
+  `);
+});
