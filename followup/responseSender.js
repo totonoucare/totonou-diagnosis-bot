@@ -37,7 +37,7 @@ const symptomMap = {
   "skin": "頭皮や肌トラブル",
   "pollen": "花粉症や鼻炎",
   "women": "女性特有のお悩み",
-  "common": "なんとなく不調・不定愁訴",
+  "unknown": "なんとなく不調・不定愁訴",
 };
 
 
