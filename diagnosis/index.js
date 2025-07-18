@@ -140,7 +140,7 @@ const guideFlex = {
         {
           type: 'button',
           style: 'primary',
-          color: '#6a9770',
+          color: '#758A6D',
           action: {
             type: 'message',
             label: 'ととのうケアガイドを見る🎁',
