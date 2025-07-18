@@ -32,7 +32,7 @@ const symptomMap = {
   "stomach": "胃腸の調子",
   "sleep": "睡眠・集中力",
   "pain": "肩こり・腰痛・関節痛",
-  "mood": "イライラや不安感",
+  "mental": "イライラや不安感",
   "cold": "冷え・のぼせ・むくみ",
   "skin": "頭皮や肌トラブル",
   "pollen": "花粉症や鼻炎",
