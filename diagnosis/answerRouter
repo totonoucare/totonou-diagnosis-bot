@@ -29,7 +29,7 @@ function handleAnswers(userAnswers, category) {
   let flow = "";
   switch (userAnswers[3]) {
     case "A": flow = "気滞"; break;
-    case "B": flow = "痰湿"; break;
+    case "B": flow = "水滞"; break;
     case "C": flow = "瘀血"; break;
     case "D": flow = "巡りは良好"; break;
     default: flow = "不明"; break;
