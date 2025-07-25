@@ -38,7 +38,7 @@ const common_Q5 = require('./common_Q5');
 module.exports = {
   stomach: {
     Q1: stomach_Q1,
-    Q2: stomach_Q2,
+    Q2: common_Q2,
     Q3: stomach_Q3,
     Q4: stomach_Q4,
     Q5: common_Q5,
