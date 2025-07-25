@@ -52,7 +52,7 @@ module.exports = {
   },
   pain: {
     Q1: pain_Q1,
-    Q2: pain_Q2,
+    Q2: common_Q2,
     Q3: pain_Q3,
     Q4: pain_Q4,
     Q5: common_Q5,
@@ -73,21 +73,21 @@ module.exports = {
   },
   skin: {
     Q1: skin_Q1,
-    Q2: skin_Q2,
+    Q2: common_Q2,
     Q3: skin_Q3,
     Q4: skin_Q4,
     Q5: common_Q5,
   },
   pollen: {
     Q1: pollen_Q1,
-    Q2: pollen_Q2,
+    Q2: common_Q2,
     Q3: pollen_Q3,
     Q4: pollen_Q4,
     Q5: common_Q5,
   },
   women: {
     Q1: women_Q1,
-    Q2: women_Q2,
+    Q2: common_Q2,
     Q3: women_Q3,
     Q4: women_Q4,
     Q5: common_Q5,
