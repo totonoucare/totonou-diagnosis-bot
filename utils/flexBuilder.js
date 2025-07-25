@@ -328,7 +328,7 @@ function buildResultFlex(result, imageUrl) {
           },
           {
             type: 'text',
-            text: '【 🫁 内臓の負担傾向 】',
+            text: '【 🫁 経絡(けいらく)の負担傾向 】',
             weight: 'bold',
             size: 'sm',
             color: '#0d0d0d',
