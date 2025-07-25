@@ -37,9 +37,9 @@ const common_Q5 = require('./common_Q5');
 
 module.exports = {
   stomach: {
-    Q1: stomach_Q1,
+    Q1: common_Q1,
     Q2: common_Q2,
-    Q3: stomach_Q3,
+    Q3: common_Q3,
     Q4: stomach_Q4,
     Q5: common_Q5,
   },
@@ -51,9 +51,9 @@ module.exports = {
     Q5: common_Q5,
   },
   pain: {
-    Q1: pain_Q1,
+    Q1: common_Q1,
     Q2: common_Q2,
-    Q3: pain_Q3,
+    Q3: common_Q3,
     Q4: pain_Q4,
     Q5: common_Q5,
   },
@@ -72,23 +72,23 @@ module.exports = {
     Q5: common_Q5,
   },
   skin: {
-    Q1: skin_Q1,
+    Q1: common_Q1,
     Q2: common_Q2,
-    Q3: skin_Q3,
+    Q3: common_Q3,
     Q4: skin_Q4,
     Q5: common_Q5,
   },
   pollen: {
-    Q1: pollen_Q1,
+    Q1: common_Q1,
     Q2: common_Q2,
-    Q3: pollen_Q3,
+    Q3: common_Q3,
     Q4: pollen_Q4,
     Q5: common_Q5,
   },
   women: {
-    Q1: women_Q1,
+    Q1: common_Q1,
     Q2: common_Q2,
-    Q3: women_Q3,
+    Q3: common_Q3,
     Q4: women_Q4,
     Q5: common_Q5,
   },
