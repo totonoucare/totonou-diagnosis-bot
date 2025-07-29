@@ -50,7 +50,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
               contents: [
                 {
                   type: "text",
-                  text: "📎 ご案内リンク",
+                  text: "🔗 ご案内リンク",
                   weight: "bold",
                   size: "lg",
                   color: "#ffffff"
@@ -70,7 +70,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#758A6D",
                   action: {
                     type: "message",
-                    label: "🤝 身近な人への紹介リンク",
+                    label: "✉️ 身近な人への紹介",
                     text: "身近な人への紹介"
                   }
                 },
@@ -80,7 +80,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#758A6D",
                   action: {
                     type: "uri",
-                    label: "🔐 サブスク登録 / 解約 ページ",
+                    label: "🔐 サブスク登録 / 解約ページ",
                     uri: subscribeUrl
                   }
                 },
@@ -90,7 +90,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#758A6D",
                   action: {
                     type: "uri",
-                    label: "🖥️ オンライン相談 予約ページ",
+                    label: "🖥️ オンライン相談等 予約ページ",
                     uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
                   }
                 },
@@ -123,7 +123,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           {
             type: "text",
             text:
-              "最近、自分の不調の根本をAIが診断してくれるLINEツールを見つけて、\n参考になりそうだからシェアするね！\n\n体質分析→セルフケア提案まで無料であるから\n病院に行くほどじゃない不調におすすめ👍",
+              "最近、自分の不調の根本原因の体質バランスとケア方法を分析してくれるLINEツールを見つけて、\n参考になりそうだからシェアするね！",
           },
           {
             type: "text",
