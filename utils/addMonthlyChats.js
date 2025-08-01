@@ -9,17 +9,17 @@ const supabase = createClient(
   try {
     const { data: users, error } = await supabase
       .from("users")
-      .select("id, remaining_chats")
+      .select("id, remaining_consultations")
       .eq("plan_type", "standard");
 
     if (error) throw error;
 
     for (const user of users) {
-      const newCount = Math.min((user.remaining_chats || 0) + 5, 30);
+      const newCount = Math.min((user.remaining_consultations || 0) + 5, 30);
 
       const { error: updateError } = await supabase
         .from("users")
-        .update({ remaining_chats: newCount })
+        .update({ remaining_consultations: newCount })
         .eq("id", user.id);
 
       if (updateError) {
