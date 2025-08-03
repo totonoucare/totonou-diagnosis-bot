@@ -56,16 +56,16 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
       body: baseAdvice
     },
     {
-      header: "🧘巡りととのえ呼吸法",
-      body: flowCareAdvice
-    },
-    {
       header: "🤸内臓ととのう経絡ストレッチ",
       body: stretchData.stretch
     },
     {
       header: "🎯ツボで不調の根本アプローチ！",
       body: stretchData.points
+    },
+    {
+      header: "🧘巡りととのえ呼吸法",
+      body: flowCareAdvice
     },
     {
       header: "🌿体質で選ぶ漢方薬",
