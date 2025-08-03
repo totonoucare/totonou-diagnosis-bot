@@ -56,19 +56,19 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
       body: baseAdvice
     },
     {
-      header: "🤸内臓ととのう経絡ストレッチ",
+      header: "🤸経絡(けいらく)ストレッチ習慣",
       body: stretchData.stretch
     },
     {
-      header: "🎯ツボで不調の根本アプローチ！",
+      header: "🎯あなたのツボはここ！",
       body: stretchData.points
     },
     {
-      header: "🧘巡りととのえ呼吸法",
+      header: "🧘巡りととのう呼吸法",
       body: flowCareAdvice
     },
     {
-      header: "🌿体質で選ぶ漢方薬",
+      header: "🌿体質で選ぶオススメ漢方薬",
       body: resolvedLink
     }
   ];
