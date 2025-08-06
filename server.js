@@ -230,49 +230,55 @@ if (userMessage === "LINEでプロに相談") {
 }
 
 // 「ととのうGPTでAI相談」トリガー
-if (userMessage === "ととのうGPTでAI相談") {
-  const { data: userData, error } = await supabase
+if (event.message.type === "text" && event.message.text === "ととのうGPTでAI相談") {
+  const replyToken = event.replyToken;
+  const lineId = event.source.userId;
+
+  // ユーザーデータを取得（UUID含む）
+  const { data: userData, error: userError } = await supabase
     .from("users")
-    .select("subscribed, plan_type, trial_intro_done")
+    .select("id, subscribed, plan_type, trial_intro_done")
     .eq("line_id", lineId)
     .single();
 
-  if (error || !userData) {
-    await client.replyMessage(event.replyToken, {
+  if (userError || !userData) {
+    await client.replyMessage(replyToken, {
       type: "text",
-      text: "ユーザー情報の取得に失敗しました。",
+      text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
     });
     return;
   }
 
+  const userId = userData.id;
   const isStandardSub = userData.subscribed && userData.plan_type === "standard";
   const isTrial = userData.trial_intro_done;
 
+  // 会員条件チェック（スタンダードまたはトライアル）
   if (!isStandardSub && !isTrial) {
     const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-    await client.replyMessage(event.replyToken, {
+    await client.replyMessage(replyToken, {
       type: "text",
       text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
     });
     return;
   }
 
-  // Supabaseから最新のcodeを取得
+  // 最新の分析コードをcontextsから取得
   const { data: contextData, error: contextError } = await supabase
     .from("contexts")
     .select("code")
-    .eq("line_id", lineId)
+    .eq("user_id", userId) // ← UUIDで照合
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
   const code = contextData?.code || "コード未登録";
 
-  // 案内メッセージ＋GPTリンク送信
+  // メッセージ送信
   const messages = [
     {
       type: "text",
-      text: "✅ ととのうGPTでのAI相談がご利用いただけます！4桁の分析結果コードをGPTに伝えると、分析結果に沿った相談対応をしてもらえます✨",
+      text: "✅ ととのうGPTでのAI相談がご利用いただけます！\n分析コードをGPTに伝えると、あなたに合ったセルフケアアドバイスを受けられます✨",
     },
     {
       type: "text",
@@ -280,11 +286,11 @@ if (userMessage === "ととのうGPTでAI相談") {
     },
     {
       type: "text",
-      text: "👇 以下のリンクから、AI相談を開始できます。\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
+      text: "👇 以下のリンクからAI相談を開始できます\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
     },
   ];
 
-  await client.replyMessage(event.replyToken, messages);
+  await client.replyMessage(replyToken, messages);
   return;
 }
 
