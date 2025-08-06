@@ -206,7 +206,7 @@ function buildDiagnosisConfirmFlex() {
             type: "button",
             action: {
               type: "message",
-              label: "分析開始",
+              label: "分析スタート！",
               text: "分析開始",
             },
             style: "primary",
