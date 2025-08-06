@@ -175,7 +175,7 @@ if (message === '定期チェックナビ開始') {
     console.error('❌ followup/index.js エラー:', err);
     return client.replyMessage(event.replyToken, [{
       type: 'text',
-      text: '診断中にエラーが発生しました。もう一度「定期チェックナビ」と送って再開してください。'
+      text: 'すでに操作済みです。'
     }]);
   }
 }
