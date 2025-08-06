@@ -455,6 +455,59 @@ function buildReminderFlex() {
   };
 }
 
+function buildChatConsultOptionsFlex() {
+  return {
+    type: "flex",
+    altText: "チャット相談メニュー",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "チャット相談メニュー",
+            weight: "bold",
+            size: "lg",
+          },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "message",
+              label: "🧠 ととのうGPTでAI相談",
+              text: "ととのうGPTでAI相談",
+            },
+            style: "primary",
+            color: "#5D8CFF",
+          },
+          {
+            type: "button",
+            action: {
+              type: "message",
+              label: "👤 LINEでプロに相談",
+              text: "LINEでプロに相談",
+            },
+            style: "secondary",
+          },
+        ],
+      },
+    },
+  };
+}
+
+module.exports = {
+  // 他のビルダーと併せてこれもエクスポート
+  buildChatConsultOptionsFlex,
+};
+
 function buildTrialStartFlex() {
   return {
     type: 'flex',
