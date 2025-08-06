@@ -464,12 +464,15 @@ function buildChatConsultOptionsFlex() {
       header: {
         type: "box",
         layout: "vertical",
+        paddingAll: "md",
+        backgroundColor: "#F8F9F7",
         contents: [
           {
             type: "text",
             text: "チャット相談メニュー",
             weight: "bold",
-            size: "lg",
+            size: "md",
+            color: "#758A6D",
           },
         ],
       },
@@ -486,7 +489,7 @@ function buildChatConsultOptionsFlex() {
               text: "ととのうGPTでAI相談",
             },
             style: "primary",
-            color: "#5D8CFF",
+            color: "#27AE60",
           },
           {
             type: "button",
@@ -502,6 +505,7 @@ function buildChatConsultOptionsFlex() {
     },
   };
 }
+
 
 function buildTrialStartFlex() {
   return {
