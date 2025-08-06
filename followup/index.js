@@ -61,7 +61,7 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-if (message === '定期チェックナビ') {
+if (message === '定期チェックナビ開始') {
   const userRecord = await supabaseMemoryManager.getUser(lineId);
   if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
     await client.replyMessage(replyToken, [{
