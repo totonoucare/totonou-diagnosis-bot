@@ -86,7 +86,7 @@ async function markGuideReceived(lineId) {
 }
 
 // ✅ context保存
-async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion) {
+async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion, code) {
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
@@ -104,7 +104,8 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
     organType,
     symptom: symptom || '不明な不調',
     motion: motion || '特定の動作',
-    advice: adviceCards
+    advice: adviceCards,
+    code: code || null
   };
 
   const { error } = await supabase
