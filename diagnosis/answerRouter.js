@@ -1,0 +1,67 @@
+const generateDiagnosis = require("./resultGenerator");
+
+function handleAnswers(userAnswers, category) {
+  // Q1〜Q3のスコア変換
+  const scoreMap = { A: -1, B: 1, C: 0 };
+  const q1to3 = userAnswers.slice(0, 3); // Q1, Q2, Q3
+
+  const scoreArray = q1to3.map(answer => {
+    if (!(answer in scoreMap)) {
+      console.warn(`⚠️ 無効な選択肢が含まれています: ${answer}`);
+      return null;
+    }
+    return Number(scoreMap[answer]);
+  });
+
+  if (scoreArray.includes(null)) {
+    console.error("❌ スコア変換に失敗しました。無効な回答が含まれています:", q1to3);
+    return {
+      type: "不明な体質タイプ",
+      traits: "",
+      flowIssue: "",
+      organBurden: "",
+      advice: "診断に必要な回答が不足または無効でした。",
+      link: ""
+    };
+  }
+
+  // Q4 → flow病理
+  let flow = "";
+  switch (userAnswers[3]) {
+    case "A": flow = "気滞"; break;
+    case "B": flow = "水滞"; break;
+    case "C": flow = "瘀血"; break;
+    case "D": flow = "巡りは良好"; break;
+    default: flow = "不明"; break;
+  }
+
+  // Q5 → 臓腑影響（動作テスト結果）
+  let organ = "";
+  let motion = "";
+  switch (userAnswers[4]) {
+    case "A": organ = "肺・大腸"; motion = "首の回旋・後屈"; break;
+    case "B": organ = "心・小腸"; motion = "腕の挙上（バンザイ）"; break;
+    case "C": organ = "腎・膀胱"; motion = "立って前屈"; break;
+    case "D": organ = "肝・胆";   motion = "体幹のひねり・側屈"; break;
+    case "E": organ = "脾・胃";   motion = "上体そらし"; break;
+    default: organ = "不明";      motion = "特定の動作"; break;
+  }
+
+  // Q0 → お悩み（session.selectedCategoryを引数categoryとして受け取る）
+  const symptom = category || "不明な不調";
+
+  // ✅ 診断ロジック呼び出し（symptomとmotionを追加）
+  const result = generateDiagnosis(
+    scoreArray[0],
+    scoreArray[1],
+    scoreArray[2],
+    flow,
+    organ,
+    symptom,
+    motion
+  );
+
+  return result;
+}
+
+module.exports = { handleAnswers };
