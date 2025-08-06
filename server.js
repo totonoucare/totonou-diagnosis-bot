@@ -223,9 +223,70 @@ if (userMessage === "LINEでプロに相談") {
     const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
     await client.replyMessage(event.replyToken, {
       type: "text",
-      text: `この機能は「スタンダード会員様限定」となっております🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+      text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
     });
   }
+  return;
+}
+
+// 「ととのうGPTでAI相談」トリガー
+if (text === "ととのうGPTでAI相談") {
+  const { data: userData, error } = await supabase
+    .from("users")
+    .select("subscribed, plan_type, trial_intro_done")
+    .eq("line_id", lineId)
+    .single();
+
+  if (error || !userData) {
+    await client.replyMessage(replyToken, {
+      type: "text",
+      text: "ユーザー情報の取得に失敗しました。",
+    });
+    return;
+  }
+
+  const isStandardSub = userData.subscribed && userData.plan_type === "standard";
+  const isTrial = userData.trial_intro_done;
+
+  if (!isStandardSub && !isTrial) {
+    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+    await client.replyMessage(replyToken, {
+      type: "text",
+      text:
+        `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n` +
+        `以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+    });
+    return;
+  }
+
+  // Supabaseから最新のcodeを取得
+  const { data: contextData, error: contextError } = await supabase
+    .from("contexts")
+    .select("code")
+    .eq("line_id", lineId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  const code = contextData?.code || "コード未登録";
+
+  // 案内メッセージ＋GPTリンク送信
+  const messages = [
+    {
+      type: "text",
+      text: "✅ ととのうGPTでのAI相談がご利用いただけます！4桁の分析結果コードをGPTに伝えると、分析結果に沿った相談対応をしてもらえます✨",
+    },
+    {
+      type: "text",
+      text: `🧠 最新の分析結果コード：${code}`,
+    },
+    {
+      type: "text",
+      text: "👇 以下のリンクから、AI相談を開始できます。\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
+    },
+  ];
+
+  await client.replyMessage(replyToken, messages);
   return;
 }
 
