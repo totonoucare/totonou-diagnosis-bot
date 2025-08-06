@@ -261,7 +261,7 @@ if (userMessage === "ととのうGPTでAI相談") {
   const { data: contextData, error: contextError } = await supabase
     .from("contexts")
     .select("code")
-    .eq("user_id", userId)
+    .eq("line_id", lineId)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
