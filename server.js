@@ -230,7 +230,7 @@ if (userMessage === "LINEでプロに相談") {
 }
 
 // 「ととのうGPTでAI相談」トリガー
-if (text === "ととのうGPTでAI相談") {
+if (userMessage === "ととのうGPTでAI相談") {
   const { data: userData, error } = await supabase
     .from("users")
     .select("subscribed, plan_type, trial_intro_done")
@@ -238,7 +238,7 @@ if (text === "ととのうGPTでAI相談") {
     .single();
 
   if (error || !userData) {
-    await client.replyMessage(replyToken, {
+    await client.replyMessage(event.replyToken, {
       type: "text",
       text: "ユーザー情報の取得に失敗しました。",
     });
@@ -250,11 +250,9 @@ if (text === "ととのうGPTでAI相談") {
 
   if (!isStandardSub && !isTrial) {
     const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-    await client.replyMessage(replyToken, {
+    await client.replyMessage(event.replyToken, {
       type: "text",
-      text:
-        `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n` +
-        `以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+      text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
     });
     return;
   }
@@ -263,7 +261,7 @@ if (text === "ととのうGPTでAI相談") {
   const { data: contextData, error: contextError } = await supabase
     .from("contexts")
     .select("code")
-    .eq("line_id", lineId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
@@ -286,7 +284,7 @@ if (text === "ととのうGPTでAI相談") {
     },
   ];
 
-  await client.replyMessage(replyToken, messages);
+  await client.replyMessage(event.replyToken, messages);
   return;
 }
 
