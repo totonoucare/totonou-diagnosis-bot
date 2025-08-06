@@ -6,6 +6,8 @@ const supabase = require("./supabaseClient");
 const {
   buildChatConsultOptionsFlex,
   buildCategorySelectionFlex, 
+  buildDiagnosisConfirmFlex, 
+  buildFollowupConfirmFlex, 
 } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
