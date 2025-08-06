@@ -115,6 +115,17 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
+     // 開始確認
+      if (userMessage === "体質分析") {
+  const flex = buildDiagnosisConfirmFlex();
+  return client.replyMessage(replyToken, flex);
+}
+
+if (userMessage === "定期チェックナビ") {
+  const flex = buildFollowupConfirmFlex();
+  return client.replyMessage(replyToken, flex);
+}
+
       // 身近な人に紹介
       if (userMessage === "身近な人への紹介") {
         const shareUrl = "https://lin.ee/UxWfJtV";
