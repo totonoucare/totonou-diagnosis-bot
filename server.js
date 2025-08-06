@@ -307,7 +307,7 @@ if (event.message.type === "text" && event.message.text === "ととのうGPTでA
 }
 
       // 定期チェックナビ
-if (userMessage === "定期チェックナビ" || handleFollowup.hasSession?.(lineId)) {
+if (userMessage === "定期チェックナビ開始" || handleFollowup.hasSession?.(lineId)) {
   try {
     const messages = await handleFollowup(event, client, lineId);
 
