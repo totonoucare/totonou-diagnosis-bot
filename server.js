@@ -255,68 +255,73 @@ if (userMessage === "LINEでプロに相談") {
 }
 
 // 「ととのうGPTでAI相談」トリガー
-if (event.message.type === "text" && event.message.text === "ととのうGPTでAI相談") {
+// messageイベントかどうか＆textかどうかを事前にチェック
+if (event.type === "message" && event.message.type === "text") {
+  const userMessage = event.message.text;
   const replyToken = event.replyToken;
   const lineId = event.source.userId;
 
-  // ユーザーデータを取得（UUID含む）
-  const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("id, subscribed, plan_type, trial_intro_done")
-    .eq("line_id", lineId)
-    .single();
+  // 「ととのうGPTでAI相談」トリガー
+  if (userMessage === "ととのうGPTでAI相談") {
+    // ユーザーデータを取得（UUID含む）
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id, subscribed, plan_type, trial_intro_done")
+      .eq("line_id", lineId)
+      .single();
 
-  if (userError || !userData) {
-    await client.replyMessage(replyToken, {
-      type: "text",
-      text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
-    });
+    if (userError || !userData) {
+      await client.replyMessage(replyToken, {
+        type: "text",
+        text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
+      });
+      return;
+    }
+
+    const userId = userData.id;
+    const isStandardSub = userData.subscribed && userData.plan_type === "standard";
+    const isTrial = userData.trial_intro_done;
+
+    // 会員条件チェック（スタンダードまたはトライアル）
+    if (!isStandardSub && !isTrial) {
+      const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+      await client.replyMessage(replyToken, {
+        type: "text",
+        text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+      });
+      return;
+    }
+
+    // 最新の分析コードをcontextsから取得
+    const { data: contextData, error: contextError } = await supabase
+      .from("contexts")
+      .select("code")
+      .eq("user_id", userId) // ← UUIDで照合
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    const code = contextData?.code || "コード未登録";
+
+    // メッセージ送信
+    const messages = [
+      {
+        type: "text",
+        text: "✅ ととのうGPTでのAI相談がご利用いただけます！\n分析コードをGPTに伝えると、あなたに合ったセルフケアアドバイスを受けられます✨",
+      },
+      {
+        type: "text",
+        text: `🧠 最新の分析結果コード：${code}`,
+      },
+      {
+        type: "text",
+        text: "👇 以下のリンクからAI相談を開始できます\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
+      },
+    ];
+
+    await client.replyMessage(replyToken, messages);
     return;
   }
-
-  const userId = userData.id;
-  const isStandardSub = userData.subscribed && userData.plan_type === "standard";
-  const isTrial = userData.trial_intro_done;
-
-  // 会員条件チェック（スタンダードまたはトライアル）
-  if (!isStandardSub && !isTrial) {
-    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-    await client.replyMessage(replyToken, {
-      type: "text",
-      text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
-    });
-    return;
-  }
-
-  // 最新の分析コードをcontextsから取得
-  const { data: contextData, error: contextError } = await supabase
-    .from("contexts")
-    .select("code")
-    .eq("user_id", userId) // ← UUIDで照合
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  const code = contextData?.code || "コード未登録";
-
-  // メッセージ送信
-  const messages = [
-    {
-      type: "text",
-      text: "✅ ととのうGPTでのAI相談がご利用いただけます！\n分析コードをGPTに伝えると、あなたに合ったセルフケアアドバイスを受けられます✨",
-    },
-    {
-      type: "text",
-      text: `🧠 最新の分析結果コード：${code}`,
-    },
-    {
-      type: "text",
-      text: "👇 以下のリンクからAI相談を開始できます\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
-    },
-  ];
-
-  await client.replyMessage(replyToken, messages);
-  return;
 }
 
       // 定期チェックナビ
