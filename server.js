@@ -118,14 +118,14 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
      // 開始確認
-      if (userMessage === "体質分析") {
+if (userMessage === "体質分析") {
   const flex = buildDiagnosisConfirmFlex();
-  return client.replyMessage(replyToken, flex);
+  return client.replyMessage(event.replyToken, flex); // ← ここ
 }
 
 if (userMessage === "定期チェックナビ") {
   const flex = buildFollowupConfirmFlex();
-  return client.replyMessage(replyToken, flex);
+  return client.replyMessage(event.replyToken, flex); // ← ここ
 }
 
       // 身近な人に紹介
