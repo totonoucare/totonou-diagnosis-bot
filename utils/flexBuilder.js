@@ -578,7 +578,7 @@ function buildChatConsultOptionsFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#27AE60", // 落ち着いたアースグリーン27AE60
+        backgroundColor: "#758A6D", // 落ち着いたアースグリーン27AE60
         paddingAll: "12px",
       },
       body: {
