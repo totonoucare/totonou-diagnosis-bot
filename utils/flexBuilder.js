@@ -674,6 +674,8 @@ module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
   buildQuestionFlex,
+  buildDiagnosisConfirmFlex,
+  buildFollowupConfirmFlex,
   buildMultiQuestionFlex,
   buildAdviceCarouselFlex,
   buildCarouselFlex,
