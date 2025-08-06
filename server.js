@@ -3,7 +3,10 @@ const line = require("@line/bot-sdk");
 const diagnosis = require("./diagnosis/index");
 const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
-const { buildCategorySelectionFlex } = require("./utils/flexBuilder");
+const {
+  buildChatConsultOptionsFlex,
+  buildCategorySelectionFlex, 
+} = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
 
