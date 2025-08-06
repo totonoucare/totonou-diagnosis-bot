@@ -181,6 +181,15 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
+// server.js のイベント処理内に以下を追加
+const { buildChatConsultOptionsFlex } = require("./utils/flexBuilder");
+
+if (userMessage === "チャット相談") {
+  const flex = buildChatConsultOptionsFlex();
+  await client.replyMessage(event.replyToken, flex);
+  return;
+}
+
       // プロに相談（ここで awaiting_consult_message: true をセット）
 if (userMessage === "LINEでプロに相談") {
   const { data: user, error } = await supabase
