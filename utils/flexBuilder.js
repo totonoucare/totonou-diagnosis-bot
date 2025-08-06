@@ -492,7 +492,7 @@ function buildChatConsultOptionsFlex() {
               text: "ととのうGPTでAI相談",
             },
             style: "primary",
-            color: "#6FCF97", // ナチュラルグリーン
+            color: "#27AE60", // ナチュラルグリーン
           },
           {
             type: "button",
