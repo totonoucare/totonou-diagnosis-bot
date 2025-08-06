@@ -229,6 +229,67 @@ if (userMessage === "LINEでプロに相談") {
   return;
 }
 
+// トトノウGPTに相談（カスタムGPT誘導リンクを送る）
+if (userMessage === "トトノウGPTに相談") {
+  // まずは user 情報を取得（サブスク・体験状態確認）
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id, subscribed, plan_type, trial_intro_done")
+    .eq("line_id", lineId)
+    .single();
+
+  if (userError || !user) {
+    console.error("❌ ユーザー取得失敗:", userError);
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: "ユーザー情報の取得に失敗しました。しばらくしてから再度お試しください。",
+    });
+    return;
+  }
+
+  const hasAccess =
+    (user.subscribed && user.plan_type === "standard") || user.trial_intro_done;
+
+  if (hasAccess) {
+    // 次に contexts テーブルから最新の code を取得
+    const { data: contextData, error: contextError } = await supabase
+      .from("contexts")
+      .select("code")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    const code = contextData?.code || null;
+
+    const gptUrl =
+      "https://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai";
+
+    const codeText = code
+      ? `🧬 分析コード：${code}\n\n`
+      : "🧬 分析コードはまだ登録されていません。\n\n";
+
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text:
+        `🧠 ととのうGPT（AI相談）はこちらからご利用いただけます！\n\n` +
+        `🔗 ${gptUrl}\n\n` +
+        codeText +
+        `・この4桁の体質タイプコードを「ととのうGPT」に伝えると、あなたの体質タイプ専用のチャット相談が受けられます✨,
+    });
+  } else {
+    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text:
+        `この機能は「スタンダード会員様」または「体験中ユーザー様限定」です。\n\n` +
+        `ご登録後、AI相談「ととのうGPT」がご利用いただけます✨\n\n` +
+        `🔗 ${subscribeUrl}`,
+    });
+  }
+  return;
+}
+
       // 定期チェックナビ
 if (userMessage === "定期チェックナビ" || handleFollowup.hasSession?.(lineId)) {
   try {
