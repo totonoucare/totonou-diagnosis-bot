@@ -503,11 +503,6 @@ function buildChatConsultOptionsFlex() {
   };
 }
 
-module.exports = {
-  // 他のビルダーと併せてこれもエクスポート
-  buildChatConsultOptionsFlex,
-};
-
 function buildTrialStartFlex() {
   return {
     type: 'flex',
@@ -571,6 +566,7 @@ module.exports = {
   buildAdviceCarouselFlex,
   buildCarouselFlex,
   buildFollowupQuestionFlex,
+  buildChatConsultOptionsFlex,
   buildReminderFlex,
   buildTrialStartFlex, 
   buildResultFlex, 
