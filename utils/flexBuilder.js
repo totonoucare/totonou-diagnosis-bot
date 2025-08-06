@@ -197,7 +197,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "初めての方はそのまま始めてください。\n2回目以降の方は、前回の分析結果が上書きされるのでご注意ください。",
+            text: "初めての方はそのまま始めてください！\n2回目以降の方は、前回の分析結果が上書きされるのでご注意ください。",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
@@ -210,7 +210,7 @@ function buildDiagnosisConfirmFlex() {
               text: "分析開始",
             },
             style: "primary",
-            color: "#6FCF97",
+            color: "#758A6D",
           },
         ],
       },
@@ -262,7 +262,7 @@ function buildFollowupConfirmFlex() {
               text: "定期チェックナビ開始",
             },
             style: "primary",
-            color: "#6FCF97",
+            color: "#758A6D",
           },
         ],
       },
