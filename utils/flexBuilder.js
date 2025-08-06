@@ -166,6 +166,110 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
   };
 }
 
+function buildDiagnosisConfirmFlex() {
+  return {
+    type: "flex",
+    altText: "体質分析を始めますか？",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "体質分析を始めますか？",
+            weight: "bold",
+            size: "md",
+            color: "#ffffff",
+          },
+        ],
+        backgroundColor: "#758A6D",
+        paddingAll: "12px",
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "16px",
+        spacing: "md",
+        contents: [
+          {
+            type: "text",
+            text: "初めての方はそのまま始めてください。\n2回目以降の方は、前回の分析結果が上書きされるのでご注意ください。",
+            wrap: true,
+            size: "md",
+            color: "#0d0d0d",
+          },
+          {
+            type: "button",
+            action: {
+              type: "message",
+              label: "分析開始",
+              text: "分析開始",
+            },
+            style: "primary",
+            color: "#6FCF97",
+          },
+        ],
+      },
+    },
+  };
+}
+
+function buildFollowupConfirmFlex() {
+  return {
+    type: "flex",
+    altText: "定期チェックナビを始めますか？",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "定期チェックナビを始めますか？",
+            weight: "bold",
+            size: "md",
+            color: "#ffffff",
+          },
+        ],
+        backgroundColor: "#758A6D",
+        paddingAll: "12px",
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "16px",
+        spacing: "md",
+        contents: [
+          {
+            type: "text",
+            text: "ととのうケアガイドのセルフケアは実施できましたか？\nまだ見ていない方は、まずそちらを確認してから定期チェックナビを受けてくださいね！",
+            wrap: true,
+            size: "md",
+            color: "#0d0d0d",
+          },
+          {
+            type: "button",
+            action: {
+              type: "message",
+              label: "定期チェックナビ開始",
+              text: "定期チェックナビ開始",
+            },
+            style: "primary",
+            color: "#6FCF97",
+          },
+        ],
+      },
+    },
+  };
+}
+
 function buildFollowupQuestionFlex(questionObj, context = {}) {
   const { id, header, body, options, isMulti } = questionObj;
 
