@@ -1,5 +1,9 @@
 const questionSets = require('./questionSets');
 const typeImageDictionary = require('./typeImageDictionary');
+const typeCodeDictionary = require('./typeCodeDictionary');
+const flowCodeDictionary = require('./flowCodeDictionary');
+const organCodeDictionary = require('./organCodeDictionary');
+
 const {
   buildQuestionFlex,
   buildCategorySelectionFlex,
@@ -72,6 +76,18 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
     const result = await handleAnswers(session.answers, session.selectedCategory);
     const [score1, score2, score3] = result.scores || [];
 
+    // 🧠 分析コード生成処理（01〜25、1〜4、1〜5 → 4桁コードに変換）
+    let code = '';
+    try {
+      const typeCode = typeCodeDictionary[result.type] || '00';
+      const flowCode = flowCodeDictionary[result.flowType] || '0';
+      const organCode = organCodeDictionary[result.organType] || '0';
+
+      code = `${typeCode}${flowCode}${organCode}`;
+    } catch (err) {
+      console.error('❌ 分析コード生成エラー:', err);
+    }
+
     try {
       await saveContext(
         userId,
@@ -84,7 +100,8 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
         result.traits,
         result.adviceCards,
         result.symptom || "未設定",
-        result.motion || "未設定"
+        result.motion || "未設定",
+        code // 🆕 保存（4桁）
       );
     } catch (err) {
       console.error("❌ Supabase保存失敗:", err);
@@ -92,67 +109,69 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
     delete userSessions[userId];
 
-    // 🆕 Flexバブルで「ととのうケアガイド」誘導ボタンを作成
-const guideFlex = {
-  type: 'flex',
-  altText: 'ととのうケアガイドのご案内',
-  contents: {
-    type: 'bubble',
-    size: 'mega',
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      backgroundColor: '#F8F9F7', // ✅ 背景色（柔らかグレー）
-      paddingAll: '16px',         // ✅ 全体に余白
-      spacing: 'md',
-      contents: [
-        {
-          type: 'text',
-          text: '📗 ととのうケアガイド完成！',
-          weight: 'bold',
-          size: 'lg',
-          color: '#B78949',
-          wrap: true
-        },
-        {
-          type: 'separator',
-          margin: 'md'
-        },
-        {
-          type: 'text',
-          text: 'あなた専用のケアアドバイスができました！✨\nセルフケア法・生活習慣のヒントを今すぐチェックしましょう！💡',
-          size: 'sm',
-          color: '#0d0d0d',
-          wrap: true
-        },
-        {
-          type: 'text',
-          text: '※ あとからメニュー内「ととのうケアガイド」でも確認できます。',
-          size: 'xs',
-          color: '#888888',
-          wrap: true,
-          margin: 'md'
-        },
-        {
-          type: 'separator',
-          margin: 'md'
-        },
-        {
-          type: 'button',
-          style: 'primary',
-          color: '#758A6D',
-          action: {
-            type: 'message',
-            label: 'ととのうケアガイドを見る🎁',
-            text: 'ととのうケアガイド'
-          }
+
+    // Flexバブル（ケアガイド誘導）
+    const guideFlex = {
+      type: 'flex',
+      altText: 'ととのうケアガイドのご案内',
+      contents: {
+        type: 'bubble',
+        size: 'mega',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#F8F9F7',
+          paddingAll: '16px',
+          spacing: 'md',
+          contents: [
+            {
+              type: 'text',
+              text: '📗 ととのうケアガイド完成！',
+              weight: 'bold',
+              size: 'lg',
+              color: '#B78949',
+              wrap: true
+            },
+            {
+              type: 'separator',
+              margin: 'md'
+            },
+            {
+              type: 'text',
+              text: 'あなた専用のケアアドバイスができました！✨\nセルフケア法・生活習慣のヒントを今すぐチェックしましょう！💡',
+              size: 'sm',
+              color: '#0d0d0d',
+              wrap: true
+            },
+            {
+              type: 'text',
+              text: '※ あとからメニュー内「ととのうケアガイド」でも確認できます。',
+              size: 'xs',
+              color: '#888888',
+              wrap: true,
+              margin: 'md'
+            },
+            {
+              type: 'separator',
+              margin: 'md'
+            },
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#758A6D',
+              action: {
+                type: 'message',
+                label: 'ととのうケアガイドを見る🎁',
+                text: 'ととのうケアガイド'
+              }
+            }
+          ]
         }
-      ]
-    }
-  }
-};
-const imageUrl = typeImageDictionary[result.type];
-const resultFlex = buildResultFlex(result, imageUrl);
+      }
+    };
+
+    const imageUrl = typeImageDictionary[result.type];
+    const resultFlex = buildResultFlex(result, imageUrl);
 
     return {
       messages: [
@@ -160,8 +179,8 @@ const resultFlex = buildResultFlex(result, imageUrl);
         guideFlex
       ]
     };
-  } 
-} 
+  }
+}
 
 async function handleExtraCommands(userId, messageText) {
   if (messageText.includes("ととのうケアガイド")) {
