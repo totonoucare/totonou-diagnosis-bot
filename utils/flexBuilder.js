@@ -578,7 +578,7 @@ function buildChatConsultOptionsFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#758A6D", // 落ち着いたアースグリーン
+        backgroundColor: "#27AE60", // 落ち着いたアースグリーン27AE60
         paddingAll: "12px",
       },
       body: {
@@ -596,7 +596,7 @@ function buildChatConsultOptionsFlex() {
               text: "ととのうGPTでAI相談",
             },
             style: "primary",
-            color: "#27AE60", // ナチュラルグリーン
+            color: "#758A6D", // ナチュラルグリーン
           },
           {
             type: "button",
