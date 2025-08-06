@@ -7,9 +7,6 @@ const linkDictionary = require("./linkDictionary");
 const stretchPointDictionary = require("./stretchPointDictionary");
 const flowAdviceDictionary = require("./flowAdviceDictionary");
 const getTypeName = require("./typeMapper");
-const typeCodeDictionary = require("./typeCodeDictionary");
-const flowCodeDictionary = require("./flowCodeDictionary");
-const organCodeDictionary = require("./organCodeDictionary");
 
 function generateResult(score1, score2, score3, flowType, organType, symptom, motion) {
   const typeName = getTypeName(score1, score2, score3);
@@ -35,8 +32,7 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
           header: "分析エラー",
           body: "スコアの組み合わせが未定義か、内部エラーが発生しています。",
         }
-      ],
-      code: "0000"  // デフォルトのコード
+      ]
     };
   }
 
@@ -48,16 +44,12 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
   const stretchData = stretchPointDictionary[organType] || { stretch: "", points: "" };
   const flowCareAdvice = flowAdviceDictionary[flowType] || "";
 
+  // flowlabel → 漢方リンク内に埋め込み
   const flowLabel = flowlabelDictionary[flowType] || "";
   const rawLinkText = linkDictionary[typeName] || "";
   const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
 
-  // 🔢 コード生成
-  const typeCode = typeCodeDictionary[typeName] || "00";
-  const flowCode = flowCodeDictionary[flowType] || "0";
-  const organCode = organCodeDictionary[organType] || "0";
-  const analysisCode = `${typeCode}${flowCode}${organCode}`;
-
+  // 📦 カルーセル用アドバイス構造化
   const adviceCards = [
     {
       header: "💡ここから始める体質改善習慣！",
@@ -91,8 +83,7 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
     flowIssue: flowInfo,
     organBurden: organInfo,
     adviceCards: adviceCards,
-    scores: [score1, score2, score3],
-    code: analysisCode  // ← ここが新しく追加された4桁コード
+    scores: [score1, score2, score3]
   };
 }
 
