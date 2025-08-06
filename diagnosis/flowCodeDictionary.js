@@ -1,9 +1,9 @@
 // flowCodeDictionary.js
 const flowCodeDictionary = {
-  "1": "気滞",
-  "2": "水滞",
-  "3": "瘀血",
-  "4": "巡りは良好"
+  "気滞": "1",
+  "水滞": "2",
+  "瘀血": "3",
+  "巡りは良好": "4"
 };
 
 module.exports = flowCodeDictionary;
