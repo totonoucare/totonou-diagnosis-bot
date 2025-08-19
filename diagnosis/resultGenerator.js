@@ -52,20 +52,20 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
   // 📦 カルーセル用アドバイス構造化
   const adviceCards = [
     {
-      header: "💡ここから始める体質改善習慣！",
+      header: "💡まずはここから体質改善習慣！",
       body: baseAdvice
+    },
+    {
+      header: "🧘巡りととのう呼吸法",
+      body: flowCareAdvice
     },
     {
       header: "🤸経絡(けいらく)ストレッチ習慣",
       body: stretchData.stretch
     },
     {
-      header: "🎯あなたのツボはここ！",
+      header: "🎯あなたのツボケア",
       body: stretchData.points
-    },
-    {
-      header: "🧘巡りととのう呼吸法",
-      body: flowCareAdvice
     },
     {
       header: "🌿体質で選ぶオススメ漢方薬",
