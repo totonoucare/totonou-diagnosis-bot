@@ -197,7 +197,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "初めての方はそのまま始めてください！\n2回目以降の方は、前回の分析結果が上書きされるのでご注意ください。",
+            text: "初めての方はそのまま分析をスタートしてください🌱\n2回目以降の方は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
