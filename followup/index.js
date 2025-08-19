@@ -139,7 +139,7 @@ if (message === '定期チェックナビ開始') {
       // 🧠 解析中メッセージを reply
       await client.replyMessage(replyToken, [{
         type: 'text',
-        text: '🧠AIが解析中です...\nしばらくお待ちください。'
+        text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のULRをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
       }]);
 
       // GPT処理 → 終わり次第 push
