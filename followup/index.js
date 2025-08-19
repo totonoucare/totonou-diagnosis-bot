@@ -30,11 +30,11 @@ const multiLabels = {
   sleep: "睡眠の状態",
   meal: "食事の状態",
   stress: "ストレスの状態",
-  habits: "体質改善の習慣（温活・食事・睡眠など）",
-  breathing: "巡りととのえ呼吸法",
-  stretch: "内臓ととのえストレッチ",
-  tsubo: "ツボケア（指圧・お灸）",
-  kampo: "漢方薬の服用",
+  habits: "体質改善習慣",
+  breathing: "巡りととのう呼吸法",
+  stretch: "経絡ストレッチ",
+  tsubo: "あなたのツボケア",
+  kampo: "漢方薬の活用",
   Q4: "動作テストの変化",
   Q5: "セルフケアの課題"
 };
