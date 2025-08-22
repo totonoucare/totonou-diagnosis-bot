@@ -138,7 +138,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
             },
             {
               type: 'text',
-              text: 'あなた専用のケアアドバイスができました！✨\nセルフケア法・生活習慣のヒントを今すぐチェックしましょう！💡',
+              text: 'あなた専用のケアアドバイスができました！生活習慣のヒントやセルフケア方法をチェックしてみましょう ✨',
               size: 'sm',
               color: '#0d0d0d',
               wrap: true
