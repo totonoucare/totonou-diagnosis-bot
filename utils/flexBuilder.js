@@ -249,7 +249,7 @@ function buildFollowupConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "週1回の体調変化とケア習慣状況の記録＆AIアドバイスの機能です！\nとととのうケアガイドのセルフケアは実施できましたか？\nまだ見ていない方は、まずそちらを確認してから定期チェックナビを受けてくださいね！\n🌟定期チェックナビご利用後はショップカードのポイントが貯まります！",
+            text: "こんにちは！週1回の体調変化とケア習慣状況の記録＆AIアドバイスのメニューです！\nとととのうケアガイドのセルフケアは実施できましたか？\nまだ見ていない方は、まずそちらを確認してから定期チェックナビを受けてくださいね！\n🌟定期チェックナビご利用後はショップカードのポイントが貯まります！",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
@@ -628,7 +628,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '🎁 無料トライアルを始める',
+            text: '🎁 16日間の無料トライアルを始める',
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
@@ -644,7 +644,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '紹介が完了した方は、下のボタンを押して無料体験を始めましょう！',
+            text: '🎁 16日間の無料トライアルをご用意しました！\nトトノウAIによる週1回の定期チェックナビやリマインド、チャット相談で、あなたのセルフケアをしっかりサポートします。\n※トライアル終了後の自動課金や強制加入は一切ありませんので安心してご利用ください 🌱',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -657,9 +657,9 @@ function buildTrialStartFlex() {
             type: 'button',
             action: {
               type: 'postback',
-              label: '紹介完了',
+              label: '無料トライアル開始',
               data: 'trial_intro_done',
-              displayText: '紹介完了',
+              displayText: '無料トライアル開始',
             },
             style: 'primary',
             color: '#758A6D',
