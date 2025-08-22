@@ -192,7 +192,7 @@ async function handleExtraCommands(userId, messageText) {
           messages: [
             {
               type: 'text',
-              text: '診断データが見つかりませんでした。もう一度診断をお願いします。'
+              text: '分析データが見つかりませんでした。もう一度分析をお願いします。'
             }
           ]
         };
@@ -208,24 +208,6 @@ async function handleExtraCommands(userId, messageText) {
         return {
           messages: [
             carousel,
-            {
-              type: 'text',
-              text: `🔄 「ととのう習慣」で、変わる毎日へ🌱
-
-ととのう体質ケア分析、おつかれさまでした！
-ここからは、【ととのうケアガイド】をもとに、「実践→振り返り」のサイクルを無理なく続けていくことがポイントです！🎯
-
-📩 「1人では続かない」という方には、、、状況チェックやリマインド、チャット相談で習慣化を支援するサブスクサービスをご用意！
-
-詳しくはこちら💁
-https://totonoucare.com/#menu
-
-さらに今なら、
-このととのうケアナビのLINE紹介リンクを身近な人に紹介すると、スタンダードコースの16日間無料体験がスタート🎁
-
-👉 今すぐ始めたい方は、ご紹介後に下記の完了ボタンを押して始めましょう！
-（※ 友達紹介リンクは、メニューボタン【ご案内リンク集】からご確認下さい）`
-            },
             {
               type: 'flex',
               altText: trialFlex.altText,
@@ -244,7 +226,7 @@ https://totonoucare.com/#menu
         messages: [
           {
             type: 'text',
-            text: '診断データ取得時にエラーが発生しました。もう一度お試しください。'
+            text: '分析データ取得時にエラーが発生しました。もう一度お試しください。'
           }
         ]
       };
