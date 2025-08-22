@@ -644,7 +644,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '16日間の無料トライアルをご用意しました！\nトトノウAIによる週1回の定期チェックナビやリマインド、チャット相談で、あなたのセルフケアをしっかりサポートします。\n※トライアル終了後の自動課金や強制加入は一切ありませんので安心してご利用ください 🌱',
+            text: '16日間の無料トライアルをご用意しました！\nトトノウAIによる週1回の定期チェックナビやリマインド、チャット相談で、あなたのセルフケアをしっかりサポートします。',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -653,6 +653,17 @@ function buildTrialStartFlex() {
             type: 'separator',
             margin: 'md',
           },
+            {
+              type: 'text',
+              text: 'トライアル終了後の自動課金や強制加入は一切ありませんので安心してご利用ください 🌱',
+              size: 'sm',
+              color: '#888888',
+              wrap: true,
+              margin: 'md'
+            },
+          {
+            type: 'separator',
+            margin: 'md',
           {
             type: 'button',
             action: {
