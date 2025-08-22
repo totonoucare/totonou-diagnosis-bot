@@ -644,7 +644,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '16日間の無料トライアルをご用意しました！\nトトノウAIによる週1回の定期チェックナビやリマインド、チャット相談で、あなたのセルフケアをしっかりサポートします。',
+            text: '16日間の無料トライアルをご用意しました！\n『ととのうケアガイド』の内容を習慣化できるように、トトノウAIによる週1回の定期チェックナビやリマインド、チャット相談で、あなたのセルフケアをしっかりサポートします。',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -667,7 +667,7 @@ function buildTrialStartFlex() {
               type: 'postback',
               label: '無料トライアル開始',
               data: 'trial_intro_done',
-              displayText: '無料トライアル開始',
+              displayText: '無料トライアルを開始！',
             },
             style: 'primary',
             color: '#758A6D',
