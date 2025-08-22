@@ -662,9 +662,6 @@ function buildTrialStartFlex() {
               margin: 'md'
             },
           {
-            type: 'separator',
-            margin: 'md',
-          {
             type: 'button',
             action: {
               type: 'postback',
