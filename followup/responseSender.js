@@ -230,7 +230,7 @@ nextStep: ${nextStepText}
         { role: "user", content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 480,
+      max_completion_tokens: 480,
     });
 
     const replyText = rsp.choices?.[0]?.message?.content?.trim();
