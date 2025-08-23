@@ -242,6 +242,35 @@ async function updateUserFields(lineId, updates) {
   return;
 }
 
+// 末尾の module.exports の上あたりに追記
+
+// ✅ 直近2件のfollowupを取得（最新, その1つ前）
+// 返り値: { latest: {...} | null, prev: {...} | null }
+async function getLastTwoFollowups(lineId) {
+  const cleanId = lineId.trim();
+
+  const { data: userRow, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('line_id', cleanId)
+    .maybeSingle();
+  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+
+  const { data, error } = await supabase
+    .from('followups')
+    .select('*')
+    .eq('user_id', userRow.id)
+    .order('created_at', { ascending: false })
+    .limit(2);
+
+  if (error) throw error;
+
+  const latest = data && data[0] ? data[0] : null;
+  const prev   = data && data[1] ? data[1] : null;
+
+  return { latest, prev };
+}
+
 module.exports = {
   initializeUser,
   getUser,
