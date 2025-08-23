@@ -283,6 +283,7 @@ module.exports = {
   setInitialContext: saveContext,
   setFollowupAnswers,
   getLatestFollowup,
+  getLastTwoFollowups,   // ← これを追加
   getSubscribedUsers,
   incrementConsultationCount,
   updateUserFields
