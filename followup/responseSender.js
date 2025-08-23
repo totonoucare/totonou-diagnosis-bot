@@ -84,6 +84,7 @@ function adherencePenalty(ans) {
 
 /**
  * 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正
+ * ※ 入力は followup レコードの1件（最新 or 前回）
  */
 function computeScore(ans) {
   let penalty = 0;
@@ -149,7 +150,7 @@ function chooseNextPillar(ans) {
   const notStarted = pillars.find(p => (p.v || "") === "未着手");
   if (notStarted) return notStarted.k;
 
-  // 乱れと柱の紐付け（ストレス→呼吸 / 食事/睡眠→習慣 / 動作→スト or ツボ）
+  // 乱れと柱の紐付け（ストレス→呼吸 / 食事→習慣 / 動作→スト or ツボ / 睡眠→呼吸 or 習慣）
   if (ans.stress >= 3) return "breathing";
   if (ans.meal   >= 3) return (ans.kampo === "未着手" ? "kampo" : "habits"); // kampoは提案OKだが減点しない
   if (ans.motion_level >= 3) return (ans.stretch === "未着手" ? "stretch" : "tsubo");
@@ -157,6 +158,50 @@ function chooseNextPillar(ans) {
 
   // 大きな乱れがない場合は習慣を微増
   return "habits";
+}
+
+/**
+ * GPTに投げてコメント生成（gpt-5）—空返し対策で1回再試行＋代替モデル
+ */
+async function callGPTWithFallback(systemPrompt, userPrompt) {
+  // 1st try (gpt-5)
+  let rsp = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    max_completion_tokens: 480
+  });
+  let text = rsp.choices?.[0]?.message?.content?.trim() || "";
+
+  // retry same (gpt-5)
+  if (!text) {
+    rsp = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_completion_tokens: 640
+    });
+    text = rsp.choices?.[0]?.message?.content?.trim() || "";
+  }
+
+  // alternative (gpt-4.1-mini)
+  if (!text) {
+    rsp = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_completion_tokens: 480
+    });
+    text = rsp.choices?.[0]?.message?.content?.trim() || "";
+  }
+
+  return text;
 }
 
 // ===== メイン：フォローアップコメント生成 =====
@@ -197,7 +242,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
       };
     }
 
-    // スコア＆差分（※ cur の Q3 文字状態をそのまま使う）
+    // スコア＆差分（※ cur/prev の Q3 文字状態をそのまま使う）
     const { score, stars, starsNum } = computeScore(cur);
     const prevScore = prev ? computeScore(prev).score : null;
     const delta = prevScore === null ? null : (score - prevScore);
@@ -260,17 +305,8 @@ pillar: ${pillarLabelMap[nextPillar] || "次の一歩"}
 nextStep: ${nextStepText}
 `.trim();
 
-    const rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      // gpt-5 は max_completion_tokens のみ対応（temperature/top_p は非対応）
-      max_completion_tokens: 640
-    });
-
-    const replyText = rsp.choices?.[0]?.message?.content?.trim();
+    // GPT呼び出し（空返し対策込み）
+    let replyText = await callGPTWithFallback(systemPrompt, userPrompt);
 
     // ===== フォールバック：最低限“読む価値のある一枚”を保証 =====
     if (!replyText) {
