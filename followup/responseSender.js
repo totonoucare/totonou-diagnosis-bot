@@ -229,7 +229,6 @@ nextStep: ${nextStepText}
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.3,
       max_completion_tokens: 480,
     });
 
