@@ -267,7 +267,7 @@ nextStep: ${nextStepText}
         { role: "user", content: userPrompt },
       ],
       // gpt-5 は max_completion_tokens のみ対応（temperature/top_p は非対応）
-      max_completion_tokens: 480
+      max_completion_tokens: 640
     });
 
     const replyText = rsp.choices?.[0]?.message?.content?.trim();
