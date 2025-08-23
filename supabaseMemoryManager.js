@@ -242,33 +242,23 @@ async function updateUserFields(lineId, updates) {
   return;
 }
 
-// 末尾の module.exports の上あたりに追記
+// どこでもOK（exportsの上）に追記
 
-// ✅ 直近2件のfollowupを取得（最新, その1つ前）
-// 返り値: { latest: {...} | null, prev: {...} | null }
-async function getLastTwoFollowups(lineId) {
-  const cleanId = lineId.trim();
-
-  const { data: userRow, error: userError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('line_id', cleanId)
-    .maybeSingle();
-  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
-
+// 直近2件のfollowupを user_id で取得（[最新, その前]）
+async function getLastTwoFollowupsByUserId(userId) {
   const { data, error } = await supabase
-    .from('followups')
+    .from(FOLLOWUP_TABLE)
     .select('*')
-    .eq('user_id', userRow.id)
+    .eq('user_id', String(userId))
     .order('created_at', { ascending: false })
     .limit(2);
 
   if (error) throw error;
 
-  const latest = data && data[0] ? data[0] : null;
-  const prev   = data && data[1] ? data[1] : null;
-
-  return { latest, prev };
+  return {
+    latest: data && data[0] ? data[0] : null,
+    prev:   data && data[1] ? data[1] : null,
+  };
 }
 
 module.exports = {
@@ -283,8 +273,8 @@ module.exports = {
   setInitialContext: saveContext,
   setFollowupAnswers,
   getLatestFollowup,
-  getLastTwoFollowups,   // ← これを追加
   getSubscribedUsers,
   incrementConsultationCount,
-  updateUserFields
+  updateUserFields,
+  getLastTwoFollowupsByUserId  // ← これを追加
 };
