@@ -245,6 +245,7 @@ async function updateUserFields(lineId, updates) {
 // どこでもOK（exportsの上）に追記
 
 // 直近2件の followup を user_id で取得（[最新, その前]）— 安定ソート版
+// supabaseMemoryManager.js 内
 async function getLastTwoFollowupsByUserId(userId) {
   const uid = String(userId);
 
@@ -252,23 +253,22 @@ async function getLastTwoFollowupsByUserId(userId) {
     .from(FOLLOWUP_TABLE)
     .select('*')
     .eq('user_id', uid)
-    // created_at が同一秒になることがあるため、id の降順も併用して安定化
+    // 同秒タイムスタンプ対策：二次ソートで id DESC を併用
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
     .limit(2);
 
   if (error) throw error;
 
-  // 念のため配列長をチェックして安全に返す
   const latest = (data && data[0]) ? data[0] : null;
   const prev   = (data && data[1]) ? data[1] : null;
 
-  // デバッグしたいときだけ有効化
-  // console.log("getLastTwoFollowupsByUserId:", {
-  //   count: data?.length || 0,
-  //   latest: latest ? { id: latest.id, created_at: latest.created_at } : null,
-  //   prev:   prev   ? { id: prev.id,   created_at: prev.created_at   } : null,
-  // });
+  // ▼ ここ重要：何を拾えているかを必ず出す
+  console.log("[getLastTwoFollowupsByUserId] uid=", uid, 
+    "count=", data?.length || 0,
+    "latest=", latest ? { id: latest.id, created_at: latest.created_at, user_id: latest.user_id } : null,
+    "prev=",   prev   ? { id: prev.id,   created_at: prev.created_at,   user_id: prev.user_id   } : null
+  );
 
   return { latest, prev };
 }
