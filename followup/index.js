@@ -127,7 +127,7 @@ function buildResultFlexFromSections(sections) {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "【 前回比 】", weight: "bold", size: "md", color: "#B78949" },
+              { type: "text", text: "【 📊 前回比 】", weight: "bold", size: "md", color: "#B78949" },
               { type: "text", text: diffLine || "前回データがありません（初回）", wrap: true, size: "sm", color: "#333333" }
             ]
           },
@@ -139,7 +139,7 @@ function buildResultFlexFromSections(sections) {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "【 このまま続けるといいこと 】", weight: "bold", size: "md", color: "#B78949" },
+              { type: "text", text: "【 🏃‍♀️‍➡️ このまま続けるといいこと 】", weight: "bold", size: "md", color: "#B78949" },
               { type: "text", text: keepText, wrap: true, size: "sm", color: "#333333" }
             ]
           },
@@ -151,7 +151,7 @@ function buildResultFlexFromSections(sections) {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "【 次にやってみてほしいこと 】", weight: "bold", size: "md", color: "#B78949" },
+              { type: "text", text: "【 🚀 次にやってみてほしいこと 】", weight: "bold", size: "md", color: "#B78949" },
               { type: "text", text: nextText, wrap: true, size: "sm", color: "#333333" }
             ]
           },
