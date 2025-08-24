@@ -235,6 +235,15 @@ async function sendFollowupResponse(userId, followupAnswers) {
     // 直近2件の followups（今回 vs 前回）
     const { latest, prev } = await supabaseMemoryManager.getLastTwoFollowupsByUserId(userId);
     const cur = followupAnswers || latest;
+
+    console.log("[responseSender] followup fetch:", {
+      latestId: latest?.id,
+      latestAt: latest?.created_at,
+      prevId: prev?.id,
+      prevAt: prev?.created_at,
+      curId: cur?.id
+    });
+    
     if (!cur) {
       return {
         gptComment: "今回は記録が見つかりませんでした。もう一度、定期チェックを送ってください。",
