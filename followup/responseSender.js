@@ -1,6 +1,11 @@
 // followup/responseSender.js
-// 定期チェック：前回差分＋「褒めて伸ばす」＋点数/星の確定計算（gpt-5）
-// contents.advice は jsonb配列（[{header, body}, ...] または {habits,...}）想定
+// 定期チェック：前回差分＋「褒めて伸ばす」＋スコア/星の確定計算（gpt-5）
+// 出力は「テキスト版」＋「3カード分割JSON」を返す（ルーター後方互換）
+// gpt-5 は max_completion_tokens 指定、temperature は未指定（=デフォルト）
+//
+// 依存：supabaseMemoryManager.getLastTwoFollowupsByUserId(userId)
+//       supabaseMemoryManager.getContext(lineId)
+//       supabaseMemoryManager.getSubscribedUsers()
 
 const OpenAI = require("openai");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
@@ -29,15 +34,19 @@ const symptomMap = {
   unknown: "なんとなく不調・不定愁訴",
 };
 
-/** contents.advice → 5本柱テキストへマッピング */
+/**
+ * contents.advice（jsonb配列 or オブジェクト）→ 5本柱テキストへマッピング
+ */
 function readAdvice(adviceInput) {
   if (!adviceInput) {
     return { habits: "", breathing: "", stretch: "", tsubo: "", kampo: "" };
   }
+  // 既に {habits,breathing,...} オブジェクトならそのまま
   if (!Array.isArray(adviceInput) && typeof adviceInput === "object") {
     const { habits = "", breathing = "", stretch = "", tsubo = "", kampo = "" } = adviceInput;
     return { habits, breathing, stretch, tsubo, kampo };
   }
+  // [{header, body}, ...] 形式
   const arr = Array.isArray(adviceInput) ? adviceInput : [];
   const pick = (keywords) => {
     const item = arr.find(a => typeof a?.header === "string" && keywords.some(kw => a.header.includes(kw)));
@@ -52,40 +61,25 @@ function readAdvice(adviceInput) {
   };
 }
 
-// ===== 正規化：数値化・欠損補填（ここが超重要） =====
-function normalizeFollowup(ans = {}) {
-  const n = (v, def) => (v === null || v === undefined || v === "" ? def : Number(v));
-  return {
-    // Q1
-    symptom_level: n(ans.symptom_level, 3),
-    general_level: n(ans.general_level, 3),
-    // Q2
-    sleep:  n(ans.sleep, 3),
-    meal:   n(ans.meal, 3),
-    stress: n(ans.stress, 3),
-    // Q3（テキストのまま）
-    habits:    ans.habits ?? "未着手",
-    breathing: ans.breathing ?? "未着手",
-    stretch:   ans.stretch ?? "未着手",
-    tsubo:     ans.tsubo ?? "未着手",
-    kampo:     ans.kampo ?? "未着手",
-    // Q4
-    motion_level: n(ans.motion_level, 3),
-    // Q5
-    q5_answer: ans.q5_answer ?? ""
-  };
-}
-
 // ===== スコア算定（0〜100）＋星（1〜5） =====
+
+// Q3の文字→数値
 const careMap = { "継続": 0, "継続中": 0, "時々": 1, "未着手": 2 };
+// “未着手/時々” 判定
 const isWeak = (v) => v === "未着手" || v === "時々";
 
-/** contents.advice と照合した “アドヒアランス修正”減点（※漢方は減点しない） */
+/**
+ * contents.advice と照合した “アドヒアランス修正”減点（※漢方は減点しない）
+ * - Q2: 睡眠/食事/ストレスの乱れ × （習慣/呼吸の未導入）
+ * - Q4: 動作が重い × （ストレッチ/ツボの未導入）
+ */
 function adherencePenalty(ans) {
   let add = 0;
+  // Q2 × advice
   if (ans.sleep >= 3 && isWeak(ans.habits))    add += 1.5;
   if (ans.meal  >= 3 && isWeak(ans.habits))    add += 1.5;
   if (ans.stress>= 3 && isWeak(ans.breathing)) add += 1.5;
+  // Q4 × advice
   if (ans.motion_level >= 3) {
     if (isWeak(ans.stretch) && isWeak(ans.tsubo)) add += 2.0;
     else if (isWeak(ans.stretch) || isWeak(ans.tsubo)) add += 1.0;
@@ -93,20 +87,28 @@ function adherencePenalty(ans) {
   return add;
 }
 
-/** 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正 */
+/**
+ * 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正
+ * ※ 入力は followup レコードの1件（最新 or 前回）
+ */
 function computeScore(ans) {
   let penalty = 0;
-  // Q1
+
+  // Q1 主訴/全体（最大35点）
   penalty += ((ans.symptom_level - 1) + (ans.general_level - 1)) * 3.5;
-  // Q2
+
+  // Q2 睡眠/食事/ストレス（最大35点）
   penalty += ((ans.sleep - 1) + (ans.meal - 1) + (ans.stress - 1)) * 2.333;
-  // Q3（漢方除外）
+
+  // Q3 セルフケア（最大20点）※漢方は減点対象から除外
   const careVals = [ans.habits, ans.breathing, ans.stretch, ans.tsubo];
   const careScore = careVals.reduce((acc, v) => acc + (careMap[v] ?? 0), 0);
   penalty += careScore * 2;
-  // Q4
+
+  // Q4 動作（最大10点）
   penalty += (ans.motion_level - 1) * 2.5;
-  // アドヒアランス修正
+
+  // アドヒアランス修正（+0〜約6点）
   penalty += adherencePenalty(ans);
 
   const raw = 100 - penalty;
@@ -140,8 +142,9 @@ function pickBottleneck(cur) {
   return arr.filter(c => c.v >= 3).sort((a,b) => b.v - a.v)[0] || null;
 }
 
-// ===== 次の一歩 =====
+// ===== 次の一歩：5本柱のうちどれを前面に出すか =====
 function chooseNextPillar(ans) {
+  // 未着手の柱を最優先（行動の着火を優先）
   const pillars = [
     { k: "breathing", v: ans.breathing },
     { k: "stretch",   v: ans.stretch },
@@ -151,56 +154,73 @@ function chooseNextPillar(ans) {
   ];
   const notStarted = pillars.find(p => (p.v || "") === "未着手");
   if (notStarted) return notStarted.k;
+
+  // 乱れと柱の紐付け（ストレス→呼吸 / 食事→習慣 or 漢方 / 動作→スト or ツボ / 睡眠→呼吸 or 習慣）
   if (ans.stress >= 3) return "breathing";
   if (ans.meal   >= 3) return (ans.kampo === "未着手" ? "kampo" : "habits");
   if (ans.motion_level >= 3) return (ans.stretch === "未着手" ? "stretch" : "tsubo");
   if (ans.sleep  >= 3) return (ans.breathing === "未着手" ? "breathing" : "habits");
+
+  // 大きな乱れがない場合は習慣を微増
   return "habits";
 }
 
-// ===== GPT呼び出し（フォールバック込み） =====
-async function callGPTWithFallback(systemPrompt, userPrompt) {
-  let rsp = await openai.chat.completions.create({
-    model: "gpt-5",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    max_completion_tokens: 480
-  });
-  let text = rsp.choices?.[0]?.message?.content?.trim() || "";
-
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
+/**
+ * GPTに投げてカード分割JSONを生成（gpt-5）—空返し対策で再試行＋代替モデル
+ * 期待するJSON:
+ * { "card1": "...", "card2": "...", "card3": "..." }
+ */
+async function callGPTCards(systemPrompt, userPrompt) {
+  // helper: 一度叩いてJSON取り出し
+  async function oneShot(model, maxTokens) {
+    const rsp = await openai.chat.completions.create({
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      max_completion_tokens: 640
+      max_completion_tokens: maxTokens
     });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
+    const txt = rsp.choices?.[0]?.message?.content?.trim() || "";
+    return txt;
   }
 
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 480
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
+  // 1st try (gpt-5)
+  let raw = await oneShot("gpt-5", 640);
 
-  return text;
+  // retry same (gpt-5)
+  if (!raw) raw = await oneShot("gpt-5", 800);
+
+  // alternative (gpt-4.1-mini)
+  if (!raw) raw = await oneShot("gpt-4.1-mini", 640);
+
+  return raw || "";
+}
+
+// JSON抽出（フェンス/前後ノイズに耐性）
+function safeParseCards(text) {
+  if (!text) return null;
+  // コードフェンス内JSON優先
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const body = fence ? fence[1] : text;
+  try {
+    const obj = JSON.parse(body);
+    if (obj && typeof obj === "object" && obj.card1 && obj.card2 && obj.card3) {
+      return { card1: String(obj.card1), card2: String(obj.card2), card3: String(obj.card3) };
+    }
+  } catch(e) { /* fallthrough */ }
+  return null;
 }
 
 // ===== メイン：フォローアップコメント生成 =====
+/**
+ * @param {string} userId - SupabaseのUUID（users.id）
+ * @param {object} followupAnswers - 今回の定期チェック回答（保存直後の値を渡す想定）
+ * @returns {{gptComment: string, statusMessage: "ok"|"fallback"|"error"|"no-current", cards?: {card1:string,card2:string,card3:string, header:string, score:number, prevScore:number|null, delta:number|null, stars:string}}}
+ */
 async function sendFollowupResponse(userId, followupAnswers) {
   try {
-    // userId → lineId
+    // userId → lineId（context取得用）
     const users = await supabaseMemoryManager.getSubscribedUsers();
     const user = users.find((u) => u.id === userId);
     if (!user || !user.line_id) {
@@ -208,7 +228,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
     }
     const lineId = user.line_id;
 
-    // コンテキスト（advice・symptom）
+    // 体質ケアの context（contents.advice を含む）取得
     const context = await supabaseMemoryManager.getContext(lineId);
     if (!context) {
       return {
@@ -220,83 +240,67 @@ async function sendFollowupResponse(userId, followupAnswers) {
     const adviceObj = readAdvice(advice);
     const symptomJapanese = symptomMap[symptom] || symptom || "未登録";
 
-    // 直近2件（今回=引数 or 最新 / 前回=その一つ前）
+    // 直近2件の followups（今回 vs 前回）
     const { latest, prev } = await supabaseMemoryManager.getLastTwoFollowupsByUserId(userId);
-
-    // ★ 正規化（ここがキモ：文字列・null 混入を排除）
-    const curN  = normalizeFollowup(followupAnswers || latest);
-    const prevN = prev ? normalizeFollowup(prev) : null;
-
-    if (!curN) {
+    // cur は引数（保存直後の今回）を優先、それがなければDB最新
+    const cur = followupAnswers || latest;
+    if (!cur) {
       return {
         gptComment: "今回は記録が見つかりませんでした。もう一度、定期チェックを送ってください。",
         statusMessage: "no-current",
       };
     }
 
-    // スコア＆差分（両方“確定値”にする）
-    const { score, stars } = computeScore(curN);
-    const prevScore = prevN ? computeScore(prevN).score : null;
+    // スコア＆差分（※ cur/prev の Q3 文字状態をそのまま使う）
+    const { score, stars, starsNum } = computeScore(cur);
+    const prevScore = prev ? computeScore(prev).score : null;
     const delta = prevScore === null ? null : (score - prevScore);
 
-    // ヘッダは “実数の比較” を常に表示（初回のみ今週だけ）
-    const header = (prevScore === null)
-      ? `今週の整いスコア：${score}点 ${stars}`
-      : `前回：${prevScore}点 → 今週：${score}点（${delta>0?'+':''}${delta}） ${stars}`;
+    // 改善点・課題・次の一歩
+    const praise = prev ? pickPraise(prev, cur) : [];
+    const bottleneck = pickBottleneck(cur);
+    const nextPillar = chooseNextPillar(cur);
+    const nextStepText = adviceObj[nextPillar] && String(adviceObj[nextPillar]).trim()
+      ? String(adviceObj[nextPillar]).trim()
+      : "今日は1分だけでも、自分のケア時間を作ってみましょう。呼吸をゆっくり、心地よく。";
 
-    // 前回比の短評（固定文）
-    const diffLine =
-      prevScore === null ? "今回が初回のチェックです。次回から変化を追えます。"
-      : delta > 0        ? `前回より +${delta} 点の改善です。良い流れをキープしましょう。`
-      : delta < 0        ? `前回より ${delta} 点の低下です。無理なく一箇所だけ整え直しましょう。`
-                         : "前回と同じスコア（現状維持）です。土台はできています。";
+    // ヘッダ（点・差分・星は確定値として固定）
+    const header =
+      (prevScore === null)
+        ? `今週の整いスコア：${score}点 ${stars}`
+        : (delta === 0)
+          ? `前回：${prevScore}点 → 今週：${score}点（±0） ${stars}`
+          : `前回：${prevScore}点 → 今週：${score}点（${delta>0?'+':''}${delta}） ${stars}`;
 
-    // 褒めポイント・課題・次の一歩
-    const praise = prevN ? pickPraise(prevN, curN) : [];
-    const bottleneck = pickBottleneck(curN);
-    const nextPillar = chooseNextPillar(curN);
-    const nextStepText =
-      adviceObj[nextPillar] && String(adviceObj[nextPillar]).trim()
-        ? String(adviceObj[nextPillar]).trim()
-        : "今日は1分だけでも、自分のケア時間を作ってみましょう。呼吸をゆっくり、心地よく。";
-
-    // ===== GPT プロンプト =====
+    // ===== GPT プロンプト（3カードJSONを返す） =====
     const systemPrompt = `
 あなたは「ととのうAI」。東洋医学の体質ケアに基づき、定期チェック結果から“褒めて伸ばす”コメントを作ります。
-出力は次の形式・条件を厳守してください。
+出力は必ず JSON で、以下の3カードに分割してください。
 
-【形式（すべて必須）】
-1) 冒頭：全体の体調・変化をひと言（親しみやすく、絵文字OK）
-2) 直後に header をそのまま1行で記載（計算済みの点/星/差分）
-3) 見出し「前回比」：1行で短評（diffLine をそのまま使う）
-4) 見出し「このまま続けるといいこと」：2〜3点（具体承認）
-5) 見出し「次にやってみてほしいこと」：1〜2点（必ず nextStep を含む）
-6) 締めのひとこと（前向き）
-※ 箇条書きに絵文字は使って良いが、*-# 等の記号は使わない。
+- カード①（結果概要）：冒頭の励まし1文＋「header」をそのまま1行で載せる＋差分の短評1文
+- カード②（このまま続けるといいこと）：承認ポイントを2〜3点。絵文字OK。短く具体的に。
+- カード③（次にやってみてほしいこと）：nextStep（与えられる本文）を必ず含める。1〜2点の具体提案。最後に注意書き「※本サービスは医療行為ではなくセルフケア支援です。」を入れる。
 
-【制約】
-- 全角250〜350字
-- praise が空でも、今できている小さな取り組みを具体承認する
-- bottleneck があれば1点だけ触れる（やさしく課題提示）
-- nextPillar に対応する nextStep を本文に必ず含める（意味改変禁止、言い換え可）
-- 最後に注意書き：「※本サービスは医療行為ではなくセルフケア支援です。」
+【厳守】
+- 必ず以下の JSON だけを返すこと（前後の説明文やコードフェンスは禁止）：
+{"card1":"...","card2":"...","card3":"..."}
+- 文字数目安：各カード 全角120〜220字
+- nextStep は意味改変しない（言い換え可）
+- 専門用語は簡潔に（初心者にも分かる語彙）
 `.trim();
 
     const userPrompt = `
 【header】
 ${header}
 
-【前回比】
-${diffLine}
-
 【主訴】${symptomJapanese}
 
 【今回の定期チェック】
-Q1: 主訴=${curN.symptom_level} / 全体=${curN.general_level}
-Q2: 睡眠=${curN.sleep} / 食事=${curN.meal} / ストレス=${curN.stress}
-Q3: 習慣=${curN.habits} / 呼吸法=${curN.breathing} / ストレッチ=${curN.stretch} / ツボ=${curN.tsubo} / 漢方薬=${curN.kampo}
-Q4: 動作=${curN.motion_level}
-Q5: 困りごと=${curN.q5_answer || "未入力"}
+Q1: 主訴=${cur.symptom_level} / 全体=${cur.general_level}
+Q2: 睡眠=${cur.sleep} / 食事=${cur.meal} / ストレス=${cur.stress}
+Q3: 習慣=${cur.habits} / 呼吸法=${cur.breathing} / ストレッチ=${cur.stretch} / ツボ=${cur.tsubo} / 漢方薬=${cur.kampo}
+Q4: 動作=${cur.motion_level}
+Q5: 困りごと=${cur.q5_answer || "未入力"}
 
 【改善点（前回→今回で良化）】
 ${praise.map(p => `${p.label}: ${p.d} 段階改善`).join(" / ") || "（特記事項なし）"}
@@ -309,11 +313,12 @@ pillar: ${pillarLabelMap[nextPillar] || "次の一歩"}
 nextStep: ${nextStepText}
 `.trim();
 
-    // ===== GPT呼び出し =====
-    let replyText = await callGPTWithFallback(systemPrompt, userPrompt);
+    // GPT呼び出し（3カードJSON）
+    let raw = await callGPTCards(systemPrompt, userPrompt);
+    let cards = safeParseCards(raw);
 
-    // ===== フォールバック =====
-    if (!replyText) {
+    // ===== フォールバック：最低限“読む価値のある一枚”を保証 =====
+    if (!cards) {
       const praiseLine = (praise && praise.length)
         ? `👏このまま続けるといいこと：${praise.map(p => `${p.label}が${p.d}段階よくなっています`).join("・")}。`
         : `👏このまま続けるといいこと：小さな積み重ねができています。`;
@@ -323,18 +328,33 @@ nextStep: ${nextStepText}
         : `🧭今週の課題：基礎の継続。`;
 
       const pillarJa = pillarLabelMap[nextPillar] || "次の一歩";
-      const fallbackText =
-        `${header}\n` +
-        `🔁前回比：${diffLine}\n` +
-        `${praiseLine}\n` +
-        `${taskLine}\n` +
-        `➡️次にやってほしいこと（${pillarJa}）：${nextStepText}\n` +
-        `※本サービスは医療行為ではなくセルフケア支援です。`;
+      const fallback = {
+        card1: `調子を丁寧に整えられていますね。\n${header}\n前回との差分を意識しながら、今週も安定を続けましょう。`,
+        card2: `${praiseLine}`,
+        card3: `➡️次にやってほしいこと（${pillarJa}）：${nextStepText}\n※本サービスは医療行為ではなくセルフケア支援です。`
+      };
 
-      return { gptComment: fallbackText, statusMessage: "fallback" };
+      const mergedText =
+        `📋【今回の定期チェックナビ】\n\n` +
+        `${fallback.card1}\n\n${fallback.card2}\n\n${fallback.card3}`;
+
+      return {
+        gptComment: mergedText,
+        statusMessage: "fallback",
+        cards: { ...fallback, header, score, prevScore, delta, stars }
+      };
     }
 
-    return { gptComment: replyText, statusMessage: "ok" };
+    // テキスト版も連結して返す（後方互換）
+    const mergedText =
+      `📋【今回の定期チェックナビ】\n\n` +
+      `${cards.card1}\n\n${cards.card2}\n\n${cards.card3}`;
+
+    return {
+      gptComment: mergedText,
+      statusMessage: "ok",
+      cards: { ...cards, header, score, prevScore, delta, stars }
+    };
 
   } catch (error) {
     console.error("sendFollowupResponse error:", error);
