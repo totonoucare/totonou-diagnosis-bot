@@ -48,6 +48,100 @@ function replacePlaceholders(template, context = {}) {
     .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
 }
 
+/**
+ * sections から 1枚の Flex Bubble を構築
+ * sections: { lead, score_header, diff_line, keep_doing[], next_steps[], footer }
+ */
+function buildResultFlexFromSections(sections) {
+  const lead = sections.lead || "";
+  const scoreHeader = sections.score_header || "";
+  const diffLine = sections.diff_line || "";
+  const keepDoing = Array.isArray(sections.keep_doing) ? sections.keep_doing : [];
+  const nextSteps = Array.isArray(sections.next_steps) ? sections.next_steps : [];
+  const footer = sections.footer || "※本サービスは医療行為ではなくセルフケア支援です。";
+
+  // 箇条書きはテキストで「・」プレフィックスに整形
+  const keepText = keepDoing.map(s => `・${s}`).join('\n') || '・継続できている点を丁寧に積み上げていきましょう。';
+  const nextText = nextSteps.map(s => `・${s}`).join('\n') || '・次の一歩を小さく一つだけ実行しましょう。';
+
+  return {
+    type: "flex",
+    altText: scoreHeader || "ととのう定期チェック結果",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          { type: "text", text: "📋 今回の定期チェックナビ", weight: "bold", size: "md" },
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          // リード
+          {
+            type: "text",
+            text: lead,
+            wrap: true,
+            size: "sm"
+          },
+          // スコア・星（大きめ）
+          {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              { type: "text", text: scoreHeader, weight: "bold", size: "lg", wrap: true }
+            ]
+          },
+          { type: "separator", margin: "md" },
+          // 前回比
+          {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              { type: "text", text: "前回比", weight: "bold", size: "sm" },
+              { type: "text", text: diffLine, wrap: true, size: "sm" }
+            ]
+          },
+          { type: "separator", margin: "md" },
+          // 続けるといいこと
+          {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              { type: "text", text: "このまま続けるといいこと", weight: "bold", size: "sm" },
+              { type: "text", text: keepText, wrap: true, size: "sm" }
+            ]
+          },
+          { type: "separator", margin: "md" },
+          // 次にやってみてほしいこと
+          {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              { type: "text", text: "次にやってみてほしいこと", weight: "bold", size: "sm" },
+              { type: "text", text: nextText, wrap: true, size: "sm" }
+            ]
+          },
+          { type: "separator", margin: "md" },
+          // フッター
+          {
+            type: "text",
+            text: footer,
+            size: "xs",
+            color: "#888888",
+            wrap: true
+          }
+        ]
+      }
+    }
+  };
+}
+
 async function handleFollowup(event, client, lineId) {
   try {
     const replyToken = event.replyToken;
@@ -61,15 +155,15 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-if (message === '定期チェックナビ開始') {
-  const userRecord = await supabaseMemoryManager.getUser(lineId);
-  if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
-    await client.replyMessage(replyToken, [{
-      type: 'text',
-      text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
-    }]);
-    return null;
-  }
+    if (message === '定期チェックナビ開始') {
+      const userRecord = await supabaseMemoryManager.getUser(lineId);
+      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+        await client.replyMessage(replyToken, [{
+          type: 'text',
+          text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
+        }]);
+        return null;
+      }
 
       userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
@@ -134,7 +228,7 @@ if (message === '定期チェックナビ開始') {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      // 🧠 解析中メッセージを reply
+      // 解析中メッセージを reply
       await client.replyMessage(replyToken, [{
         type: 'text',
         text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のULRをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
@@ -143,11 +237,20 @@ if (message === '定期チェックナビ開始') {
       // GPT処理 → 終わり次第 push
       handleFollowupAnswers(lineId, answers)
         .then(async (result) => {
-          await client.pushMessage(lineId, [{
-            type: 'text',
-            text: `📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-          }]);
-          delete userSession[lineId];
+          try {
+            // sections があれば 1枚の Flex、なければテキスト
+            if (result && result.sections) {
+              const flex = buildResultFlexFromSections(result.sections);
+              await client.pushMessage(lineId, [flex]);
+            } else {
+              await client.pushMessage(lineId, [{
+                type: 'text',
+                text: `📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+              }]);
+            }
+          } finally {
+            delete userSession[lineId];
+          }
         })
         .catch(async (err) => {
           console.error("❌ GPTコメント生成失敗:", err);
