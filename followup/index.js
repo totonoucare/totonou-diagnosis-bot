@@ -2,8 +2,7 @@
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
-// ✅ カルーセル出力ビルダー（utils/flexBuilder.js 側に実装済み想定）
-const { MessageBuilder, buildMultiQuestionFlex, buildFollowupCarousel } = require('../utils/flexBuilder');
+const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
 
 const symptomLabels = {
   stomach: '胃腸の調子',
@@ -17,8 +16,16 @@ const symptomLabels = {
   unknown: 'なんとなく不調・不定愁訴',
 };
 
+const motionLabels = {
+  A: '首を後ろに倒すor左右に回す',
+  B: '腕をバンザイする',
+  C: '前屈する',
+  D: '腰を左右にねじるor側屈',
+  E: '上体をそらす',
+};
+
 const multiLabels = {
-  symptom: "「{{symptom\}\}」のお悩みレベル",
+  symptom: "「{{symptom}}」のお悩みレベル",
   general: "全体的な調子",
   sleep: "睡眠の状態",
   meal: "食事の状態",
@@ -41,57 +48,6 @@ function replacePlaceholders(template, context = {}) {
     .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
 }
 
-/**
- * gptComment を 3セクション（①冒頭+スコア ②続ける ③次に…）に強制パース
- * 見出しは「このまま続けるといいこと」「次にやってみてほしいこと」を目印にする
- * うまく見つからない場合は素直に三分割するだけの安全策
- */
-function splitCommentToThreeCards(gptComment = '') {
-  const text = (gptComment || '').trim();
-  if (!text) return null;
-
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
-  const idxKeep = lines.findIndex(l => l.includes('このまま続けるといいこと'));
-  const idxNext = lines.findIndex(l => l.includes('次にやってみてほしいこと'));
-
-  let part1 = [], part2 = [], part3 = [];
-
-  if (idxKeep !== -1 && idxNext !== -1 && idxKeep < idxNext) {
-    part1 = lines.slice(0, idxKeep);
-    part2 = lines.slice(idxKeep, idxNext);
-    part3 = lines.slice(idxNext);
-  } else {
-    // 見出しが取れない場合は機械的に三分割
-    const n = lines.length;
-    const a = Math.max(1, Math.floor(n * 0.33));
-    const b = Math.max(a + 1, Math.floor(n * 0.66));
-    part1 = lines.slice(0, a);
-    part2 = lines.slice(a, b);
-    part3 = lines.slice(b);
-  }
-
-  const mkBubble = (title, arr) => ({
-    type: "bubble",
-    size: "mega",
-    body: {
-      type: "box",
-      layout: "vertical",
-      spacing: "md",
-      contents: [
-        { type: "text", text: title, weight: "bold", size: "md" },
-        { type: "separator", margin: "md" },
-        { type: "text", text: arr.join("\n"), wrap: true, size: "sm" }
-      ]
-    }
-  });
-
-  const title1 = "📋 今回の定期チェック";
-  const title2 = "😊 このまま続けるといいこと";
-  const title3 = "🧭 次にやってみてほしいこと";
-
-  return [ mkBubble(title1, part1), mkBubble(title2, part2), mkBubble(title3, part3) ];
-}
-
 async function handleFollowup(event, client, lineId) {
   try {
     const replyToken = event.replyToken;
@@ -105,16 +61,15 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-    // セッション開始
-    if (message === '定期チェックナビ開始') {
-      const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
-        await client.replyMessage(replyToken, [{
-          type: 'text',
-          text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
-        }]);
-        return null;
-      }
+if (message === '定期チェックナビ開始') {
+  const userRecord = await supabaseMemoryManager.getUser(lineId);
+  if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+    await client.replyMessage(replyToken, [{
+      type: 'text',
+      text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
+    }]);
+    return null;
+  }
 
       userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
@@ -123,14 +78,13 @@ async function handleFollowup(event, client, lineId) {
     }
 
     if (!userSession[lineId]) {
-      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「定期チェックナビ開始」と送ってください。' }]);
+      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「定期チェッナビ」と送ってください。' }]);
     }
 
     const session = userSession[lineId];
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    // マルチ設問（Q1〜Q3）
     if (question.isMulti && Array.isArray(question.options)) {
       const parts = message.split(':');
       if (parts.length !== 2) {
@@ -153,7 +107,6 @@ async function handleFollowup(event, client, lineId) {
       session.step++;
 
     } else {
-      // 単一設問（Q4/Q5）
       const validDataValues = question.options.map(opt => opt.data);
       if (!validDataValues.includes(message)) {
         return client.replyMessage(replyToken, [{ type: 'text', text: '選択肢からお選びください。' }]);
@@ -173,64 +126,29 @@ async function handleFollowup(event, client, lineId) {
       session.step++;
     }
 
-    // 回答完了 → 解析へ
     if (session.step > questionSets.length) {
       const answers = session.answers;
 
-      // Q4の動作レベルを users に控え（任意）
+      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
+
       const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      // 解析中メッセージ
+      // 🧠 解析中メッセージを reply
       await client.replyMessage(replyToken, [{
         type: 'text',
-        text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のURLをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
+        text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のULRをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
       }]);
 
-      // GPT処理 → 終わり次第 push（カルーセルのみ送る）
+      // GPT処理 → 終わり次第 push
       handleFollowupAnswers(lineId, answers)
         .then(async (result) => {
-          // 1) まず result.cards を優先
-          let cards = Array.isArray(result?.cards) ? result.cards : null;
-
-          // 2) 無ければ gptComment から3枚生成
-          if (!cards) {
-            const fromText = splitCommentToThreeCards(result?.gptComment || '');
-            if (fromText && fromText.length) cards = fromText;
-          }
-
-          // 3) それでもダメなら最小3枚のダミー生成
-          if (!cards) {
-            const mk = (title, body) => ({
-              type: "bubble",
-              size: "mega",
-              body: {
-                type: "box",
-                layout: "vertical",
-                spacing: "md",
-                contents: [
-                  { type: "text", text: title, weight: "bold", size: "md" },
-                  { type: "separator", margin: "md" },
-                  { type: "text", text: body, wrap: true, size: "sm" }
-                ]
-              }
-            });
-            cards = [
-              mk("📋 今回の定期チェック", "今回の記録を受け取りました。"),
-              mk("😊 このまま続けるといいこと", "小さな積み重ねができています。"),
-              mk("🧭 次にやってみてほしいこと", "今日は1分だけ呼吸を深めましょう。")
-            ];
-          }
-
-          // ✅ カルーセル1通のみ送信（テキストは送らない）
           await client.pushMessage(lineId, [{
-            type: 'flex',
-            altText: '今回の定期チェックナビ',
-            contents: buildFollowupCarousel(cards)
+            type: 'text',
+            text: 📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}
           }]);
-
           delete userSession[lineId];
         })
         .catch(async (err) => {
@@ -245,7 +163,6 @@ async function handleFollowup(event, client, lineId) {
       return;
     }
 
-    // 次の設問を出す
     const nextQuestion = questionSets[session.step - 1];
     const nextContext = await supabaseMemoryManager.getContext(lineId);
     return client.replyMessage(replyToken, [{
