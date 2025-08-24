@@ -54,13 +54,12 @@ function replacePlaceholders(template, context = {}) {
  */
 function buildResultFlexFromSections(sections) {
   const lead = sections.lead || "";
-  const scoreHeader = sections.score_header || "";
-  const diffLine = sections.diff_line || "";
+  const scoreHeader = sections.score_header || ""; // 例) 今週の整いスコア：85点（+12） ★★★★☆
+  const diffLine = sections.diff_line || "";       // 例) 前回：73点 → 今週：85点（+12）
   const keepDoing = Array.isArray(sections.keep_doing) ? sections.keep_doing : [];
   const nextSteps = Array.isArray(sections.next_steps) ? sections.next_steps : [];
   const footer = sections.footer || "※本サービスは医療行為ではなくセルフケア支援です。";
 
-  // 箇条書きはテキストで「・」プレフィックスに整形
   const keepText = keepDoing.map(s => `・${s}`).join('\n') || '・継続できている点を丁寧に積み上げていきましょう。';
   const nextText = nextSteps.map(s => `・${s}`).join('\n') || '・次の一歩を小さく一つだけ実行しましょう。';
 
@@ -70,65 +69,96 @@ function buildResultFlexFromSections(sections) {
     contents: {
       type: "bubble",
       size: "mega",
+
+      // ✅ ヘッダーはタイトルのみ（スコアは入れない）
       header: {
         type: "box",
         layout: "vertical",
         contents: [
-          { type: "text", text: "📋 今回の定期チェックナビ", weight: "bold", size: "md" },
-        ]
+          {
+            type: "text",
+            text: "📋 【 今回の定期チェックナビ 】",
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff"
+          }
+        ],
+        backgroundColor: "#758A6D",
+        paddingAll: "12px",
+        cornerRadius: "12px"
       },
+
       body: {
         type: "box",
         layout: "vertical",
         spacing: "md",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "12px",
         contents: [
-          // リード
+          // リード文
           {
             type: "text",
             text: lead,
             wrap: true,
-            size: "sm"
+            size: "md",
+            color: "#333333"
           },
-          // スコア・星（大きめ）
+
+          // ✅ スコア＆星（本文の先頭で強調表示）
           {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: scoreHeader, weight: "bold", size: "lg", wrap: true }
+              {
+                type: "text",
+                text: scoreHeader,
+                weight: "bold",
+                size: "lg",
+                color: "#B78949",
+                wrap: true
+              }
             ]
           },
+
           { type: "separator", margin: "md" },
+
           // 前回比
           {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "前回比", weight: "bold", size: "sm" },
-              { type: "text", text: diffLine, wrap: true, size: "sm" }
+              { type: "text", text: "【 前回比 】", weight: "bold", size: "sm", color: "#B78949" },
+              { type: "text", text: diffLine || "前回データがありません（初回）", wrap: true, size: "md", color: "#333333" }
             ]
           },
+
           { type: "separator", margin: "md" },
-          // 続けるといいこと
+
+          // このまま続けるといいこと
           {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "このまま続けるといいこと", weight: "bold", size: "sm" },
-              { type: "text", text: keepText, wrap: true, size: "sm" }
+              { type: "text", text: "【 このまま続けるといいこと 】", weight: "bold", size: "sm", color: "#B78949" },
+              { type: "text", text: keepText, wrap: true, size: "md", color: "#333333" }
             ]
           },
+
           { type: "separator", margin: "md" },
+
           // 次にやってみてほしいこと
           {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "次にやってみてほしいこと", weight: "bold", size: "sm" },
-              { type: "text", text: nextText, wrap: true, size: "sm" }
+              { type: "text", text: "【 次にやってみてほしいこと 】", weight: "bold", size: "sm", color: "#B78949" },
+              { type: "text", text: nextText, wrap: true, size: "md", color: "#333333" }
             ]
           },
+
           { type: "separator", margin: "md" },
-          // フッター
+
+          // フッター注意書き
           {
             type: "text",
             text: footer,
