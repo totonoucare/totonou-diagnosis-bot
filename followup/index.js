@@ -2,7 +2,8 @@
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
-const { MessageBuilder, buildMultiQuestionFlex } = require('../utils/flexBuilder');
+// ✅ カルーセル送信用ビルダーを追加
+const { MessageBuilder, buildMultiQuestionFlex, buildFollowupCarousel } = require('../utils/flexBuilder');
 
 const symptomLabels = {
   stomach: '胃腸の調子',
@@ -61,15 +62,16 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-if (message === '定期チェックナビ開始') {
-  const userRecord = await supabaseMemoryManager.getUser(lineId);
-  if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
-    await client.replyMessage(replyToken, [{
-      type: 'text',
-      text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
-    }]);
-    return null;
-  }
+    // セッション開始
+    if (message === '定期チェックナビ開始') {
+      const userRecord = await supabaseMemoryManager.getUser(lineId);
+      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+        await client.replyMessage(replyToken, [{
+          type: 'text',
+          text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
+        }]);
+        return null;
+      }
 
       userSession[lineId] = { step: 1, answers: {} };
       const q1 = questionSets[0];
@@ -78,13 +80,14 @@ if (message === '定期チェックナビ開始') {
     }
 
     if (!userSession[lineId]) {
-      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「定期チェッナビ」と送ってください。' }]);
+      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「定期チェックナビ開始」と送ってください。' }]);
     }
 
     const session = userSession[lineId];
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
+    // マルチ設問（Q1〜Q3）ハンドリング
     if (question.isMulti && Array.isArray(question.options)) {
       const parts = message.split(':');
       if (parts.length !== 2) {
@@ -107,6 +110,7 @@ if (message === '定期チェックナビ開始') {
       session.step++;
 
     } else {
+      // 単一設問（Q4/Q5）
       const validDataValues = question.options.map(opt => opt.data);
       if (!validDataValues.includes(message)) {
         return client.replyMessage(replyToken, [{ type: 'text', text: '選択肢からお選びください。' }]);
@@ -126,28 +130,62 @@ if (message === '定期チェックナビ開始') {
       session.step++;
     }
 
+    // 回答完了 → 解析へ
     if (session.step > questionSets.length) {
       const answers = session.answers;
 
+      // Q4の動作レベルを users に控え（任意）
       const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
       }
 
-      // 🧠 解析中メッセージを reply
+      // 解析中メッセージ
       await client.replyMessage(replyToken, [{
         type: 'text',
-        text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のULRをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
+        text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のURLをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
       }]);
 
-      // GPT処理 → 終わり次第 push
+      // GPT処理 → 終わり次第 push（カルーセルは必須送信）
       handleFollowupAnswers(lineId, answers)
         .then(async (result) => {
-          await client.pushMessage(lineId, [{
-            type: 'text',
-            text: `📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
-          }]);
-          delete userSession[lineId];
+          try {
+            if (result && result.cards) {
+              await client.pushMessage(lineId, [{
+                type: 'flex',
+                altText: '今回の定期チェックナビ',
+                contents: buildFollowupCarousel(result.cards)
+              }]);
+            } else {
+              // 極端な失敗時の最小フォールバック（1枚Bubble）
+              await client.pushMessage(lineId, [{
+                type: 'flex',
+                altText: '今回の定期チェックナビ',
+                contents: {
+                  type: "bubble",
+                  body: {
+                    type: "box",
+                    layout: "vertical",
+                    contents: [
+                      { type: "text", text: "📋 今回の定期チェック", weight: "bold", size: "md" },
+                      { type: "separator", margin: "md" },
+                      { type: "text", text: (result?.gptComment || "解析コメントの取得に失敗しました。"), wrap: true, size: "sm" }
+                    ]
+                  }
+                }
+              }]);
+            }
+
+            // 読み物テキストも（必要なら）併送
+            if (result?.gptComment) {
+              await client.pushMessage(lineId, [{
+                type: 'text',
+                text: `📋【今回の定期チェックナビ】\n\n${result.gptComment}`
+              }]);
+            }
+          } finally {
+            delete userSession[lineId];
+          }
         })
         .catch(async (err) => {
           console.error("❌ GPTコメント生成失敗:", err);
@@ -161,6 +199,7 @@ if (message === '定期チェックナビ開始') {
       return;
     }
 
+    // 次の設問を出す
     const nextQuestion = questionSets[session.step - 1];
     const nextContext = await supabaseMemoryManager.getContext(lineId);
     return client.replyMessage(replyToken, [{
