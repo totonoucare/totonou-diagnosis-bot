@@ -678,6 +678,53 @@ function buildTrialStartFlex() {
   };
 }
 
+// utils/flexBuilder.js
+function textBlock(text) {
+  return { type: "text", text, wrap: true, size: "sm" };
+}
+
+function headerBlock(title) {
+  return {
+    type: "box",
+    layout: "vertical",
+    contents: [{ type: "text", text: title, weight: "bold", size: "md" }]
+  };
+}
+
+function sectionCard(title, bodyLines) {
+  return {
+    type: "bubble",
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "sm",
+      contents: [
+        headerBlock(title),
+        { type: "separator", margin: "md" },
+        ...bodyLines.map(line => textBlock(line))
+      ]
+    }
+  };
+}
+
+/**
+ * cards: {card1, card2, card3, header, score, prevScore, delta, stars}
+ */
+function buildFollowupCarousel(cards) {
+  const c1Lines = String(cards.card1 || "").split(/\n+/).slice(0, 6);
+  const c2Lines = String(cards.card2 || "").split(/\n+/).slice(0, 8);
+  const c3Lines = String(cards.card3 || "").split(/\n+/).slice(0, 8);
+
+  return {
+    type: "carousel",
+    contents: [
+      sectionCard("📋 今回の定期チェック", c1Lines),
+      sectionCard("🌿 続けるといいこと", c2Lines),
+      sectionCard("🌸 次にやってみてほしいこと", c3Lines)
+    ]
+  };
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
@@ -692,4 +739,5 @@ module.exports = {
   buildReminderFlex,
   buildTrialStartFlex, 
   buildResultFlex, 
+  buildFollowupCarousel,
 };
