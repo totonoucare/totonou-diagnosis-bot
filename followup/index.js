@@ -147,7 +147,7 @@ if (message === '定期チェックナビ開始') {
         .then(async (result) => {
           await client.pushMessage(lineId, [{
             type: 'text',
-            text: 📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}
+            text: `📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
           }]);
           delete userSession[lineId];
         })
