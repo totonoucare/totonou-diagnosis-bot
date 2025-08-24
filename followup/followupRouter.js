@@ -1,5 +1,4 @@
 // followup/followupRouter.js
-
 const generateFollowupResult = require("./resultGenerator");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
 const { sendFollowupResponse } = require("./responseSender");
@@ -8,7 +7,7 @@ const { sendFollowupResponse } = require("./responseSender");
  * フォローアップ回答を処理し、GPTコメント付き結果を返す
  * @param {string} lineId - LINEユーザーの一意なID（supabaseMemoryManagerが要求するID）
  * @param {Array|string|object} answers - ユーザーの回答（形式に応じて処理分岐）
- * @returns {Promise<Object>} - GPTコメント付きの再診結果
+ * @returns {Promise<Object>} - GPTコメント付きの再診結果（sections があれば Flex 用に同梱）
  */
 async function handleFollowupAnswers(lineId, answers) {
   try {
@@ -59,7 +58,7 @@ async function handleFollowupAnswers(lineId, answers) {
       throw new Error("answers形式が不正です");
     }
 
-    // 🎯 再診結果の生成
+    // 🎯 再診結果の生成（スコア計算用の rawData を含む）
     const result = generateFollowupResult(parsedAnswers, context);
 
     // 💾 Supabaseへ保存（lineId使用）
@@ -69,13 +68,15 @@ async function handleFollowupAnswers(lineId, answers) {
     const subscribedUsers = await supabaseMemoryManager.getSubscribedUsers();
     const matchedUser = subscribedUsers.find((u) => u.line_id === cleanLineId);
     const userId = matchedUser?.id;
-
     if (!userId) throw new Error(`❌ userIdが取得できません: lineId=${cleanLineId}`);
 
-    const { gptComment, statusMessage } = await sendFollowupResponse(userId, result.rawData);
+    // ✅ sections を受け取って返却に含める（Flex 用）
+    const { gptComment, statusMessage, sections } =
+      await sendFollowupResponse(userId, result.rawData);
 
     return {
-      ...result,
+      ...result,                 // lead/score/delta 等、従来の算出結果
+      sections: sections || null, // ← 追加：Flex 用セクション
       gptComment: gptComment || "診断コメントの生成に失敗しました。時間をおいて再試行してください。",
       statusMessage: statusMessage || "",
     };
@@ -85,6 +86,7 @@ async function handleFollowupAnswers(lineId, answers) {
       error: "再診処理中にエラーが発生しました。",
       gptComment: "通信エラーにより解析に失敗しました。時間を置いてもう一度お試しください。",
       statusMessage: "",
+      sections: null,
     };
   }
 }
