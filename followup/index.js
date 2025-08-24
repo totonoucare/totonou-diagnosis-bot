@@ -2,7 +2,7 @@
 const questionSets = require('./questionSets');
 const handleFollowupAnswers = require('./followupRouter');
 const supabaseMemoryManager = require('../supabaseMemoryManager');
-// ✅ カルーセル送信用ビルダーを追加
+// ✅ カルーセル出力ビルダー（utils/flexBuilder.js 側に実装済み想定）
 const { MessageBuilder, buildMultiQuestionFlex, buildFollowupCarousel } = require('../utils/flexBuilder');
 
 const symptomLabels = {
@@ -17,16 +17,8 @@ const symptomLabels = {
   unknown: 'なんとなく不調・不定愁訴',
 };
 
-const motionLabels = {
-  A: '首を後ろに倒すor左右に回す',
-  B: '腕をバンザイする',
-  C: '前屈する',
-  D: '腰を左右にねじるor側屈',
-  E: '上体をそらす',
-};
-
 const multiLabels = {
-  symptom: "「{{symptom}}」のお悩みレベル",
+  symptom: "「{{symptom\}\}」のお悩みレベル",
   general: "全体的な調子",
   sleep: "睡眠の状態",
   meal: "食事の状態",
@@ -47,6 +39,57 @@ function replacePlaceholders(template, context = {}) {
   return template
     .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || '不明な主訴')
     .replace(/\{\{motion\}\}/g, context.motion || '特定の動作');
+}
+
+/**
+ * gptComment を 3セクション（①冒頭+スコア ②続ける ③次に…）に強制パース
+ * 見出しは「このまま続けるといいこと」「次にやってみてほしいこと」を目印にする
+ * うまく見つからない場合は素直に三分割するだけの安全策
+ */
+function splitCommentToThreeCards(gptComment = '') {
+  const text = (gptComment || '').trim();
+  if (!text) return null;
+
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  const idxKeep = lines.findIndex(l => l.includes('このまま続けるといいこと'));
+  const idxNext = lines.findIndex(l => l.includes('次にやってみてほしいこと'));
+
+  let part1 = [], part2 = [], part3 = [];
+
+  if (idxKeep !== -1 && idxNext !== -1 && idxKeep < idxNext) {
+    part1 = lines.slice(0, idxKeep);
+    part2 = lines.slice(idxKeep, idxNext);
+    part3 = lines.slice(idxNext);
+  } else {
+    // 見出しが取れない場合は機械的に三分割
+    const n = lines.length;
+    const a = Math.max(1, Math.floor(n * 0.33));
+    const b = Math.max(a + 1, Math.floor(n * 0.66));
+    part1 = lines.slice(0, a);
+    part2 = lines.slice(a, b);
+    part3 = lines.slice(b);
+  }
+
+  const mkBubble = (title, arr) => ({
+    type: "bubble",
+    size: "mega",
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "md",
+      contents: [
+        { type: "text", text: title, weight: "bold", size: "md" },
+        { type: "separator", margin: "md" },
+        { type: "text", text: arr.join("\n"), wrap: true, size: "sm" }
+      ]
+    }
+  });
+
+  const title1 = "📋 今回の定期チェック";
+  const title2 = "😊 このまま続けるといいこと";
+  const title3 = "🧭 次にやってみてほしいこと";
+
+  return [ mkBubble(title1, part1), mkBubble(title2, part2), mkBubble(title3, part3) ];
 }
 
 async function handleFollowup(event, client, lineId) {
@@ -87,7 +130,7 @@ async function handleFollowup(event, client, lineId) {
     const currentStep = session.step;
     const question = questionSets[currentStep - 1];
 
-    // マルチ設問（Q1〜Q3）ハンドリング
+    // マルチ設問（Q1〜Q3）
     if (question.isMulti && Array.isArray(question.options)) {
       const parts = message.split(':');
       if (parts.length !== 2) {
@@ -146,46 +189,49 @@ async function handleFollowup(event, client, lineId) {
         text: '🧠トトノウAIが解析中です...\nお待ちいただく間に、下記のURLをタップして今回の『ととのう継続ポイント』をお受け取りください！👇\nhttps://u.lin.ee/i8yUyKF'
       }]);
 
-      // GPT処理 → 終わり次第 push（カルーセルは必須送信）
+      // GPT処理 → 終わり次第 push（カルーセルのみ送る）
       handleFollowupAnswers(lineId, answers)
         .then(async (result) => {
-          try {
-            if (result && result.cards) {
-              await client.pushMessage(lineId, [{
-                type: 'flex',
-                altText: '今回の定期チェックナビ',
-                contents: buildFollowupCarousel(result.cards)
-              }]);
-            } else {
-              // 極端な失敗時の最小フォールバック（1枚Bubble）
-              await client.pushMessage(lineId, [{
-                type: 'flex',
-                altText: '今回の定期チェックナビ',
-                contents: {
-                  type: "bubble",
-                  body: {
-                    type: "box",
-                    layout: "vertical",
-                    contents: [
-                      { type: "text", text: "📋 今回の定期チェック", weight: "bold", size: "md" },
-                      { type: "separator", margin: "md" },
-                      { type: "text", text: (result?.gptComment || "解析コメントの取得に失敗しました。"), wrap: true, size: "sm" }
-                    ]
-                  }
-                }
-              }]);
-            }
+          // 1) まず result.cards を優先
+          let cards = Array.isArray(result?.cards) ? result.cards : null;
 
-            // 読み物テキストも（必要なら）併送
-            if (result?.gptComment) {
-              await client.pushMessage(lineId, [{
-                type: 'text',
-                text: `📋【今回の定期チェックナビ】\n\n${result.gptComment}`
-              }]);
-            }
-          } finally {
-            delete userSession[lineId];
+          // 2) 無ければ gptComment から3枚生成
+          if (!cards) {
+            const fromText = splitCommentToThreeCards(result?.gptComment || '');
+            if (fromText && fromText.length) cards = fromText;
           }
+
+          // 3) それでもダメなら最小3枚のダミー生成
+          if (!cards) {
+            const mk = (title, body) => ({
+              type: "bubble",
+              size: "mega",
+              body: {
+                type: "box",
+                layout: "vertical",
+                spacing: "md",
+                contents: [
+                  { type: "text", text: title, weight: "bold", size: "md" },
+                  { type: "separator", margin: "md" },
+                  { type: "text", text: body, wrap: true, size: "sm" }
+                ]
+              }
+            });
+            cards = [
+              mk("📋 今回の定期チェック", "今回の記録を受け取りました。"),
+              mk("😊 このまま続けるといいこと", "小さな積み重ねができています。"),
+              mk("🧭 次にやってみてほしいこと", "今日は1分だけ呼吸を深めましょう。")
+            ];
+          }
+
+          // ✅ カルーセル1通のみ送信（テキストは送らない）
+          await client.pushMessage(lineId, [{
+            type: 'flex',
+            altText: '今回の定期チェックナビ',
+            contents: buildFollowupCarousel(cards)
+          }]);
+
+          delete userSession[lineId];
         })
         .catch(async (err) => {
           console.error("❌ GPTコメント生成失敗:", err);
