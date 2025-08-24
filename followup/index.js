@@ -129,8 +129,6 @@ if (message === '定期チェックナビ開始') {
     if (session.step > questionSets.length) {
       const answers = session.answers;
 
-      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
-
       const motionLevel = answers['motion_level'];
       if (motionLevel && /^[1-5]$/.test(motionLevel)) {
         await supabaseMemoryManager.updateUserFields(lineId, { motion_level: parseInt(motionLevel) });
