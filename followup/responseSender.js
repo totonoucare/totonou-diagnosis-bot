@@ -166,21 +166,9 @@ async function callGPTWithFallback(systemPrompt, userPrompt) {
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    max_completion_tokens: 480
+    max_completion_tokens: 640
   });
   let text = rsp.choices?.[0]?.message?.content?.trim() || "";
-
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 640
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
 
   if (!text) {
     rsp = await openai.chat.completions.create({
