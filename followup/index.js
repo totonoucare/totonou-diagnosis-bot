@@ -35,8 +35,7 @@ const multiLabels = {
   stretch: "経絡ストレッチ",
   tsubo: "あなたのツボケア",
   kampo: "漢方薬の活用",
-  Q4: "動作テストの変化",
-  Q5: "セルフケアの課題"
+  Q4: "動作テストの変化"
 };
 
 const userSession = {};
