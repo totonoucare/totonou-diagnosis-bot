@@ -236,9 +236,7 @@ async function handleFollowup(event, client, lineId) {
         return client.replyMessage(replyToken, [{ type: 'text', text: '選択肢からお選びください。' }]);
       }
 
-      const keyName = question.id === "Q5" ? "q5_answer" :
-                      question.id === "Q4" ? "motion_level" :
-                      question.id;
+      const keyName = question.id === "Q4" ? "motion_level" : question.id;
 
       let value = message;
       if (question.id === "Q4" && value.startsWith("Q4=")) {
