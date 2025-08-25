@@ -27,11 +27,6 @@ async function handleFollowupAnswers(lineId, answers) {
             case "Q4":
               parsedAnswers.motion_level = parseInt(value);
               break;
-            case "Q5":
-              parsedAnswers.q5_answer = value.startsWith("q5_answer=")
-                ? value.split("=")[1]
-                : value;
-              break;
             case "symptom":
             case "general":
             case "sleep":
