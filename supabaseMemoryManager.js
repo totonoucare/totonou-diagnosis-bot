@@ -150,27 +150,32 @@ async function setFollowupAnswers(lineId, answers) {
     .maybeSingle();
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
-  const payload = {
-    user_id: userRow.id,
-    symptom_level: parseInt(answers.symptom),
-    general_level: parseInt(answers.general),
-    sleep: parseInt(answers.sleep),
-    meal: parseInt(answers.meal),
-    stress: parseInt(answers.stress),
-    habits: answers.habits,
-    breathing: answers.breathing,
-    stretch: answers.stretch,
-    tsubo: answers.tsubo,
-    kampo: answers.kampo,
-    motion_level: parseInt(answers.motion_level),
-    q5_answer: answers.q5_answer
-  };
+const payload = {
+  user_id: userRow.id,
+  symptom_level: parseInt(answers.symptom),
+  general_level: parseInt(answers.general),
+  sleep: parseInt(answers.sleep),
+  meal: parseInt(answers.meal),
+  stress: parseInt(answers.stress),
+  habits: answers.habits,
+  breathing: answers.breathing,
+  stretch: answers.stretch,
+  tsubo: answers.tsubo,
+  kampo: answers.kampo,
+  motion_level: parseInt(answers.motion_level),
+  // q5_answer:  ← 削除
+};
 
-  for (const key in payload) {
-    if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
-      throw new Error(`❌ 必須項目が未定義: ${key}`);
-    }
+// 必須キーのみチェック（q5 は対象外）
+const requiredKeys = [
+  'user_id','symptom_level','general_level','sleep','meal','stress',
+  'habits','breathing','stretch','tsubo','kampo','motion_level'
+];
+for (const key of requiredKeys) {
+  if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+    throw new Error(`❌ 必須項目が未定義: ${key}`);
   }
+}
 
   const { error } = await supabase
     .from(FOLLOWUP_TABLE)
