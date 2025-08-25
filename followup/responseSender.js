@@ -71,9 +71,7 @@ function normalizeFollowup(ans = {}) {
     tsubo:     ans.tsubo ?? "未着手",
     kampo:     ans.kampo ?? "未着手",
     // Q4
-    motion_level: n(ans.motion_level, 3),
-    // Q5
-    q5_answer: ans.q5_answer ?? ""
+    motion_level: n(ans.motion_level, 3)
   };
 }
 
@@ -360,7 +358,6 @@ Q1: 主訴=${curN.symptom_level} / 全体=${curN.general_level}
 Q2: 睡眠=${curN.sleep} / 食事=${curN.meal} / ストレス=${curN.stress}
 Q3: 習慣=${curN.habits} / 呼吸法=${curN.breathing} / ストレッチ=${curN.stretch} / ツボ=${curN.tsubo} / 漢方薬=${curN.kampo}
 Q4: 動作=${curN.motion_level}
-Q5: 困りごと=${curN.q5_answer || "未入力"}
 
 【改善点（前回→今回で良化）】${praise.map(p => `${p.label}: ${p.d} 段階改善`).join(" / ") || "（特記事項なし）"}
 【課題候補】${bottleneck ? `${bottleneck.label}（スコア${bottleneck.v}）` : "（特記事項なし）"}
@@ -406,7 +403,6 @@ Q1: 主訴=${curN.symptom_level} / 全体=${curN.general_level}
 Q2: 睡眠=${curN.sleep} / 食事=${curN.meal} / ストレス=${curN.stress}
 Q3: 習慣=${curN.habits} / 呼吸法=${curN.breathing} / ストレッチ=${curN.stretch} / ツボ=${curN.tsubo} / 漢方薬=${curN.kampo}
 Q4: 動作=${curN.motion_level}
-Q5: 困りごと=${curN.q5_answer || "未入力"}
 
 改善点: ${praise.map(p => `${p.label}: ${p.d} 段階改善`).join(" / ") || "（特記事項なし）"}
 課題候補: ${bottleneck ? `${bottleneck.label}（スコア${bottleneck.v}）` : "（特記事項なし）"}
