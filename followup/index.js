@@ -76,7 +76,7 @@ function buildResultFlexFromSections(sections) {
         contents: [
           {
             type: "text",
-            text: "📋 【 今回の定期チェックナビ 】",
+            text: "📋 【 今回のととのい度チェック 】",
             weight: "bold",
             size: "lg",
             color: "#ffffff"
@@ -272,7 +272,7 @@ async function handleFollowup(event, client, lineId) {
             } else {
               await client.pushMessage(lineId, [{
                 type: 'text',
-                text: `📋【今回のととのい度】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+                text: `📋【今回のととのい度チェック】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
               }]);
             }
           } finally {
