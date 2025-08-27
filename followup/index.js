@@ -64,7 +64,7 @@ function buildResultFlexFromSections(sections) {
 
   return {
     type: "flex",
-    altText: scoreHeader || "ととのう定期チェック結果",
+    altText: scoreHeader || "ととのい度チェック結果",
     contents: {
       type: "bubble",
       size: "mega",
@@ -184,12 +184,12 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [{ type: 'text', text: '形式が不正です。A〜Eのボタンで回答してください。' }]);
     }
 
-    if (message === '定期チェックナビ開始') {
+    if (message === 'ととのい度チェック開始') {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
       if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
         await client.replyMessage(replyToken, [{
           type: 'text',
-          text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『ご案内リンク集』からアクセスいただけます✨'
+          text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『サービス案内』からアクセスいただけます✨'
         }]);
         return null;
       }
@@ -201,7 +201,7 @@ async function handleFollowup(event, client, lineId) {
     }
 
     if (!userSession[lineId]) {
-      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「定期チェッナビ」と送ってください。' }]);
+      return client.replyMessage(replyToken, [{ type: 'text', text: '始めるには「ととのい度チェック」ボタンを押してください。' }]);
     }
 
     const session = userSession[lineId];
@@ -272,7 +272,7 @@ async function handleFollowup(event, client, lineId) {
             } else {
               await client.pushMessage(lineId, [{
                 type: 'text',
-                text: `📋【今回の定期チェックナビ】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
+                text: `📋【今回のととのい度】\n\n${result?.gptComment || "（解析コメント取得に失敗しました）"}`
               }]);
             }
           } finally {
