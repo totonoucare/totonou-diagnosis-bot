@@ -118,12 +118,12 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
      // 開始確認
-if (userMessage === "体質分析") {
+if (userMessage === "ととのえ方分析") {
   const flex = buildDiagnosisConfirmFlex();
   return client.replyMessage(event.replyToken, flex); // ← ここ
 }
 
-if (userMessage === "定期チェックナビ") {
+if (userMessage === "ととのい度チェック") {
   const flex = buildFollowupConfirmFlex();
   return client.replyMessage(event.replyToken, flex); // ← ここ
 }
@@ -325,7 +325,7 @@ if (event.type === "message" && event.message.type === "text") {
 }
 
       // 定期チェックナビ
-if (userMessage === "定期チェックナビ開始" || handleFollowup.hasSession?.(lineId)) {
+if (userMessage === "ととのい度チェック開始" || handleFollowup.hasSession?.(lineId)) {
   try {
     const messages = await handleFollowup(event, client, lineId);
 
@@ -339,7 +339,7 @@ if (userMessage === "定期チェックナビ開始" || handleFollowup.hasSessio
     } else if (!handleFollowup.hasSession(lineId)) {
       await client.replyMessage(event.replyToken, {
         type: "text",
-        text: "定期チェックナビを始めるには、メニューバーの【定期チェックナビ】をタップしてください。",
+        text: "ととのい度チェックを始めるには、メニューバーの【定期チェックナビ】をタップしてください。",
       });
     }
   } catch (err) {
@@ -352,8 +352,8 @@ if (userMessage === "定期チェックナビ開始" || handleFollowup.hasSessio
   return;
 }
 
-      // 分析開始
-      if (userMessage === "分析開始") {
+      // ととのえ方分析開始
+      if (userMessage === "ととのえ方分析開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
         await client.replyMessage(event.replyToken, flex);
