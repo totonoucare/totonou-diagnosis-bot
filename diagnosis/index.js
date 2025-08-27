@@ -26,7 +26,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
 
   if (!session) {
     return {
-      messages: [{ type: 'text', text: '「分析開始」と送ってから始めてくださいね。' }]
+      messages: [{ type: 'text', text: '「ととのえ方分析開始」と送ってから始めてくださいね。' }]
     };
   }
 
