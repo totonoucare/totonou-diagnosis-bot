@@ -61,14 +61,14 @@ function injectContext(template, context = {}) {
 
 function buildCategorySelectionFlex() {
   return MessageBuilder({
-    altText: '分析を開始します。どの不調が気になりますか？',
-    header: '🚀 分析スタート！',
+    altText: 'ととのえ方分析を開始します。どの不調が気になりますか？',
+    header: '🚀 ととのえ方分析スタート！',
     body: 'どんなお悩みをととのえたいですか？1つ選んでください。',
     buttons: [
       { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
       { label: '睡眠・集中力', data: 'sleep', displayText: '睡眠・集中力' },
       { label: '肩こり・腰痛・関節痛', data: 'pain', displayText: '肩こり・腰痛・関節痛' },
-      { label: 'イライラや不安感', data: 'mental', displayText: 'イライラや不安感' },
+      { label: '不安感やイライラ', data: 'mental', displayText: 'イライラや不安感' },
       { label: '体温バランス・むくみ', data: 'cold', displayText: '体温バランス・むくみ' },
       { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
       { label: '花粉症・鼻炎', data: 'pollen', displayText: '花粉症・鼻炎' },
@@ -169,7 +169,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
 function buildDiagnosisConfirmFlex() {
   return {
     type: "flex",
-    altText: "体質分析を始めますか？",
+    altText: "ととのえ方分析を始めますか？",
     contents: {
       type: "bubble",
       size: "mega",
@@ -179,7 +179,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "体質分析を始めますか？",
+            text: "ととのえ方分析を始めますか？",
             weight: "bold",
             size: "md",
             color: "#ffffff",
@@ -206,8 +206,8 @@ function buildDiagnosisConfirmFlex() {
             type: "button",
             action: {
               type: "message",
-              label: "分析スタート！",
-              text: "分析開始",
+              label: "ととのえ方分析スタート！",
+              text: "ととのえ方分析開始",
             },
             style: "primary",
             color: "#758A6D",
@@ -221,7 +221,7 @@ function buildDiagnosisConfirmFlex() {
 function buildFollowupConfirmFlex() {
   return {
     type: "flex",
-    altText: "定期チェックナビを始めますか？",
+    altText: "ととのい度チェックを始めますか？",
     contents: {
       type: "bubble",
       size: "mega",
@@ -231,7 +231,7 @@ function buildFollowupConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "定期チェックナビを始めますか？",
+            text: "ととのい度チェックを始めますか？",
             weight: "bold",
             size: "md",
             color: "#ffffff",
@@ -249,7 +249,7 @@ function buildFollowupConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "こんにちは！週1回の体調変化とケア習慣状況の記録＆AIアドバイスのメニューです！\nとととのうケアガイドのセルフケアは実施できましたか？\nまだ見ていない方は、まずそちらを確認してから定期チェックナビを受けてくださいね！\n🌟定期チェックナビご利用後はショップカードのポイントが貯まります！",
+            text: "こんにちは！週1回（目安）のととのい度チェックです！\n今週もチェックに取り組んでくださりありがとうございます✨\nとととのうケアガイドのセルフケアは実施できましたか？\nまだ見ていない方は、まずそちらを確認してからチェックを受けてくださいね！\n🌟チェックを受けた後はショップカード『ととのうスタンプラリー』のスタンプが貯まります！",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
@@ -258,8 +258,8 @@ function buildFollowupConfirmFlex() {
             type: "button",
             action: {
               type: "message",
-              label: "定期チェックナビ開始",
-              text: "定期チェックナビ開始",
+              label: "ととのい度チェック開始",
+              text: "ととのい度チェック開始",
             },
             style: "primary",
             color: "#758A6D",
@@ -501,14 +501,14 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
   };
 }
 
-function buildCarouselFlex(cards, altText = '分析結果とセルフケア提案') {
+function buildCarouselFlex(cards, altText = '分析結果・ととのえ方提案') {
   return buildAdviceCarouselFlex(cards, altText);
 }
 
 function buildReminderFlex() {
   return {
     type: 'flex',
-    altText: '📅 定期チェックナビのご案内',
+    altText: '📊 ととのい度チェックのご案内',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -518,7 +518,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '📅 定期チェックナビ',
+            text: '📊 ととのい度チェック',
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
@@ -534,7 +534,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '前回から、セルフケアの調子はいかがですか❓\n『定期チェックナビ』で、ととのい具合の確認とケアの見直し提案をいつでもサポートしますよ🌿',
+            text: 'こんにちは！セルフケアの調子はいかがですか❓\n『ととのい度チェック』で、ととのい具合の確認やケアの見直し方針をご提案しますよ🌿',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -547,8 +547,8 @@ function buildReminderFlex() {
             type: 'button',
             action: {
               type: 'message',
-              label: '定期チェックナビ',
-              text: '定期チェックナビ',
+              label: 'ととのい度チェック',
+              text: 'ととのい度チェック',
             },
             style: 'primary',
             color: '#758A6D',
@@ -644,7 +644,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '16日間の無料トライアルをご用意しました！\n『ととのうケアガイド』の内容を習慣化できるように、トトノウAIによる週1回の定期チェックナビやリマインド、チャット相談で、あなたのセルフケアをしっかりサポートします。',
+            text: '16日間の無料トライアルをご用意しました！\nご提案した『ととのうケアガイド』の内容を習慣化できるように、トトノウAIによる週1回の『ととのい度チェック』や『応援リマインド』、『チャット相談』で、あなたのセルフケアをしっかりサポートします。',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -718,7 +718,7 @@ function buildFollowupCarousel(cards) {
   return {
     type: "carousel",
     contents: [
-      sectionCard("📋 今回の定期チェック", c1Lines),
+      sectionCard("📋 今回のととのい度", c1Lines),
       sectionCard("🌿 続けるといいこと", c2Lines),
       sectionCard("🌸 次にやってみてほしいこと", c3Lines)
     ]
