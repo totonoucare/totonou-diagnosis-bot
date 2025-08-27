@@ -41,11 +41,11 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🟢 userMessage:", userMessage);
 
       // ご案内リンク集
-      if (userMessage === "ご案内リンク集") {
+      if (userMessage === "サービス案内") {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
         const flex = {
           type: "flex",
-          altText: "ご案内リンク集",
+          altText: "サービス案内",
           contents: {
             type: "bubble",
             size: "mega",
@@ -55,7 +55,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
               contents: [
                 {
                   type: "text",
-                  text: "🔗 ご案内リンク",
+                  text: "🔗 サービス案内リンク",
                   weight: "bold",
                   size: "lg",
                   color: "#ffffff"
@@ -95,7 +95,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#758A6D",
                   action: {
                     type: "uri",
-                    label: "🖥️ オンライン相談等 予約ページ",
+                    label: "🖥️ オンライン相談・鍼灸のご予約",
                     uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
                   }
                 },
@@ -139,7 +139,7 @@ if (userMessage === "ととのい度チェック") {
           {
             type: "text",
             text:
-              "最近、自分の不調の根本原因の体質バランスとケア方法を分析してくれるLINEツールを見つけて、\n参考になりそうだからシェアするね！",
+              "公式LINE上で自分の不調の根本原因の体質バランスとケア提案・ケア継続サポートが完結するサービス『ととのうケアナビ』です",
           },
           {
             type: "text",
@@ -163,7 +163,7 @@ if (userMessage === "ととのい度チェック") {
 
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: "🎁ありがとうございます！16日間の無料トライアルがスタートしました！\n\n⏰定期的なリマインドで、習慣改善やセルフケアを継続サポートしていきますね😊\n\n📊 さらに、AIと一緒に「体調変化」や「ととのうケアガイド実施状況」をみる『定期チェックナビ』(メニューボタン)の週1回利用をオススメしています！\n推奨タイミングで「促しリマインド」を入れるので、ぜひ活用してくださいね💪\n\nまた、ケアに関する疑問や生活上のお困りごとなど、どんなことでも『チャット相談メニュー』ボタンからトトノウAI（GPT）やプロ（鍼灸師）にお気軽にご相談いただけるのでぜひご活用を！🧑‍⚕️",
+            text: "🎁ありがとうございます！16日間の無料トライアルがスタートしました！\n\n⏰4日に一度のリマインドで、あなたの「ととのえ習慣」を継続サポートしていきますね😊\n\n📊 さらに、AIが毎週の「ととのい度」を確認・見直し提案をする『ととのい度チェック』(メニューボタンで開始)がご利用可能！\nできれば週一回ご利用くださいね💪\n\nケアに関する疑問や生活上のお困りごと等は、『チャット相談メニュー』ボタンからトトノウAI（GPT）やプロ（鍼灸師）に相談できる機能もございます。ぜひご活用ください！🧑‍⚕️",
           });
         } catch (err) {
           console.error("❌ trial_intro_done 登録エラー:", err);
