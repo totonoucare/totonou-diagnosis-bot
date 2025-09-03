@@ -85,21 +85,7 @@ const followupQuestionSet = [
       { label: "4", data: "Q4=4", displayText: "4" },
       { label: "5", data: "Q4=5", displayText: "5" }
     ]
-  },
-{
-  id: "Q5",
-  header: "【Q5】セルフケアで困ったこと",
-  body: "セルフケアに取り組む上で、難しかったこと・悩んだことがあれば教えてください（今回もっとも感じたことを教えてください）",
-  isMulti: false,
-  options: [
-    { label: "やり方が分からなかった", data: "q5_answer=A", displayText: "やり方が分からなかった" },
-    { label: "効果を感じなかった", data: "q5_answer=B", displayText: "効果を感じなかった" },
-    { label: "時間が取れなかった", data: "q5_answer=C", displayText: "時間が取れなかった" },
-    { label: "体に合わない気がした", data: "q5_answer=D", displayText: "体に合わない気がした" },
-    { label: "モチベーションが続かなかった", data: "q5_answer=E", displayText: "モチベーションが続かなかった" },
-    { label: "特になし", data: "q5_answer=F", displayText: "特になし" }
-  ]
-}
+  }
 ];
 
 module.exports = followupQuestionSet;
