@@ -1,8 +1,8 @@
 /**
- * フォローアップ診断の入力（Q1〜Q5）と、過去の体質情報（context）から
+ * フォローアップ診断の入力（Q1〜Q4）と、過去の体質情報（context）から
  * GPTへの送信に必要なプロンプト用データを構成する。
  *
- * @param {Object} answers - Q1〜Q5の回答（オブジェクト形式）
+ * @param {Object} answers - Q1〜Q4の回答（オブジェクト形式）
  * @param {Object} context - Supabaseに保存された体質ケア分析結果＆アドバイス情報
  * @returns {{ rawData: Object, promptParts: Object }}
  */
@@ -19,7 +19,6 @@ function generateFollowupResult(answers, context = {}) {
     tsubo: answers.tsubo || null,
     kampo: answers.kampo || null,
     motion_level: parseInt(answers.motion_level) || null,
-    q5_answer: answers.q5_answer || null,
   };
 
   const advice = context.advice || {};
@@ -36,7 +35,7 @@ function generateFollowupResult(answers, context = {}) {
       kampo: advice.kampo || "未登録",
     },
 
-    // Q1〜Q5（今回の定期チェック診断）
+    // Q1〜Q4（今回の定期チェック診断）
     Q1: {
       symptom: rawData.symptom_level,
       general: rawData.general_level,
@@ -54,7 +53,6 @@ function generateFollowupResult(answers, context = {}) {
       kampo: rawData.kampo || "未使用",
     },
     Q4: rawData.motion_level,
-    Q5: rawData.q5_answer || "F", // 特になしをデフォに
   };
 
   return { rawData, promptParts };
