@@ -336,7 +336,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
   "score_header": "ヘッダ行（こちらで計算した header をそのまま入れる）",
   "diff_line": "前回比の短評（こちらで渡す diffLine をそのまま入れる）",
   "keep_doing": ["このまま続けると良い点（2〜3項目、文として自然に）"],
-  "next_steps": ["次にやってみてほしいこと（1〜2項目、必ず nextStep を本文のどこかに原義を保って含める）"],
+  "next_steps": ["次にやってみてほしいこと（1〜2項目、必ず渡された nextStepText を自然な日本語にして含める）"],
   "footer": "締めのひとこと。最後に注意書き（※本サービスは医療行為ではなくセルフケア支援です。）も含める。"
 }
 
@@ -364,7 +364,7 @@ Q4: 動作=${curN.motion_level}
 
 【次の一歩（柱と本文）】
 pillar: ${pillarLabelMap[nextPillar] || "次の一歩"}
-nextStep（本文そのまま含めること）: ${nextStepText}
+次の一歩テキスト: ${nextStepText}
 `.trim();
 
     // JSON生成
