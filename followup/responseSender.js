@@ -227,18 +227,7 @@ async function callGPTJson(systemPrompt, userPrompt) {
     raw = rsp.choices?.[0]?.message?.content?.trim() || "";
   }
 
-  // 代替
-  if (!raw) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 512
-    });
-    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
+
 
   if (!raw) return null;
 
