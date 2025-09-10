@@ -195,11 +195,14 @@ async function callGPTJson(systemPrompt, userPrompt) {
       ],
       max_output_tokens: 800,
       text: {
-        format: "json"   // ← これが正しい
+        format: { type: "json_object" }
       }
     });
 
-    let raw = (rsp.output_text || "").trim();
+     let raw =
+     (rsp.output_text ||
+      rsp.output?.[0]?.content?.[0]?.text?.value ||
+      "").trim();
     if (!raw) return null;
 
     // 念のためコードブロックガード
