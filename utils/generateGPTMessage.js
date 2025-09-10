@@ -147,6 +147,7 @@ async function generateGPTMessage(lineId) {
       .select("symptom_level, sleep, meal, stress, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
+      .order("id", { ascending: false })   // ← 追加：同秒対策
       .limit(1);
     if (fuErr) console.error("followups fetch error:", fuErr);
     const latestFollowup = fuRows?.[0] || null;
