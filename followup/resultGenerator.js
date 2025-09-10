@@ -2,6 +2,8 @@
  * フォローアップ診断の入力（Q1〜Q4）と、過去の体質情報（context）から
  * GPTへの送信に必要なプロンプト用データを構成する。
  *
+ * ※ general_level は廃止（2025-09）。Q1は「主訴の度合い」のみ。
+ *
  * @param {Object} answers - Q1〜Q4の回答（オブジェクト形式）
  * @param {Object} context - Supabaseに保存された体質ケア分析結果＆アドバイス情報
  * @returns {{ rawData: Object, promptParts: Object }}
@@ -9,7 +11,7 @@
 function generateFollowupResult(answers, context = {}) {
   const rawData = {
     symptom_level: parseInt(answers.symptom) || null,
-    general_level: parseInt(answers.general) || null,
+    // general_level: 廃止
     sleep: parseInt(answers.sleep) || null,
     meal: parseInt(answers.meal) || null,
     stress: parseInt(answers.stress) || null,
@@ -37,8 +39,8 @@ function generateFollowupResult(answers, context = {}) {
 
     // Q1〜Q4（今回の定期チェック診断）
     Q1: {
-      symptom: rawData.symptom_level,
-      general: rawData.general_level,
+      symptom: rawData.symptom_level
+      // general: 廃止
     },
     Q2: {
       sleep: rawData.sleep,
