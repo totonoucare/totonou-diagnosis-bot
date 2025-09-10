@@ -163,57 +163,95 @@ function chooseNextPillar(ans) {
   return "habits";
 }
 
-// ===== GPT呼び出し（テキスト：GPT-5/Responses API） =====
+// ===== GPT呼び出し（テキスト） =====
 async function callGPTWithFallbackText(systemPrompt, userPrompt) {
-  try {
-    const rsp = await openai.responses.create({
+  let rsp = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    max_completion_tokens: 480
+  });
+  let text = rsp.choices?.[0]?.message?.content?.trim() || "";
+
+  if (!text) {
+    rsp = await openai.chat.completions.create({
       model: "gpt-5",
-      input: [
+      messages: [
         { role: "system", content: systemPrompt },
-        { role: "user",   content: userPrompt  },
+        { role: "user", content: userPrompt },
       ],
-      max_output_tokens: 600
+      max_completion_tokens: 640
     });
-
-    const text = (rsp.output_text || "").trim();
-    return text || null;
-
-  } catch (err) {
-    console.error("callGPTWithFallbackText error:", err);
-    return null;
+    text = rsp.choices?.[0]?.message?.content?.trim() || "";
   }
+
+  if (!text) {
+    rsp = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_completion_tokens: 480
+    });
+    text = rsp.choices?.[0]?.message?.content?.trim() || "";
+  }
+
+  return text;
 }
 
-// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API 正しい指定） =====
+// ===== GPT呼び出し（JSON構造） =====
 async function callGPTJson(systemPrompt, userPrompt) {
-  try {
-    const rsp = await openai.responses.create({
+  let rsp = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    max_completion_tokens: 512
+  });
+  let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
+
+  // 再試行（同モデル）
+  if (!raw) {
+    rsp = await openai.chat.completions.create({
       model: "gpt-5",
-      input: [
+      messages: [
         { role: "system", content: systemPrompt },
-        { role: "user",   content: userPrompt  },
+        { role: "user", content: userPrompt },
       ],
-      max_output_tokens: 800,
-      text: {
-        format: { type: "json_object" }
-      }
+      max_completion_tokens: 640
     });
+    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
+  }
 
-     let raw =
-     (rsp.output_text ||
-      rsp.output?.[0]?.content?.[0]?.text?.value ||
-      "").trim();
-    if (!raw) return null;
+  // 代替
+  if (!raw) {
+    rsp = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_completion_tokens: 512
+    });
+    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
+  }
 
-    // 念のためコードブロックガード
-    if (raw.startsWith("```")) {
-      raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+  if (!raw) return null;
+
+  // 余分な前後テキスト/コードブロックの除去
+  try {
+    const jsonStart = raw.indexOf("{");
+    const jsonEnd = raw.lastIndexOf("}");
+    if (jsonStart >= 0 && jsonEnd > jsonStart) {
+      const sliced = raw.slice(jsonStart, jsonEnd + 1);
+      return JSON.parse(sliced);
     }
-
     return JSON.parse(raw);
-
-  } catch (err) {
-    console.error("callGPTJson error:", err);
+  } catch (e) {
     return null;
   }
 }
