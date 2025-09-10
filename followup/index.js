@@ -257,7 +257,7 @@ async function handleFollowup(event, client, lineId) {
       // 解析中メッセージを reply
       await client.replyMessage(replyToken, [{
         type: 'text',
-        text: '🧠トトノウAIが結果作成中です...1〜2分程あとで結果を通知します🙏\n\nお待ちいただく間に、下記のULRをタップして今回の『ととのう継続スタンプ』を押してください！👇\nhttps://u.lin.ee/i8yUyKF'
+        text: '✅ チェック完了です、お疲れ様でした！\n\nトトノウAIが スコア計算・今後の提案 を作成中です...後ほどメッセージを通知しますので１〜2分お待ちください🙏'
       }]);
 
       // GPT処理 → 終わり次第 push
