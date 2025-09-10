@@ -163,95 +163,52 @@ function chooseNextPillar(ans) {
   return "habits";
 }
 
-// ===== GPT呼び出し（テキスト） =====
+// ===== GPT呼び出し（テキスト：GPT-5/Responses API） =====
 async function callGPTWithFallbackText(systemPrompt, userPrompt) {
-  let rsp = await openai.chat.completions.create({
+  const rsp = await openai.responses.create({
     model: "gpt-5",
-    messages: [
+    input: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
+      { role: "user",   content: userPrompt  },
     ],
-    max_completion_tokens: 480
+    // ※ Responses APIでは max_output_tokens
+    max_output_tokens: 600
   });
-  let text = rsp.choices?.[0]?.message?.content?.trim() || "";
 
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 640
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
-
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 480
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
-
-  return text;
+  const text = (rsp.output_text || "").trim();
+  return text || null;
 }
 
-// ===== GPT呼び出し（JSON構造） =====
+// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API） =====
 async function callGPTJson(systemPrompt, userPrompt) {
-  let rsp = await openai.chat.completions.create({
+  const rsp = await openai.responses.create({
     model: "gpt-5",
-    messages: [
+    response_format: { type: "json_object" }, // JSONモードを強制
+    input: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
+      { role: "user",   content: userPrompt  },
     ],
-    max_completion_tokens: 512
+    // Chatの max_completion_tokens ではなく、Responses は max_output_tokens
+    max_output_tokens: 800
   });
-  let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
 
-  // 再試行（同モデル）
-  if (!raw) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 640
-    });
-    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
-
-  // 代替
-  if (!raw) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 512
-    });
-    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
-
+  let raw = (rsp.output_text || "").trim();
   if (!raw) return null;
 
-  // 余分な前後テキスト/コードブロックの除去
+  // 万一 ```json ... ``` で返る場合のガード
+  if (raw.startsWith("```")) {
+    raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+  }
+
   try {
-    const jsonStart = raw.indexOf("{");
-    const jsonEnd = raw.lastIndexOf("}");
-    if (jsonStart >= 0 && jsonEnd > jsonStart) {
-      const sliced = raw.slice(jsonStart, jsonEnd + 1);
-      return JSON.parse(sliced);
-    }
     return JSON.parse(raw);
-  } catch (e) {
+  } catch {
+    // 端にゴミが混ざった時の保険（最後の {} を抽出）
+    const s = raw.indexOf("{");
+    const e = raw.lastIndexOf("}");
+    if (s >= 0 && e > s) {
+      try { return JSON.parse(raw.slice(s, e + 1)); } catch {}
+    }
     return null;
   }
 }
