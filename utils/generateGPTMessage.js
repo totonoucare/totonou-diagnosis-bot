@@ -56,7 +56,7 @@ async function buildConstitutionSeasonalReminder({
 【厳守】
 - 出力は必ず「${greeting()}」で始める
 - 本文は 70〜110文字（挨拶込みで全体 100〜150目安）
-- 絵文字は0〜2個まで
+- 絵文字は適度に使用して親しみやすく
 - 天気の推測は禁止
 - 医療断定は禁止
 - followup状況があれば “1点だけ” 触れる
