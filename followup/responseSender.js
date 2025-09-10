@@ -171,25 +171,15 @@ async function callGPTWithFallbackText(systemPrompt, userPrompt) {
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    max_completion_tokens: 480
+    max_output_tokens: 800
   });
   let text = rsp.choices?.[0]?.message?.content?.trim() || "";
 
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 640
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
+  
 
   if (!text) {
     rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -210,27 +200,15 @@ async function callGPTJson(systemPrompt, userPrompt) {
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    max_completion_tokens: 512
+    max_output_tokens: 1000
   });
   let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
 
-  // 再試行（同モデル）
-  if (!raw) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 640
-    });
-    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
 
   // 代替
   if (!raw) {
     rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
