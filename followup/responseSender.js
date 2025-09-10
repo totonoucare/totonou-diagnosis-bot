@@ -187,20 +187,7 @@ async function callGPTWithFallbackText(systemPrompt, userPrompt) {
     text = rsp.choices?.[0]?.message?.content?.trim() || "";
   }
 
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 480
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
 
-  return text;
-}
 
 // ===== GPT呼び出し（JSON構造） =====
 async function callGPTJson(systemPrompt, userPrompt) {
