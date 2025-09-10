@@ -163,59 +163,42 @@ function chooseNextPillar(ans) {
   return "habits";
 }
 
-// ===== GPT呼び出し（テキスト：GPT-5 / Responses API, max未指定）=====
+// ===== GPT呼び出し（テキスト：GPT-4o） =====
 async function callGPTWithFallbackText(systemPrompt, userPrompt) {
   try {
-    const rsp = await openai.responses.create({
-      model: "gpt-5",
-      input: [
+    const rsp = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
         { role: "system", content: systemPrompt },
         { role: "user",   content: userPrompt  },
       ]
-      // max_output_tokens は指定しない
+      // max_completion_tokens は一旦省略（必要なら付けられる）
     });
 
-    // Responses API は出力の置き場所が複数パターンありうるので多段で拾う
-    const chunk = rsp?.output?.[0]?.content?.[0] ?? null;
-    const text =
-      (rsp.output_text) ||
-      (chunk?.text?.value) ||
-      "";
-
-    return (text || "").trim() || null;
+    const text = rsp.choices?.[0]?.message?.content?.trim() || "";
+    return text || null;
   } catch (err) {
     console.error("callGPTWithFallbackText error:", err);
     return null;
   }
 }
 
-// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API, max未指定）=====
+// ===== GPT呼び出し（JSON構造：GPT-4o） =====
 async function callGPTJson(systemPrompt, userPrompt) {
   try {
-    const rsp = await openai.responses.create({
-      model: "gpt-5",
-      input: [
+    const rsp = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
         { role: "system", content: systemPrompt },
         { role: "user",   content: userPrompt  },
       ],
-      // JSON固定（必要に応じて json_schema にしてもOK）
-      text: { format: { type: "json_object" } }
-      // max_output_tokens は指定しない
+      response_format: { type: "json_object" }
     });
 
-    // 出力の取り出しを多段でカバー
-    const chunk = rsp?.output?.[0]?.content?.[0] ?? null;
-    let raw =
-      (rsp.output_text) ||
-      (chunk?.text?.value) ||
-      (chunk?.json ? JSON.stringify(chunk.json) : "") ||
-      (chunk?.parsed ? JSON.stringify(chunk.parsed) : "") ||
-      "";
-
-    raw = (raw || "").trim();
+    let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
     if (!raw) return null;
 
-    // ```json ～ ``` のガード（返りがコードブロック化される保険）
+    // ```json ... ``` に包まれている場合を除去
     if (raw.startsWith("```")) {
       raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
     }
@@ -223,7 +206,6 @@ async function callGPTJson(systemPrompt, userPrompt) {
     try {
       return JSON.parse(raw);
     } catch {
-      // 前後にノイズが混ざった場合の最終救済
       const s = raw.indexOf("{");
       const e = raw.lastIndexOf("}");
       if (s >= 0 && e > s) {
