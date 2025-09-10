@@ -3,7 +3,7 @@ const followupQuestionSet = [
   id: "Q1",
   header: "【Q1】お体の変化", // ← 見出しはそのままでもOK
   body: "体質分析時のお悩み「{{symptom}}」含む体調レベルについて「1＝改善した」「5＝変わらずツライ」でお答えください。",
-  isMulti: false,
+  isMulti: true,
   options: [
     {
       id: "symptom",
