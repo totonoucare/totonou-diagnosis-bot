@@ -25,8 +25,7 @@ const motionLabels = {
 };
 
 const multiLabels = {
-  symptom: "「{{symptom}}」のお悩みレベル",
-  general: "全体的な調子",
+  symptom: "「{{symptom}}」含むの体調レベル",
   sleep: "睡眠の状態",
   meal: "食事の状態",
   stress: "ストレスの状態",
