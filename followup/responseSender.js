@@ -163,7 +163,7 @@ function chooseNextPillar(ans) {
   return "habits";
 }
 
-// ===== GPT呼び出し（テキスト：GPT-5 / Responses API） =====
+// ===== GPT呼び出し（テキスト：GPT-5 / Responses API, max未指定）=====
 async function callGPTWithFallbackText(systemPrompt, userPrompt) {
   try {
     const rsp = await openai.responses.create({
@@ -171,10 +171,11 @@ async function callGPTWithFallbackText(systemPrompt, userPrompt) {
       input: [
         { role: "system", content: systemPrompt },
         { role: "user",   content: userPrompt  },
-      ],
-      max_output_tokens: 600
+      ]
+      // max_output_tokens は指定しない
     });
 
+    // Responses API は出力の置き場所が複数パターンありうるので多段で拾う
     const chunk = rsp?.output?.[0]?.content?.[0] ?? null;
     const text =
       (rsp.output_text) ||
@@ -188,7 +189,7 @@ async function callGPTWithFallbackText(systemPrompt, userPrompt) {
   }
 }
 
-// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API） =====
+// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API, max未指定）=====
 async function callGPTJson(systemPrompt, userPrompt) {
   try {
     const rsp = await openai.responses.create({
@@ -197,10 +198,12 @@ async function callGPTJson(systemPrompt, userPrompt) {
         { role: "system", content: systemPrompt },
         { role: "user",   content: userPrompt  },
       ],
-      max_output_tokens: 1000,
+      // JSON固定（必要に応じて json_schema にしてもOK）
       text: { format: { type: "json_object" } }
+      // max_output_tokens は指定しない
     });
 
+    // 出力の取り出しを多段でカバー
     const chunk = rsp?.output?.[0]?.content?.[0] ?? null;
     let raw =
       (rsp.output_text) ||
@@ -208,10 +211,11 @@ async function callGPTJson(systemPrompt, userPrompt) {
       (chunk?.json ? JSON.stringify(chunk.json) : "") ||
       (chunk?.parsed ? JSON.stringify(chunk.parsed) : "") ||
       "";
-    raw = raw.trim();
+
+    raw = (raw || "").trim();
     if (!raw) return null;
 
-    // ```json ... ``` に包まれていたら除去
+    // ```json ～ ``` のガード（返りがコードブロック化される保険）
     if (raw.startsWith("```")) {
       raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
     }
@@ -219,10 +223,11 @@ async function callGPTJson(systemPrompt, userPrompt) {
     try {
       return JSON.parse(raw);
     } catch {
+      // 前後にノイズが混ざった場合の最終救済
       const s = raw.indexOf("{");
       const e = raw.lastIndexOf("}");
       if (s >= 0 && e > s) {
-        try { return JSON.parse(raw.slice(s, e + 1)); } catch {}
+        try { return JSON.parse(raw.slice(s, e + 1)); } catch { /* noop */ }
       }
       return null;
     }
