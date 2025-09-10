@@ -57,9 +57,8 @@ function readAdvice(adviceInput) {
 function normalizeFollowup(ans = {}) {
   const n = (v, def) => (v === null || v === undefined || v === "" ? def : Number(v));
   return {
-    // Q1
+    // Q1（general_level は廃止）
     symptom_level: n(ans.symptom_level, 3),
-    general_level: n(ans.general_level, 3),
     // Q2
     sleep:  n(ans.sleep, 3),
     meal:   n(ans.meal, 3),
@@ -93,11 +92,13 @@ function adherencePenalty(ans) {
   return add;
 }
 
-/** 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正 */
+/** 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正
+ *  Q1は general_level 廃止に伴い、「主訴」のみで同等ウエイトになるよう係数を倍に調整。
+ */
 function computeScore(ans) {
   let penalty = 0;
-  // Q1
-  penalty += ((ans.symptom_level - 1) + (ans.general_level - 1)) * 3.5;
+  // Q1（symptom_level のみ。最大減点28を維持するため係数7.0）
+  penalty += (ans.symptom_level - 1) * 7.0;
   // Q2
   penalty += ((ans.sleep - 1) + (ans.meal - 1) + (ans.stress - 1)) * 2.333;
   // Q3（漢方除外）
@@ -354,7 +355,7 @@ diffLine: ${diffLine}
 【主訴】${symptomJapanese}
 
 【今回の定期チェック（正規化後の値）】
-Q1: 主訴=${curN.symptom_level} / 全体=${curN.general_level}
+Q1: 主訴=${curN.symptom_level}
 Q2: 睡眠=${curN.sleep} / 食事=${curN.meal} / ストレス=${curN.stress}
 Q3: 習慣=${curN.habits} / 呼吸法=${curN.breathing} / ストレッチ=${curN.stretch} / ツボ=${curN.tsubo} / 漢方薬=${curN.kampo}
 Q4: 動作=${curN.motion_level}
@@ -399,7 +400,7 @@ diff_line: ${diffLine}
 【主訴】${symptomJapanese}
 
 【今回の定期チェック】
-Q1: 主訴=${curN.symptom_level} / 全体=${curN.general_level}
+Q1: 主訴=${curN.symptom_level}
 Q2: 睡眠=${curN.sleep} / 食事=${curN.meal} / ストレス=${curN.stress}
 Q3: 習慣=${curN.habits} / 呼吸法=${curN.breathing} / ストレッチ=${curN.stretch} / ツボ=${curN.tsubo} / 漢方薬=${curN.kampo}
 Q4: 動作=${curN.motion_level}
