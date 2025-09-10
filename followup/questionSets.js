@@ -1,26 +1,21 @@
 const followupQuestionSet = [
-  {
-    id: "Q1",
-    header: "【Q1】お悩みと体調の変化",
-    body: "初回分析時のお悩み「{{symptom}}」が一番ツラいときの度合いを「5」とした場合、今はどのくらいですか？\nあわせて、全体的な体調の度合いも「5＝最悪」として、今はどのくらいですか？",
-    isMulti: true,
-    options: [
-      {
-        id: "symptom",
-        label: "「{{symptom}}」のツラさ",
-        items: ["1", "2", "3", "4", "5"]
-      },
-      {
-        id: "general",
-        label: "全体的な調子の度合い",
-        items: ["1", "2", "3", "4", "5"]
-      }
-    ]
-  },
+{
+  id: "Q1",
+  header: "【Q1】お体の変化", // ← 見出しはそのままでもOK
+  body: "体質分析時のお悩み「{{symptom}}」含む体調レベルについて「1＝改善した」「5＝変わらずツライ」でお答えください。",
+  isMulti: false,
+  options: [
+    {
+      id: "symptom",
+      label: "「{{symptom}}」含む体調レベル",
+      items: ["1", "2", "3", "4", "5"]
+    }
+  ]
+},
   {
     id: "Q2",
     header: "【Q2】生活リズムの整い具合",
-    body: "最近の睡眠・食事・ストレスの状態について、それぞれ「1＝理想」「5＝かなり乱れている」で答えてください。",
+    body: "最近の睡眠・食事・ストレスの状態について、それぞれ「1＝理想的」「5＝かなり乱れている」でお答えください。",
     isMulti: true,
     options: [
       {
@@ -76,7 +71,7 @@ const followupQuestionSet = [
   {
     id: "Q4",
     header: "【Q4】動作テストの変化",
-    body: "初回診断時の「{{motion}}」のつらさを「5」とした場合、今はどのくらいですか？",
+    body: "初回分析時の「{{motion}}」のツラ度合いについて、「1＝改善した」「5＝変わらずツライ」でお答えください。",
     isMulti: false,
     options: [
       { label: "1", data: "Q4=1", displayText: "1" },
