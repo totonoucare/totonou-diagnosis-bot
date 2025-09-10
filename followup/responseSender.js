@@ -195,7 +195,7 @@ async function callGPTJson(systemPrompt, userPrompt) {
       ],
       max_output_tokens: 800,
       text: {
-        format: { type: "json_object" }
+        format: "json_object"
       }
     });
 
