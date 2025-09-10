@@ -28,7 +28,6 @@ async function handleFollowupAnswers(lineId, answers) {
               parsedAnswers.motion_level = parseInt(value);
               break;
             case "symptom":
-            case "general":
             case "sleep":
             case "meal":
             case "stress":
