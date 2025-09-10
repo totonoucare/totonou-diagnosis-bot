@@ -38,7 +38,7 @@ function seasonalHint({ date, weekdayJp }) {
   ].join("\n");
 }
 
-/** followups から“今触れるならこの1点だけ” */
+/** followups から“今触れるならこの1点だけ”（1=理想, 5=乱れ） */
 function extractStatusFlag(fu = null) {
   if (!fu) return null;
   const n = v => (v == null ? null : Number(v));
@@ -95,6 +95,11 @@ ${seasonalHint({ date, weekdayJp })}
 ${advice ? JSON.stringify(advice) : "（未登録）"}
 
 ${statusLine}
+
+【出力条件】
+- 先頭は「${greeting()}」で始める
+- その後に体質×季節ベースの短文（70〜110文字）
+- 丁寧すぎず親しみやすい口調
   `.trim();
 
   const completion = await openai.chat.completions.create({
@@ -102,8 +107,8 @@ ${statusLine}
     messages: [
       { role: "system", content: sys },
       { role: "user",   content: user },
-    ],
-    max_completion_tokens: 320
+    ]
+    // max_tokens 指定なし → GPT-5に任せる
   });
 
   const text = completion.choices?.[0]?.message?.content?.trim();
