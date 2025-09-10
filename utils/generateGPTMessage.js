@@ -42,12 +42,12 @@ function extractStatusFlag(fu = null) {
 }
 
 async function buildConstitutionSeasonalReminder({
-  constitution, trait, flowType, organType, chiefSymptom, advice,
+  constitution, trait, flowType, organType, chiefSymptom,
   date, weekdayJp, tone, statusFlag
 }) {
   const styleLine = tone === "uranai"
     ? "占い風（控えめに吉/巡りのニュアンス）"
-    : "豆知識風（読む人が“へぇ”と感じるような小ネタ。ただし『へぇ〜』という表現は書かない。具体アクションを1つ添える）";
+    : "豆知識風（読む人が“へぇ”と感じる小ネタ。ただし『へぇ〜』という表現は書かない。具体アクションを1つ添える）";
 
   const sys = `
 あなたは東洋医学に詳しい親しみやすい伴走AI。
@@ -56,11 +56,15 @@ async function buildConstitutionSeasonalReminder({
 【厳守】
 - 出力は必ず「${greeting()}」で始める
 - 本文は 70〜110文字（挨拶込みで全体 100〜150目安）
-- 絵文字は適度に使用して親しみやすく
+- 絵文字は0〜2個まで
 - 天気の推測は禁止
 - 医療断定は禁止
 - followup状況があれば “1点だけ” 触れる
 - トーン：${styleLine}
+
+【禁止事項】
+- 漢方薬や特定のツボ名、経絡名は出さない
+- 食材や生活アドバイスは自由に提案してよい
   `.trim();
 
   const contextLines = [
@@ -80,14 +84,11 @@ ${contextLines || "不明"}
 【季節ヒント】
 ${seasonalHint({ date, weekdayJp })}
 
-【ケア提案（初回）】
-${advice ? JSON.stringify(advice) : "（未登録）"}
-
 ${statusLine}
   `.trim();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o", // ← ここを gpt-4o に
+    model: "gpt-4o", // モデルは自然さ重視の gpt-4o
     messages: [
       { role: "system", content: sys },
       { role: "user",   content: user },
@@ -110,7 +111,7 @@ async function generateGPTMessage(lineId) {
     // contexts
     const { data: ctxRows } = await supabase
       .from("contexts")
-      .select("type, trait, flowType, organType, symptom, advice, created_at")
+      .select("type, trait, flowType, organType, symptom, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -123,7 +124,6 @@ async function generateGPTMessage(lineId) {
     const flowType     = latestContext?.flowType || mmContext?.flowType || null;
     const organType    = latestContext?.organType || mmContext?.organType || null;
     const chiefSymptom = latestContext?.symptom || mmContext?.symptom || null;
-    const advice       = latestContext?.advice || mmContext?.advice || null;
 
     // followups
     const { data: fuRows } = await supabase
@@ -145,7 +145,7 @@ async function generateGPTMessage(lineId) {
     console.log("[gm] tone/date:", tone, date, weekdayJp);
 
     const msg = await buildConstitutionSeasonalReminder({
-      constitution, trait, flowType, organType, chiefSymptom, advice,
+      constitution, trait, flowType, organType, chiefSymptom,
       date, weekdayJp, tone, statusFlag,
     });
 
