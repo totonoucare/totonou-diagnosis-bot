@@ -153,7 +153,6 @@ async function setFollowupAnswers(lineId, answers) {
 const payload = {
   user_id: userRow.id,
   symptom_level: parseInt(answers.symptom),
-  general_level: parseInt(answers.general),
   sleep: parseInt(answers.sleep),
   meal: parseInt(answers.meal),
   stress: parseInt(answers.stress),
