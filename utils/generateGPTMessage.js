@@ -110,7 +110,7 @@ ${statusLine}
       { role: "system", content: sys },
       { role: "user",   content: user },
     ],
-    max_completion_tokens: 220
+    max_completion_tokens: 320
   });
 
   return completion.choices?.[0]?.message?.content?.trim();
