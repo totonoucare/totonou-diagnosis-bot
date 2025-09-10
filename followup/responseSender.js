@@ -163,95 +163,71 @@ function chooseNextPillar(ans) {
   return "habits";
 }
 
-// ===== GPT呼び出し（テキスト） =====
+// ===== GPT呼び出し（テキスト：GPT-5 / Responses API） =====
 async function callGPTWithFallbackText(systemPrompt, userPrompt) {
-  let rsp = await openai.chat.completions.create({
-    model: "gpt-5",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    max_completion_tokens: 480
-  });
-  let text = rsp.choices?.[0]?.message?.content?.trim() || "";
-
-  if (!text) {
-    rsp = await openai.chat.completions.create({
+  try {
+    const rsp = await openai.responses.create({
       model: "gpt-5",
-      messages: [
+      input: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        { role: "user",   content: userPrompt  },
       ],
-      max_completion_tokens: 640
+      max_output_tokens: 600
     });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
 
-  if (!text) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 480
-    });
-    text = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
+    const chunk = rsp?.output?.[0]?.content?.[0] ?? null;
+    const text =
+      (rsp.output_text) ||
+      (chunk?.text?.value) ||
+      "";
 
-  return text;
+    return (text || "").trim() || null;
+  } catch (err) {
+    console.error("callGPTWithFallbackText error:", err);
+    return null;
+  }
 }
 
-// ===== GPT呼び出し（JSON構造） =====
+// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API） =====
 async function callGPTJson(systemPrompt, userPrompt) {
-  let rsp = await openai.chat.completions.create({
-    model: "gpt-5",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    max_completion_tokens: 512
-  });
-  let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-
-  // 再試行（同モデル）
-  if (!raw) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 640
-    });
-    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
-
-  // 代替
-  if (!raw) {
-    rsp = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 512
-    });
-    raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-  }
-
-  if (!raw) return null;
-
-  // 余分な前後テキスト/コードブロックの除去
   try {
-    const jsonStart = raw.indexOf("{");
-    const jsonEnd = raw.lastIndexOf("}");
-    if (jsonStart >= 0 && jsonEnd > jsonStart) {
-      const sliced = raw.slice(jsonStart, jsonEnd + 1);
-      return JSON.parse(sliced);
+    const rsp = await openai.responses.create({
+      model: "gpt-5",
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userPrompt  },
+      ],
+      max_output_tokens: 1000,
+      text: { format: { type: "json_object" } }
+    });
+
+    const chunk = rsp?.output?.[0]?.content?.[0] ?? null;
+    let raw =
+      (rsp.output_text) ||
+      (chunk?.text?.value) ||
+      (chunk?.json ? JSON.stringify(chunk.json) : "") ||
+      (chunk?.parsed ? JSON.stringify(chunk.parsed) : "") ||
+      "";
+    raw = raw.trim();
+    if (!raw) return null;
+
+    // ```json ... ``` に包まれていたら除去
+    if (raw.startsWith("```")) {
+      raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
     }
-    return JSON.parse(raw);
-  } catch (e) {
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      const s = raw.indexOf("{");
+      const e = raw.lastIndexOf("}");
+      if (s >= 0 && e > s) {
+        try { return JSON.parse(raw.slice(s, e + 1)); } catch {}
+      }
+      return null;
+    }
+  } catch (err) {
+    console.error("callGPTJson error:", err);
     return null;
   }
 }
