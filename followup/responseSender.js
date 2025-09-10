@@ -165,50 +165,52 @@ function chooseNextPillar(ans) {
 
 // ===== GPT呼び出し（テキスト：GPT-5/Responses API） =====
 async function callGPTWithFallbackText(systemPrompt, userPrompt) {
-  const rsp = await openai.responses.create({
-    model: "gpt-5",
-    input: [
-      { role: "system", content: systemPrompt },
-      { role: "user",   content: userPrompt  },
-    ],
-    // ※ Responses APIでは max_output_tokens
-    max_output_tokens: 600
-  });
+  try {
+    const rsp = await openai.responses.create({
+      model: "gpt-5",
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userPrompt  },
+      ],
+      max_output_tokens: 600
+    });
 
-  const text = (rsp.output_text || "").trim();
-  return text || null;
+    const text = (rsp.output_text || "").trim();
+    return text || null;
+
+  } catch (err) {
+    console.error("callGPTWithFallbackText error:", err);
+    return null;
+  }
 }
 
-// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API） =====
+// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API 正しい指定） =====
 async function callGPTJson(systemPrompt, userPrompt) {
-  const rsp = await openai.responses.create({
-    model: "gpt-5",
-    response_format: { type: "json_object" }, // JSONモードを強制
-    input: [
-      { role: "system", content: systemPrompt },
-      { role: "user",   content: userPrompt  },
-    ],
-    // Chatの max_completion_tokens ではなく、Responses は max_output_tokens
-    max_output_tokens: 800
-  });
-
-  let raw = (rsp.output_text || "").trim();
-  if (!raw) return null;
-
-  // 万一 ```json ... ``` で返る場合のガード
-  if (raw.startsWith("```")) {
-    raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
-  }
-
   try {
-    return JSON.parse(raw);
-  } catch {
-    // 端にゴミが混ざった時の保険（最後の {} を抽出）
-    const s = raw.indexOf("{");
-    const e = raw.lastIndexOf("}");
-    if (s >= 0 && e > s) {
-      try { return JSON.parse(raw.slice(s, e + 1)); } catch {}
+    const rsp = await openai.responses.create({
+      model: "gpt-5",
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userPrompt  },
+      ],
+      max_output_tokens: 800,
+      text: {
+        format: "json"   // ← これが正しい
+      }
+    });
+
+    let raw = (rsp.output_text || "").trim();
+    if (!raw) return null;
+
+    // 念のためコードブロックガード
+    if (raw.startsWith("```")) {
+      raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
     }
+
+    return JSON.parse(raw);
+
+  } catch (err) {
+    console.error("callGPTJson error:", err);
     return null;
   }
 }
