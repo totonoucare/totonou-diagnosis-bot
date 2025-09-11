@@ -47,7 +47,7 @@ async function buildConstitutionSeasonalReminder({
 }) {
   const styleLine = tone === "uranai"
     ? "占い風（控えめに吉/巡りのニュアンス）"
-    : "豆知識風（読む人が“へぇ”と感じる小ネタ。ただし『へぇ〜』という表現は書かない。具体アクションを1つ添える）";
+    : "豆知識風（読む人が“へぇー”と感じるような勉強になる小ネタ。具体アクションを1つ添える）";
 
   const sys = `
 あなたは東洋医学に詳しい親しみやすい伴走AI。
@@ -56,7 +56,7 @@ async function buildConstitutionSeasonalReminder({
 【厳守】
 - 出力は必ず「${greeting()}」で始める
 - 本文は 70〜110文字（挨拶込みで全体 100〜150目安）
-- 絵文字は0〜2個まで
+- 絵文字は適度に使い、親しみやすく
 - 天気の推測は禁止
 - 医療断定は禁止
 - followup状況があれば “1点だけ” 触れる
