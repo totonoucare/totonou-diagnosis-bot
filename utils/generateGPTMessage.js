@@ -64,7 +64,8 @@ async function buildConstitutionSeasonalReminder({
 
 【禁止事項】
 - 漢方薬や特定のツボ名、経絡名は出さない
-- 食材や生活アドバイスは自由に提案してよい
+- 食材や生活アドバイスは自由に提案してよい（ただし、どの体質にも低温の飲食のおすすめはしない。冷性の飲食なら可。）
+- 今日の日付・曜日はメッセージ文内に含めないこと
   `.trim();
 
   const contextLines = [
