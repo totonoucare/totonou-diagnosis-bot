@@ -197,7 +197,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "分析が初めての方はそのまま分析をスタートしてください🌱",
+            text: "ととのえ方分析が初めての方は、そのまま分析をスタートしてください🌱",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
