@@ -134,20 +134,15 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 
       // 身近な人に紹介
       if (userMessage === "身近な人への紹介") {
-        const shareUrl = "https://lin.ee/UxWfJtV";
+        const shareUrl = "https://page.line.me/173moafk";
         await client.replyMessage(event.replyToken, [
           {
             type: "text",
-            text: "ご紹介ありがとうございます✨\n👇こちら紹介文のコピペ用テンプレート文です。ぜひ参考にお使いください！😊",
+            text: "ありがとうございます✨\n👇こちらのリンクをコピペしてご紹介ください！😊",
           },
           {
             type: "text",
-            text:
-              "公式LINE上で自分の不調の根本原因の体質バランスとケア提案・ケア継続サポートが完結するサービス『ととのうケアナビ』です",
-          },
-          {
-            type: "text",
-            text: `🔗 LINE登録はこちら\n${shareUrl}`,
+            text: `体質タイプ分析もセルフケアフォローも健康相談も、すべてLINEひとつで。🔗 公式LINE登録はこちら\n${shareUrl}`,
           },
         ]);
         return;
