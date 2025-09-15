@@ -12,6 +12,9 @@ const {
 const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
 
+// ★ AI相談 本体（常時オンで呼び出す）
+const consult = require("./consult/index");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -40,7 +43,9 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       console.log("🔵 event.type:", event.type);
       console.log("🟢 userMessage:", userMessage);
 
-      // ご案内リンク集
+      // ===== 強トリガー系（先にすべて処理して return） =====
+
+      // サービス案内（Flex）
       if (userMessage === "サービス案内") {
         const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
         const flex = {
@@ -117,16 +122,15 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-     // 開始確認
-if (userMessage === "ととのえ方分析") {
-  const flex = buildDiagnosisConfirmFlex();
-  return client.replyMessage(event.replyToken, flex); // ← ここ
-}
-
-if (userMessage === "ととのい度チェック") {
-  const flex = buildFollowupConfirmFlex();
-  return client.replyMessage(event.replyToken, flex); // ← ここ
-}
+      // 開始確認（分析／フォローアップ）
+      if (userMessage === "ととのえ方分析") {
+        const flex = buildDiagnosisConfirmFlex();
+        return client.replyMessage(event.replyToken, flex);
+      }
+      if (userMessage === "ととのい度チェック") {
+        const flex = buildFollowupConfirmFlex();
+        return client.replyMessage(event.replyToken, flex);
+      }
 
       // 身近な人に紹介
       if (userMessage === "身近な人への紹介") {
@@ -149,7 +153,7 @@ if (userMessage === "ととのい度チェック") {
         return;
       }
 
-      // トライアル開始完了
+      // トライアル開始完了（postback）
       if (event.type === "postback" && userMessage === "trial_intro_done") {
         try {
           const { error } = await supabase
@@ -197,162 +201,151 @@ if (userMessage === "ととのい度チェック") {
         return;
       }
 
-// server.js のイベント処理内に以下を追加
-const { buildChatConsultOptionsFlex } = require("./utils/flexBuilder");
+      // チャット相談メニュー（既存UIを残すだけ／AIとは別物）
+      if (userMessage === "チャット相談") {
+        const flex = buildChatConsultOptionsFlex();
+        await client.replyMessage(event.replyToken, flex);
+        return;
+      }
 
-if (userMessage === "チャット相談") {
-  const flex = buildChatConsultOptionsFlex();
-  await client.replyMessage(event.replyToken, flex);
-  return;
-}
+      // 人に相談（awaiting_consult_message: true にして以降はAIを反応させない）
+      if (userMessage === "LINEでプロに相談") {
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("subscribed, plan_type, remaining_consultations, trial_intro_done")
+          .eq("line_id", lineId)
+          .single();
 
-      // プロに相談（ここで awaiting_consult_message: true をセット）
-if (userMessage === "LINEでプロに相談") {
-  const { data: user, error } = await supabase
-    .from("users")
-    .select("subscribed, plan_type, remaining_consultations, trial_intro_done")
-    .eq("line_id", lineId)
-    .single();
+        if (error || !user) {
+          console.error("❌ ユーザー取得失敗:", error);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "ユーザー情報の取得中にエラーが発生しました。しばらくしてから再度お試しください。",
+          });
+          return;
+        }
 
-  if (error || !user) {
-    console.error("❌ ユーザー取得失敗:", error);
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: "ユーザー情報の取得中にエラーが発生しました。しばらくしてから再度お試しください。",
-    });
-    return;
-  }
+        const hasAccess = (user.subscribed && user.plan_type === "standard") || user.trial_intro_done;
+        if (hasAccess) {
+          if ((user.remaining_consultations || 0) <= 0) {
+            await client.replyMessage(event.replyToken, {
+              type: "text",
+              text: `ご相談回数の上限に達しています🙏\n\nスタンダード会員様は月ごとにリセットされます。\nもう一度ご相談されたい場合は、来月までお待ちいただくか、サポートまでご連絡ください。`,
+            });
+            return;
+          }
 
-  const hasAccess = (user.subscribed && user.plan_type === "standard") || user.trial_intro_done;
+          await supabase
+            .from("users")
+            .update({ awaiting_consult_message: true })
+            .eq("line_id", lineId);
 
-  if (hasAccess) {
-    if ((user.remaining_consultations || 0) <= 0) {
-      await client.replyMessage(event.replyToken, {
-        type: "text",
-        text: `ご相談回数の上限に達しています🙏\n\nスタンダード会員様は月ごとにリセットされます。\nもう一度ご相談されたい場合は、来月までお待ちいただくか、サポートまでご連絡ください。`,
-      });
-      return;
-    }
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: `メッセージありがとうございます！\nご相談内容をこのトーク画面でご自由にお送りください☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
+          });
+        } else {
+          const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+          });
+        }
+        return;
+      }
 
-    // 相談可能なので、awaiting_consult_message を true にセット
-    await supabase
-      .from("users")
-      .update({ awaiting_consult_message: true })
-      .eq("line_id", lineId);
+      // 外部GPTリンク案内（既存）
+      if (event.type === "message" && event.message.type === "text") {
+        const userMessageIn = event.message.text;
+        const replyToken = event.replyToken;
+        const lineIdIn = event.source.userId;
 
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: `メッセージありがとうございます！\nご相談内容をこのトーク画面でご自由にお送りください☺️\n\n📝 残り相談回数：${user.remaining_consultations}回\n\n例：\n・最近の不調や気になる症状\n・セルフケアのやり方やコツ\n・漢方やツボの詳しい説明\n・診断結果についての質問　など`,
-    });
-  } else {
-    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、LINE相談がご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
-    });
-  }
-  return;
-}
+        if (userMessageIn === "ととのうGPTでAI相談") {
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("id, subscribed, plan_type, trial_intro_done")
+            .eq("line_id", lineIdIn)
+            .single();
 
-// 「ととのうGPTでAI相談」トリガー
-// messageイベントかどうか＆textかどうかを事前にチェック
-if (event.type === "message" && event.message.type === "text") {
-  const userMessage = event.message.text;
-  const replyToken = event.replyToken;
-  const lineId = event.source.userId;
+          if (userError || !userData) {
+            await client.replyMessage(replyToken, {
+              type: "text",
+              text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
+            });
+            return;
+          }
 
-  // 「ととのうGPTでAI相談」トリガー
-  if (userMessage === "ととのうGPTでAI相談") {
-    // ユーザーデータを取得（UUID含む）
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("id, subscribed, plan_type, trial_intro_done")
-      .eq("line_id", lineId)
-      .single();
+          const userId = userData.id;
+          const isStandardSub = userData.subscribed && userData.plan_type === "standard";
+          const isTrial = userData.trial_intro_done;
 
-    if (userError || !userData) {
-      await client.replyMessage(replyToken, {
-        type: "text",
-        text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
-      });
-      return;
-    }
+          if (!isStandardSub && !isTrial) {
+            const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineIdIn}`;
+            await client.replyMessage(replyToken, {
+              type: "text",
+              text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+            });
+            return;
+          }
 
-    const userId = userData.id;
-    const isStandardSub = userData.subscribed && userData.plan_type === "standard";
-    const isTrial = userData.trial_intro_done;
+          const { data: contextData } = await supabase
+            .from("contexts")
+            .select("code")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
 
-    // 会員条件チェック（スタンダードまたはトライアル）
-    if (!isStandardSub && !isTrial) {
-      const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-      await client.replyMessage(replyToken, {
-        type: "text",
-        text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
-      });
-      return;
-    }
+          const code = contextData?.code || "コード未登録";
 
-    // 最新の分析コードをcontextsから取得
-    const { data: contextData, error: contextError } = await supabase
-      .from("contexts")
-      .select("code")
-      .eq("user_id", userId) // ← UUIDで照合
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+          const messages = [
+            {
+              type: "text",
+              text: "✅ ととのうGPTでのAI相談がご利用いただけます！\n分析コードをGPTに伝えると、あなたに合ったセルフケアアドバイスを受けられます✨",
+            },
+            {
+              type: "text",
+              text: `🧠 最新の分析結果コード：${code}`,
+            },
+            {
+              type: "text",
+              text: "👇 以下のリンクからAI相談を開始できます\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
+            },
+          ];
 
-    const code = contextData?.code || "コード未登録";
+          await client.replyMessage(replyToken, messages);
+          return;
+        }
+      }
 
-    // メッセージ送信
-    const messages = [
-      {
-        type: "text",
-        text: "✅ ととのうGPTでのAI相談がご利用いただけます！\n分析コードをGPTに伝えると、あなたに合ったセルフケアアドバイスを受けられます✨",
-      },
-      {
-        type: "text",
-        text: `🧠 最新の分析結果コード：${code}`,
-      },
-      {
-        type: "text",
-        text: "👇 以下のリンクからAI相談を開始できます\nhttps://chatgpt.com/g/g-68923563b29c8191acd3bf82435a3bed-totonoukeanahi-tiyatutoxiang-tan-ai",
-      },
-    ];
+      // ===== ととのい度チェック（強トリガー）— フロー専用。GPTは反応させない =====
+      if (userMessage === "ととのい度チェック開始" || handleFollowup.hasSession?.(lineId)) {
+        try {
+          const messages = await handleFollowup(event, client, lineId);
 
-    await client.replyMessage(replyToken, messages);
-    return;
-  }
-}
+          if (messages === null) {
+            return;
+          }
 
-      // 定期チェックナビ
-if (userMessage === "ととのい度チェック開始" || handleFollowup.hasSession?.(lineId)) {
-  try {
-    const messages = await handleFollowup(event, client, lineId);
+          if (Array.isArray(messages) && messages.length > 0) {
+            await client.replyMessage(event.replyToken, messages);
+          } else if (!handleFollowup.hasSession(lineId)) {
+            await client.replyMessage(event.replyToken, {
+              type: "text",
+              text: "ととのい度チェックを始めるには、メニューバーの【定期チェックナビ】をタップしてください。",
+            });
+          }
+        } catch (err) {
+          console.error("❌ handleFollowup エラー:", err);
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "再診処理中にエラーが発生しました。もう一度お試しください。",
+          });
+        }
+        return;
+      }
 
-    if (messages === null) {
-      // 未登録または未サブスクユーザーなど ⇒ メッセージ送信済みなので return だけ
-      return;
-    }
-
-    if (Array.isArray(messages) && messages.length > 0) {
-      await client.replyMessage(event.replyToken, messages);
-    } else if (!handleFollowup.hasSession(lineId)) {
-      await client.replyMessage(event.replyToken, {
-        type: "text",
-        text: "ととのい度チェックを始めるには、メニューバーの【定期チェックナビ】をタップしてください。",
-      });
-    }
-  } catch (err) {
-    console.error("❌ handleFollowup エラー:", err);
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: "再診処理中にエラーが発生しました。もう一度お試しください。",
-    });
-  }
-  return;
-}
-
-      // ととのえ方分析開始
+      // ===== ととのえ方分析（強トリガー）— フロー専用。GPTは反応させない =====
       if (userMessage === "ととのえ方分析開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
@@ -360,7 +353,7 @@ if (userMessage === "ととのい度チェック開始" || handleFollowup.hasSes
         return;
       }
 
-      // 分析セッション中
+      // 分析セッション中（GPTは反応させない）
       if (diagnosis.hasSession(lineId)) {
         const result = await diagnosis.handleDiagnosis(lineId, userMessage, event);
         if (result.sessionUpdate) result.sessionUpdate(userMessage);
@@ -368,49 +361,55 @@ if (userMessage === "ととのい度チェック開始" || handleFollowup.hasSes
         return;
       }
 
-// 分析以外のコマンド（ととのうケアガイドなど）
-const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
-if (extraResult && extraResult.messages) {
-  await client.replyMessage(event.replyToken, extraResult.messages);
-  return;
-}
+      // 分析以外のコマンド（ととのうケアガイド等）
+      const extraResult = await diagnosis.handleExtraCommands(lineId, userMessage);
+      if (extraResult && extraResult.messages) {
+        await client.replyMessage(event.replyToken, extraResult.messages);
+        return;
+      }
 
-// 👤 awaiting_consult_message: true のユーザーのみ処理（多重発火防止）
-const { data: consultUser, error: consultError } = await supabase
-  .from("users")
-  .select("remaining_consultations")
-  .eq("line_id", lineId)
-  .eq("awaiting_consult_message", true)
-  .single();
+      // 人相談中は GPT に投げない（awaiting_consult_message: true）
+      const { data: consultUser, error: consultError } = await supabase
+        .from("users")
+        .select("remaining_consultations")
+        .eq("line_id", lineId)
+        .eq("awaiting_consult_message", true)
+        .single();
 
-if (!consultError && consultUser) {
-  const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
+      if (!consultError && consultUser) {
+        const newCount = Math.max((consultUser.remaining_consultations || 0) - 1, 0);
 
-  const { data: updated, error: updateError } = await supabase
-    .from("users")
-    .update({
-      remaining_consultations: newCount,
-      awaiting_consult_message: false,
-    })
-    .eq("line_id", lineId)
-    .eq("awaiting_consult_message", true)
-    .select(); // ← 更新の反映確認にも使える
+        const { data: updated, error: updateError } = await supabase
+          .from("users")
+          .update({
+            remaining_consultations: newCount,
+            awaiting_consult_message: false,
+          })
+          .eq("line_id", lineId)
+          .eq("awaiting_consult_message", true)
+          .select();
 
-  if (updateError) {
-    console.error("❌ 相談カウント更新失敗:", updateError);
-  } else if (updated?.length > 0) {
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📝 残り相談回数：${newCount}回`,
-    });
-  } else {
-    console.warn("⚠️ awaiting_consult_message が false に戻っていた可能性：更新スキップ");
-  }
+        if (updateError) {
+          console.error("❌ 相談カウント更新失敗:", updateError);
+        } else if (updated?.length > 0) {
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: `ご相談ありがとうございます！\nスタッフが順次お返事いたしますね☺️\n\n📝 残り相談回数：${newCount}回`,
+          });
+        } else {
+          console.warn("⚠️ awaiting_consult_message が false に戻っていた可能性：更新スキップ");
+        }
+        return;
+      }
 
-  return;
-}
+      // ====== ここから：常時オンの AI 相談（トリガー不要） ======
+      if (event.type === "message" && event.message.type === "text") {
+        // ここまでで強トリガー／他フローに該当しなければ、GPTに相談を投げる
+        await consult(event, client); // ← consult/index.js 側で reply→push フォールバックを実装済み
+        return;
+      }
 
-      // デフォルト返信
+      // デフォルト返信（基本到達しない想定）
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `メッセージありがとうございます😊\nお問い合わせ・不具合報告には24時間以内にご対応させていただきますね！`,
