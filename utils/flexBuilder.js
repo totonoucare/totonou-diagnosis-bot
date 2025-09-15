@@ -197,9 +197,20 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "初めての方はそのまま分析をスタートしてください🌱\n2回目以降の方は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
+            text: "分析が初めての方はそのまま分析をスタートしてください🌱",
             wrap: true,
             size: "md",
+            color: "#0d0d0d",
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: "text",
+            text: "※2回目以降の方は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
+            wrap: true,
+            size: "xs",
             color: "#0d0d0d",
           },
           {
