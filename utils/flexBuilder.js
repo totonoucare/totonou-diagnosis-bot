@@ -211,7 +211,7 @@ function buildDiagnosisConfirmFlex() {
             text: "※2回目以降の方は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
             wrap: true,
             size: "xs",
-            color: "#0d0d0d",
+            color: "#888888",
           },
           {
             type: "button",
@@ -274,7 +274,7 @@ function buildFollowupConfirmFlex() {
             text: "※ご提案したケアの内容を忘れた方は、まず『ととのうケアガイド』ボタンで確認してからチェックを受けてくださいね！",
             wrap: true,
             size: "xs",
-            color: "#0d0d0d",
+            color: "#888888",
           },
           {
             type: "button",
