@@ -26,20 +26,46 @@ async function safeReplyThenPushFallback({ client, event, text }) {
 
 module.exports = async function consult(event, client) {
   const lineId = event.source.userId;
-  const user = await getUser(lineId);
+
+  // 二重の保険（通常は server 側で事前チェック済み）
+  let user;
+  try {
+    user = await getUser(lineId);
+  } catch (err) {
+    console.error("getUser失敗:", err);
+    await safeReplyThenPushFallback({
+      client, event,
+      text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。"
+    });
+    return;
+  }
 
   if (!isAllowed(user)) {
-    return client.replyMessage(event.replyToken, {
-      type: "text",
-      text: "このAI相談は「スタンダード」またはトライアルの方限定です🙏\nご利用希望は『サービス案内』→ サブスク登録をご確認ください。",
+    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
+    return safeReplyThenPushFallback({
+      client, event,
+      text:
+        "このAI相談は「スタンダード」またはトライアルの方限定です🙏\n" +
+        "ご利用希望は『サービス案内』→ サブスク登録をご確認ください。\n\n" +
+        `🔗 ${subscribeUrl}`
     });
   }
 
   // contexts と 直近2件の followups を取得
-  const [context, followups] = await Promise.all([
-    getContext(lineId),
-    getLastTwoFollowupsByUserId(user.id),
-  ]);
+  let context, followups;
+  try {
+    [context, followups] = await Promise.all([
+      getContext(lineId),
+      getLastTwoFollowupsByUserId(user.id),
+    ]);
+  } catch (err) {
+    console.error("データ取得失敗:", err);
+    await safeReplyThenPushFallback({
+      client, event,
+      text: "データの取得に失敗しました🙏\n少し時間をおいてから、もう一度お試しください。"
+    });
+    return;
+  }
 
   // プロンプト生成
   const messages = buildConsultMessages({
@@ -48,17 +74,25 @@ module.exports = async function consult(event, client) {
     userText: event.message?.text || "",
   });
 
-  // 生成（長引きすぎ対策で適宜値は調整可）
-  const rsp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages,
-    max_completion_tokens: 700,
-  });
+  // 生成
+  try {
+    const rsp = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
+      max_completion_tokens: 700,
+    });
 
-  const text =
-    rsp.choices?.[0]?.message?.content?.trim() ||
-    "（すみません、回答を生成できませんでした）";
+    const text =
+      rsp.choices?.[0]?.message?.content?.trim() ||
+      "（すみません、回答を生成できませんでした）";
 
-  // まずは reply、本当に失敗したら push フォールバック
-  await safeReplyThenPushFallback({ client, event, text });
+    // まずは reply、本当に失敗したら push フォールバック
+    await safeReplyThenPushFallback({ client, event, text });
+  } catch (err) {
+    console.error("OpenAI呼び出し失敗:", err);
+    await safeReplyThenPushFallback({
+      client, event,
+      text: "ただいまAIの応答が混み合っています🙏\n少し時間をおいて、もう一度お試しください。"
+    });
+  }
 };
