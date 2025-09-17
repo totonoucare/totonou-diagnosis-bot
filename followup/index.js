@@ -32,7 +32,7 @@ const multiLabels = {
   habits: "体質改善習慣",
   breathing: "巡りととのう呼吸法",
   stretch: "経絡ストレッチ",
-  tsubo: "あなたのツボケア",
+  tsubo: "指先・ツボほぐし",
   kampo: "漢方薬の活用",
   Q4: "動作テストの変化"
 };
