@@ -90,7 +90,7 @@ module.exports = async function consult(event, client) {
       model: "gpt-4o",
       messages,
       max_completion_tokens: 700,
-      temperature: 0.8,
+      temperature: 0.85,
     });
 
     const text =
