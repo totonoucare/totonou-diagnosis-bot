@@ -1,7 +1,13 @@
 // consult/index.js
 const { OpenAI } = require("openai");
 const buildConsultMessages = require("../utils/buildConsultMessages");
-const { getUser, getContext, getLastTwoFollowupsByUserId } = require("../supabaseMemoryManager");
+const {
+  getUser,
+  getContext,
+  getLastTwoFollowupsByUserId,
+  getLastNConsultMessages,
+  saveConsultMessage,
+} = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -12,10 +18,8 @@ function isAllowed(user) {
 
 async function safeReplyThenPushFallback({ client, event, text }) {
   try {
-    // まずは reply で本回答
     await client.replyMessage(event.replyToken, { type: "text", text });
   } catch (e) {
-    // replyToken期限切れ等 → push でフォールバック
     try {
       await client.pushMessage(event.source.userId, { type: "text", text });
     } catch (e2) {
@@ -26,8 +30,9 @@ async function safeReplyThenPushFallback({ client, event, text }) {
 
 module.exports = async function consult(event, client) {
   const lineId = event.source.userId;
+  const userText = event.message?.text || "";
 
-  // 二重の保険（通常は server 側で事前チェック済み）
+  // ユーザー確認
   let user;
   try {
     user = await getUser(lineId);
@@ -51,12 +56,13 @@ module.exports = async function consult(event, client) {
     });
   }
 
-  // contexts と 直近2件の followups を取得
-  let context, followups;
+  // contexts / followups / チャット履歴（直近3件）を取得
+  let context, followups, recentChats;
   try {
-    [context, followups] = await Promise.all([
+    [context, followups, recentChats] = await Promise.all([
       getContext(lineId),
       getLastTwoFollowupsByUserId(user.id),
+      getLastNConsultMessages(user.id, 3),
     ]);
   } catch (err) {
     console.error("データ取得失敗:", err);
@@ -67,14 +73,18 @@ module.exports = async function consult(event, client) {
     return;
   }
 
-  // プロンプト生成
+  // 🔸 ユーザー発話をログ保存（失敗しても処理継続）
+  try { await saveConsultMessage(user.id, 'user', userText); } catch (e) { console.warn("save user msg fail", e); }
+
+  // プロンプト生成（recentChatsは古→新）
   const messages = buildConsultMessages({
     context,
     followups,
-    userText: event.message?.text || "",
+    userText,
+    recentChats,
   });
 
-  // 生成
+  // 生成＆返信
   try {
     const rsp = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -87,8 +97,12 @@ module.exports = async function consult(event, client) {
       rsp.choices?.[0]?.message?.content?.trim() ||
       "（すみません、回答を生成できませんでした）";
 
-    // まずは reply、本当に失敗したら push フォールバック
+    // 先にユーザーへ返信
     await safeReplyThenPushFallback({ client, event, text });
+
+    // 🔸 アシスタント応答もログ保存（失敗しても無視）
+    try { await saveConsultMessage(user.id, 'assistant', text); } catch (e) { console.warn("save ai msg fail", e); }
+
   } catch (err) {
     console.error("OpenAI呼び出し失敗:", err);
     await safeReplyThenPushFallback({
