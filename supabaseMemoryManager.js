@@ -277,6 +277,33 @@ async function getLastTwoFollowupsByUserId(userId) {
   return { latest, prev };
 }
 
+/* ---------------------------
+   ここから相談履歴（新規）
+--------------------------- */
+
+// ✅ 相談ログ保存（1メッセージ＝1行）
+async function saveConsultMessage(userId, role, message) {
+  const payload = {
+    user_id: String(userId),
+    role: role === 'assistant' ? 'assistant' : 'user',
+    message: String(message || ''),
+  };
+  const { error } = await supabase.from(CONSULT_TABLE).insert(payload);
+  if (error) throw error;
+}
+
+// ✅ 直近N件（デフォ3件）を取得（古→新に並べ替えて返す）
+async function getLastNConsultMessages(userId, n = 3) {
+  const { data, error } = await supabase
+    .from(CONSULT_TABLE)
+    .select('role, message, created_at')
+    .eq('user_id', String(userId))
+    .order('created_at', { ascending: false })
+    .limit(n);
+  if (error) throw error;
+  return (data || []).reverse();
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -292,5 +319,8 @@ module.exports = {
   getSubscribedUsers,
   incrementConsultationCount,
   updateUserFields,
-  getLastTwoFollowupsByUserId  // ← これを追加
+  getLastTwoFollowupsByUserId,
+  // 新規
+  saveConsultMessage,
+  getLastNConsultMessages,
 };
