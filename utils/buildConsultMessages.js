@@ -20,11 +20,11 @@ function normalizeAdvice(advice) {
     const body = String(card?.body || "");
     const h = header;
 
-    if (/体質改善|習慣/.test(h))      { r.habits = body;    continue; }
-    if (/巡りととのう呼吸法/.test(h))                { r.breathing = body; continue; }
-    if (/経絡ストレッチ/.test(h))         { r.stretch = body;   continue; }
-    if (/指先・ツボほぐし/.test(h))                { r.tsubo = body;     continue; }
-    if (/おすすめ漢方薬/.test(h))               { r.kampo = body;     continue; }
+    if (/体質改善|習慣/.test(h))             { r.habits = body;    continue; }
+    if (/巡りととのう呼吸法|呼吸/.test(h))     { r.breathing = body; continue; }
+    if (/経絡ストレッチ|ストレッチ/.test(h))   { r.stretch = body;   continue; }
+    if (/指先・ツボほぐし|ツボ/.test(h))       { r.tsubo = body;     continue; }
+    if (/おすすめ漢方薬|漢方/.test(h))        { r.kampo = body;     continue; }
   }
   return r;
 }
@@ -64,20 +64,21 @@ function toJSON(obj) {
 /** スコアの見方（followup/responseSender.js の仕様に基づく）
  * 数値は 1 が良好、数値が大きいほど「乱れが強い」。
  * Q3の柱は「継続 / 継続中 / 時々 / 未着手」で、左ほど実践できている。
+ * motion_level は「その人に提案している stretch（特定動作）そのもののつらさ」を数値化したもの。
  */
 function buildScoreLegend() {
   const lines = [
     "▼ ととのい度チェックとは？",
-    "・ユーザーが主訴（symptom）のつらさ、睡眠・食事の乱れ・ストレスの強さ、advice（セルフケア提案：habits（体質改善習慣）／breathing（巡りととのう呼吸法）／stretch（経絡ストレッチ）／tsubo（指先・ツボほぐし）／kampo（おすすめ漢方薬））の実施状況を自己申告する。",
-    "・同時に、主訴（symptom）のつらさや睡眠・食事・ストレス・特定動作の辛さを数値で答える。（※特定動作とは、stretchの動きであり、stretchやtsuboのセルフケアで緩和する想定）",
-    "・つまり「セルフケアの実施度」と「症状の変化」をセットで振り返る仕組み。",
-    "",    
+    "・『症状の強さ（symptom_level / motion_level）』と『生活リズム（sleep / meal / stress）』を数値で自己申告。",
+    "・同時に、提案セルフケア（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
+    "・つまり『症状の変化（数値）』×『セルフケア実施度（段階）』をペアで記録し、改善の手応えを見える化する仕組み。",
+    "",
     "▼ スコアの見方",
     "・数値スコア（1〜5）は 1 が良好、数値が大きいほど“乱れ”や“つらさ”が強い。",
-    "・Q3〈習慣/呼吸法/ストレッチ/ツボ/漢方〉は段階評価（継続/継続中/時々/未着手）。左ほど実施できており、未着手が最も弱い。",
+    "・Q3〈habits / breathing / stretch / tsubo / kampo〉は段階評価（継続 / 継続中 / 時々 / 未着手）。左ほど実施できている。",
     "",
     "Q1: symptom_level（主訴のつらさ） … 1=軽い/支障なし ←→ 5=強い/生活に支障",
-    "Q2: sleep（睡眠の乱れ） … 1=よく眠れている ←→ 5=かなり乱れている",
+    "Q2: sleep（睡眠の乱れ） … 1=整っている ←→ 5=かなり乱れている",
     "Q2: meal（食事の乱れ） … 1=整っている ←→ 5=かなり乱れている",
     "Q2: stress（ストレスの強さ） … 1=軽い ←→ 5=かなり強い",
     "Q3: habits（体質改善習慣） … 継続 / 継続中 / 時々 / 未着手",
@@ -85,7 +86,13 @@ function buildScoreLegend() {
     "Q3: stretch（経絡ストレッチ） … 継続 / 継続中 / 時々 / 未着手",
     "Q3: tsubo（指先・ツボほぐし） … 継続 / 継続中 / 時々 / 未着手",
     "Q3: kampo（おすすめ漢方薬） … 継続 / 継続中 / 時々 / 未着手",
-    "Q4: motion_level（動作のつらさ/ぎこちなさ） … 1=軽い/支障なし ←→ 5=強い/支障大",
+    "Q4: motion_level（特定動作のつらさ） … 1=軽い/支障なし ←→ 5=強い/支障大",
+    "　※ここでの『特定動作』は、その人に提案している stretch の動きそのもの。",
+    "",
+    "▼ 項目どうしの関係（AIはここを意識して因果を推定）",
+    "・habits ↔ sleep / meal / stress：habitsの実践は生活リズム（睡眠・食事・ストレス）を整えやすく、逆に生活リズムの乱れはhabits実践を阻害しやすい。",
+    "・stretch / tsubo ↔ motion_level：この2つのセルフケアは、motion_level（特定動作のつらさ）の低下に“直接”効く想定。motion_levelの悪化は、stretch/tsubo未実施や負荷過多のサインになりやすい。",
+    "・breathing は自律調整の底上げ要素として働きやすく、sleep・stress・symptom_level の改善を後押しすることが多い。",
   ];
   return lines.join("\n");
 }
@@ -121,8 +128,8 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "",
     "【回答方針】",
     "・上記の体質・所見、直近のととのい度チェックの傾向、最近の会話内容を踏まえ、ユーザーのタイプに寄り添った相談対応や行動提案を返すこと。",
-    "・セルフケアの提案をする場合は adviceの内容（生活習慣／経絡ストレッチ／指先・ツボほぐし／呼吸法／おすすめ市販漢方）の範囲で、タイミング・回数・目安時間・注意点を具体的に。",
-    "・adviceの内容の丸写しは避け、相談内容やととのい度チェックの状況・季節などに応じた、応用・優先順位・実践の工夫に寄せること。",
+    "・セルフケアの提案をする場合は advice の内容（生活習慣／経絡ストレッチ／指先・ツボほぐし／呼吸法／おすすめ市販漢方）の範囲で、タイミング・回数・目安時間・注意点を具体的に。",
+    "・advice の丸写しは避け、相談内容やととのい度チェックの状況・季節などに応じた、応用・優先順位・実践の工夫に寄せること。",
     "・専門用語は必要に応じて短く翻訳・補足すること。",
     "・急性/重篤が疑われる場合は受診を促す。体質傾向と訴えが大きく乖離するなら、必要に応じて再評価（ととのえ方分析）を丁寧に提案。",
     "・出力はLINEで読みやすい短文＋改行中心（長文は小見出し＋箇条書き最小限）＋絵文字を適宜入れる。※不自然な記号（*や#など）は使わない。",
