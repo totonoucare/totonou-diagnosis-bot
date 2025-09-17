@@ -3,6 +3,7 @@ const supabase = require('./supabaseClient');
 const CONTEXT_TABLE = 'contexts';
 const USERS_TABLE = 'users';
 const FOLLOWUP_TABLE = 'followups';
+const CONSULT_TABLE = 'consult_histories'; // ← 追加
 
 // JST現在時刻（ISO文字列）を取得
 function getJSTISOStringNow() {
