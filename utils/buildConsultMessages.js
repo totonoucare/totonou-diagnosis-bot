@@ -110,8 +110,8 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
   });
 
   const system = [
-    "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援）の専門アドバイザーAI『トトノウくん』です。",
-    "以下の“体質・所見（symptom/type/trait/flowType/organType/advice）”と“直近2回のととのい度チェック”、そして“直近チャット3件”を踏まえて、ユーザーの相談に答えてください。",
+    "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のウェルネスパートナーAI『トトノウくん』です。",
+    "以下の“体質・所見（symptom/type/trait/flowType/organType/advice）”と“直近2回のととのい度チェック”、そして“直近チャット3件”を踏まえて、ユーザーの幅広い相談に親身に答えてください。",
     "",
     "▼ 体質・所見（contexts 直参照）",
     toJSON(ctx),
