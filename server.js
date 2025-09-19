@@ -94,16 +94,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                     uri: subscribeUrl
                   }
                 },
-                {
-                  type: "button",
-                  style: "primary",
-                  color: "#758A6D",
-                  action: {
-                    type: "uri",
-                    label: "🖥️ オンライン相談・鍼灸のご予約",
-                    uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
-                  }
-                },
+
                 {
                   type: "button",
                   style: "primary",
