@@ -540,7 +540,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: '📊 ととのい度チェック',
+            text: '📊ととのい度チェックのご案内',
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
@@ -556,7 +556,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: 'こんにちは！お体のケアはどんな様子ですか？\n今週も『ととのい度チェック』で、現状のととのいスコアやAI見直し提案をチェックしてみましょう！🌿',
+            text: 'こんにちは！お体の調子はですか？\n今週の『ととのい度チェック』がまだでしたら、現状のととのいスコアと見直しアドバイスをチェックしてみましょう！🌿',
             wrap: true,
             color: '#333333',
             size: 'md',
