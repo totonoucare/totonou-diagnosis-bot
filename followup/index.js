@@ -149,7 +149,7 @@ function buildResultFlexFromSections(sections) {
             type: "box",
             layout: "vertical",
             contents: [
-              { type: "text", text: "【 🚀 次にやってみてほしいこと 】", weight: "bold", size: "sm", color: "#B78949" },
+              { type: "text", text: "【 🚀 次のステップ 】", weight: "bold", size: "sm", color: "#B78949" },
               { type: "text", text: nextText, wrap: true, size: "md", color: "#333333" }
             ]
           },
