@@ -121,11 +121,11 @@ function computeScore(ans) {
 function pickPraise(prev, cur) {
   if (!prev) return [];
   const diffs = [
-    { key: "symptom_level", label: "主訴",     d: prev.symptom_level - cur.symptom_level },
+    { key: "symptom_level", label: "不調レベル",     d: prev.symptom_level - cur.symptom_level },
     { key: "sleep",         label: "睡眠",     d: prev.sleep - cur.sleep },
     { key: "meal",          label: "食事",     d: prev.meal - cur.meal },
     { key: "stress",        label: "ストレス", d: prev.stress - cur.stress },
-    { key: "motion_level",  label: "動作",     d: prev.motion_level - cur.motion_level },
+    { key: "motion_level",  label: "動作テスト",     d: prev.motion_level - cur.motion_level },
   ];
   return diffs.filter(x => x.d > 0).sort((a,b) => b.d - a.d).slice(0, 3); // 3件まで拾う
 }
@@ -136,7 +136,7 @@ function pickBottleneck(cur) {
     { key: "meal",         label: "食事",     v: cur.meal },
     { key: "sleep",        label: "睡眠",     v: cur.sleep },
     { key: "stress",       label: "ストレス", v: cur.stress },
-    { key: "motion_level", label: "動作",     v: cur.motion_level },
+    { key: "motion_level", label: "動作テスト",     v: cur.motion_level },
   ];
   return arr.filter(c => c.v >= 3).sort((a,b) => b.v - a.v)[0] || null;
 }
