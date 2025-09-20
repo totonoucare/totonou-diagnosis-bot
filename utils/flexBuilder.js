@@ -260,7 +260,7 @@ function buildFollowupConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "こんにちは！\n今回もチェックに取り組んでくださりありがとうございます✨",
+            text: "こんにちは！\n今回もチェックへの取り組み素晴らしいです✨\n一歩ずつ一緒に改善していきましょう！",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
