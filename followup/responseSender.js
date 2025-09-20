@@ -121,11 +121,11 @@ function computeScore(ans) {
 function pickPraise(prev, cur) {
   if (!prev) return [];
   const diffs = [
-    { key: "symptom_level", label: "不調レベル",     d: prev.symptom_level - cur.symptom_level },
+    { key: "symptom_level", label: "主訴",     d: prev.symptom_level - cur.symptom_level },
     { key: "sleep",         label: "睡眠",     d: prev.sleep - cur.sleep },
     { key: "meal",          label: "食事",     d: prev.meal - cur.meal },
     { key: "stress",        label: "ストレス", d: prev.stress - cur.stress },
-    { key: "motion_level",  label: "動作テスト",     d: prev.motion_level - cur.motion_level },
+    { key: "motion_level",  label: "動作",     d: prev.motion_level - cur.motion_level },
   ];
   return diffs.filter(x => x.d > 0).sort((a,b) => b.d - a.d).slice(0, 3); // 3件まで拾う
 }
@@ -136,7 +136,7 @@ function pickBottleneck(cur) {
     { key: "meal",         label: "食事",     v: cur.meal },
     { key: "sleep",        label: "睡眠",     v: cur.sleep },
     { key: "stress",       label: "ストレス", v: cur.stress },
-    { key: "motion_level", label: "動作テスト",     v: cur.motion_level },
+    { key: "motion_level", label: "動作",     v: cur.motion_level },
   ];
   return arr.filter(c => c.v >= 3).sort((a,b) => b.v - a.v)[0] || null;
 }
@@ -145,8 +145,8 @@ function pickBottleneck(cur) {
 function reasonForPillar(pillarKey) {
   switch (pillarKey) {
     case "habits":
-      // habits ↔ sleep/meal/stress
-      return "生活の土台を整えると、睡眠・食事・ストレスのバランスが同時に噛み合いはじめます。";
+      // habits ↔ sleep/meal/stress（3要素セットを強調）
+      return "生活の土台づくり（睡眠・食事・活動習慣）をまとめて整えると、全体のバランスが噛み合いはじめます。";
     case "breathing":
       // breathing = stress改善＆自律調整の底上げ
       return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、自律神経に働きかけてストレス反応を鎮め、全体の調整力を底上げします。";
@@ -155,7 +155,7 @@ function reasonForPillar(pillarKey) {
       return "“今いちばん張りを感じる動作”で伸展される経絡ラインを、ストレッチで直接伸ばします。ラインの通りが良くなることで動作がラクになり、関連の負担も軽くなります。";
     case "tsubo":
       // tsubo = その経絡ライン上の井穴・要穴をほぐす → motion_levelを直接改善
-      return "その動作で張る経絡ライン上の井穴や要穴を、指先からやさしくほぐします。ライン全体の滞りが緩み、motion_levelの改善に直結します。";
+      return "その動作で張る経絡ライン上の井穴や要穴を、指先からやさしくほぐします。ライン全体の滞りが緩み、動作のひっかかりが和らぎます。";
     case "kampo":
       return "他の柱を十分に整えた上で、足りない部分を漢方で補う“最後の一手”です。";
     default:
@@ -198,7 +198,7 @@ function buildKeepDoing(cur, prev, score) {
     }
     if (k === "motion_level" && (isActive(cur.stretch) || isActive(cur.tsubo))) {
       const which = isActive(cur.stretch) ? "ストレッチ" : "ツボほぐし";
-      items.push(`${which}の継続が「その動作で張る経絡ライン」の通りを良くし、動作のつらさ（motion_level）低下につながっています。`);
+      items.push(`${which}の継続が「その動作で張る経絡ライン」の通りを良くし、動作のつらさの低下につながっています。`);
       continue;
     }
     if (k === "symptom" && (isActive(cur.habits) || isActive(cur.breathing))) {
@@ -229,59 +229,48 @@ function buildKeepDoing(cur, prev, score) {
 
 /** 次の一歩（どの柱を前面に）：
  * 1) 未着手優先（ただし漢方は最後尾）
- * 2) ボトルネック対応：stress→breathing / meal・sleep→habits / motion→stretch→tsubo
+ * 2) ボトルネック対応：meal/sleep→habits、stress→breathing、motion→stretch→tsubo
  * 3) 漢方の“最終手段”ゲート：他の柱が弱くなく、かつ score<80 のときだけ許可
  */
 function chooseNextPillar(ans, score) {
   const weak = (v) => v === "未着手" || v === "時々";
 
-  // 1) 未着手優先（kampoは最後に評価）
-  const notStartedOrder = ["breathing", "stretch", "tsubo", "habits", "kampo"];
+  // 1) 未着手優先（kampoは最後に評価）※順序を habits → breathing → stretch → tsubo → kampo に変更
+  const notStartedOrder = ["habits", "breathing", "stretch", "tsubo", "kampo"];
   const firstNotStarted = notStartedOrder.find(k => weak(ans[k]));
   if (firstNotStarted && firstNotStarted !== "kampo") {
     return firstNotStarted;
   }
 
   // 2) ボトルネックに基づく優先度
-  if (ans.stress >= 3 && !weak(ans.breathing)) {
-    // 既にやれているなら次候補へ回す
-  } else if (ans.stress >= 3) {
+  // a) meal/sleep 高め → habits 最優先
+  if ((ans.meal >= 3 || ans.sleep >= 3) && weak(ans.habits)) {
+    return "habits";
+  }
+  // b) stress 高め → breathing
+  if (ans.stress >= 3 && weak(ans.breathing)) {
     return "breathing";
   }
-
+  // c) motion 高め → stretch → tsubo
   if (ans.motion_level >= 3) {
-    if (!weak(ans.stretch)) {
-      // 既にやれているなら次候補へ
-    } else {
-      return "stretch";
-    }
-    if (!weak(ans.tsubo)) {
-      // 既にやれているなら次候補へ
-    } else {
-      return "tsubo";
-    }
+    if (weak(ans.stretch)) return "stretch";
+    if (weak(ans.tsubo))   return "tsubo";
+  }
+  // d) meal/sleep 高いが habits は既にある程度できている → 次候補へ
+  if ((ans.meal >= 3 || ans.sleep >= 3)) {
+    if (weak(ans.breathing)) return "breathing";
+    if (weak(ans.stretch))   return "stretch";
+    if (weak(ans.tsubo))     return "tsubo";
   }
 
-  if (ans.meal >= 3 || ans.sleep >= 3) {
-    if (!weak(ans.habits)) {
-      // 既にやれているなら次候補へ
-    } else {
-      return "habits";
-    }
-    if (weak(ans.breathing))  return "breathing";
-    if (weak(ans.stretch))    return "stretch";
-    if (weak(ans.tsubo))      return "tsubo";
-  }
-
-  // 3) ここまでで候補が無い＝他の柱はある程度やれている
+  // 3) 他が概ねできていて score<80 → kampo（最終手段）
   const othersOk =
     !isWeak(ans.habits) && !isWeak(ans.breathing) && !isWeak(ans.stretch) && !isWeak(ans.tsubo);
-
   if (othersOk && score < 80 && isWeak(ans.kampo)) {
     return "kampo";
   }
 
-  // 特に乱れが目立たず、未着手もない → 土台強化の habits をデフォルト
+  // 4) デフォルトは土台強化（habits）
   return "habits";
 }
 
@@ -388,7 +377,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
       : delta < 0        ? `前回より ${delta} 点の低下です。${bottleneckTxt || "無理なく一箇所だけ整え直しましょう。"}`
                          : "前回と同じスコア（現状維持）です。小さな積み重ねを続けましょう。";
 
-    // 次の一歩（“漢方は最終手段” ルール込み）
+    // 次の一歩（“漢方は最終手段” ルール込み）※新しい順序で選定
     const nextPillar = chooseNextPillar(curN, score);
 
     // nextStep テキスト：因果の理由を前置きし、必要なら抜粋・補足
@@ -422,6 +411,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 - 「score_header」「diff_line」は文字加工せず、そのまま入れる
 - 「keep_doing」「next_steps」はリストで返す（各要素は記号なしの文章）
 - keep_doing は **必ず** 与えた候補の範囲で作る（内容の削除・追加をしない、軽い言い換えのみ可）
+- **pillar が「体質改善習慣」の場合、睡眠・食事・活動習慣の3要素に必ず触れること**
 `.trim();
 
     const userJson = `
