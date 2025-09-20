@@ -141,7 +141,7 @@ function pickBottleneck(cur) {
   return arr.filter(c => c.v >= 3).sort((a,b) => b.v - a.v)[0] || null;
 }
 
-/** pillarごとの“因果ベース理由文” */
+/** pillarごとの“因果ベース理由文”（motion＝経絡ライン由来を明示） */
 function reasonForPillar(pillarKey) {
   switch (pillarKey) {
     case "habits":
@@ -149,13 +149,13 @@ function reasonForPillar(pillarKey) {
       return "生活の土台を整えると、睡眠・食事・ストレスのバランスが同時に噛み合いはじめます。";
     case "breathing":
       // breathing = stress改善＆自律調整の底上げ
-      return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、深層筋活性や自律神経の安定に直結。乱れたストレス反応を鎮め、全体の調整力を底上げします。";
+      return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、自律神経に働きかけてストレス反応を鎮め、全体の調整力を底上げします。";
     case "stretch":
-      // stretch = motion_levelの直接改善
-      return "動きのつらさに直結する経絡ラインのストレッチ。動作の抵抗そのものを直接下げていきます。";
+      // stretch = その動作で張る経絡ラインを伸ばす → motion_levelを直接改善
+      return "“今いちばん張りを感じる動作”で伸展される経絡ラインを、ストレッチで直接伸ばします。ラインの通りが良くなることで動作がラクになり、関連の負担も軽くなります。";
     case "tsubo":
-      // tsubo = motion_levelの直接改善
-      return "指先ほぐしやツボほぐしは局所と全体の連動を促し、動作のひっかかり（motion_level）を直接和らげます。";
+      // tsubo = その経絡ライン上の井穴・要穴をほぐす → motion_levelを直接改善
+      return "その動作で張る経絡ライン上の井穴や要穴を、指先からやさしくほぐします。ライン全体の滞りが緩み、motion_levelの改善に直結します。";
     case "kampo":
       return "他の柱を十分に整えた上で、足りない部分を漢方で補う“最後の一手”です。";
     default:
@@ -163,7 +163,9 @@ function reasonForPillar(pillarKey) {
   }
 }
 
-/** keep_doing 候補を pillar × 改善差分 から自動生成（最大3件） */
+/** keep_doing 候補を pillar × 改善差分 から自動生成（最大3件）
+ *  motion_level 改善時は「その動作で張る経絡ライン」→ stretch/tsubo の因果を明示
+ */
 function buildKeepDoing(cur, prev, score) {
   const items = [];
   const diffs = prev ? {
@@ -183,20 +185,20 @@ function buildKeepDoing(cur, prev, score) {
     if (items.length >= 3) break;
 
     if (k === "stress" && isActive(cur.breathing)) {
-      items.push("呼吸法の継続がストレスの落ち着きに表れてきています。無理なく1〜2分でも続けましょう。");
+      items.push("呼吸法の継続がストレスの落ち着きに表れています。1〜2分でも続ける価値あり。");
       continue;
     }
     if (k === "sleep" && isActive(cur.habits)) {
-      items.push("体質改善習慣の継続が睡眠の整いに反映されています。この調子で土台づくりを。");
+      items.push("体質改善習慣の継続が睡眠の整いに反映されています。土台づくりをこの調子で。");
       continue;
     }
     if (k === "meal" && isActive(cur.habits)) {
-      items.push("体質改善習慣を続けたことが食事の乱れを抑える助けになっています。");
+      items.push("体質改善習慣を続けたことで、食の乱れに引きずられにくくなっています。");
       continue;
     }
     if (k === "motion_level" && (isActive(cur.stretch) || isActive(cur.tsubo))) {
       const which = isActive(cur.stretch) ? "ストレッチ" : "ツボほぐし";
-      items.push(`${which}の継続が動作のつらさ（motion_level）の軽減につながっています。`);
+      items.push(`${which}の継続が「その動作で張る経絡ライン」の通りを良くし、動作のつらさ（motion_level）低下につながっています。`);
       continue;
     }
     if (k === "symptom" && (isActive(cur.habits) || isActive(cur.breathing))) {
@@ -206,13 +208,13 @@ function buildKeepDoing(cur, prev, score) {
     }
   }
 
-  // 2) 改善差分が拾えなかった場合でも、現在の pillar 継続を因果で承認（優先：habits→breathing→stretch/tsubo）
+  // 2) 差分が少なくても、現在の pillar 継続を因果で承認（優先：habits→breathing→stretch/tsubo）
   if (items.length < 2) {
     if (isActive(cur.habits)) items.push("体質改善習慣の継続は睡眠・食事・ストレスの土台づくりに直結しています。");
     if (items.length < 3 && isActive(cur.breathing)) items.push("呼吸法の継続は自律神経の安定を支え、日中の過ごしやすさに効いてきます。");
     if (items.length < 3 && (isActive(cur.stretch) || isActive(cur.tsubo))) {
       const which = isActive(cur.stretch) ? "ストレッチ" : "ツボほぐし";
-      items.push(`${which}の継続は動作のラクさを保つベースになります。`);
+      items.push(`${which}の継続は「その動作で張る経絡ライン」を整え、ラクに動ける状態を保ちます。`);
     }
   }
 
@@ -222,7 +224,6 @@ function buildKeepDoing(cur, prev, score) {
     items.push("漢方は補助として良い使い方ができています。主軸は生活・呼吸・動きの継続で。");
   }
 
-  // 上限3件に制限
   return items.slice(0, 3);
 }
 
