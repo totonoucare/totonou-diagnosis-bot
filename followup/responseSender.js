@@ -121,11 +121,11 @@ function computeScore(ans) {
 function pickPraise(prev, cur) {
   if (!prev) return [];
   const diffs = [
-    { key: "symptom_level", label: "主訴",     d: prev.symptom_level - cur.symptom_level },
+    { key: "symptom_level", label: "不調レベル",     d: prev.symptom_level - cur.symptom_level },
     { key: "sleep",         label: "睡眠",     d: prev.sleep - cur.sleep },
     { key: "meal",          label: "食事",     d: prev.meal - cur.meal },
     { key: "stress",        label: "ストレス", d: prev.stress - cur.stress },
-    { key: "motion_level",  label: "動作",     d: prev.motion_level - cur.motion_level },
+    { key: "motion_level",  label: "動作テスト",     d: prev.motion_level - cur.motion_level },
   ];
   return diffs.filter(x => x.d > 0).sort((a,b) => b.d - a.d).slice(0, 3); // 3件まで拾う
 }
@@ -136,7 +136,7 @@ function pickBottleneck(cur) {
     { key: "meal",         label: "食事",     v: cur.meal },
     { key: "sleep",        label: "睡眠",     v: cur.sleep },
     { key: "stress",       label: "ストレス", v: cur.stress },
-    { key: "motion_level", label: "動作",     v: cur.motion_level },
+    { key: "motion_level", label: "動作テスト",     v: cur.motion_level },
   ];
   return arr.filter(c => c.v >= 3).sort((a,b) => b.v - a.v)[0] || null;
 }
@@ -401,16 +401,16 @@ async function sendFollowupResponse(userId, followupAnswers) {
   "lead": "冒頭ひとこと（2〜3文、親しみやすく、絵文字も使って）",
   "score_header": "ヘッダ行（こちらで計算した header をそのまま入れる）",
   "diff_line": "前回比の短評（こちらで渡す diffLine をそのまま入れる）",
-  "keep_doing": ["このまま続けると良い点（2〜3項目）。必ず与えられた keep_doing候補 から選び、言い換えるだけにする。pillar名と因果を残す。"],
+  "keep_doing": ["このまま続けると良い点（基本2項目、内容が明確に異なる場合のみ3項目）。与えられた keep_doing候補 を必ず参照し、意味が重複・近似する内容は1つに『統合要約』して出す。pillar名（例：呼吸法・体質改善習慣・ストレッチ・ツボ）と因果（何に効いているか）を残す。視点が被らないよう、原因（行動）／効果（結果）／体感（ユーザー利益）を取り混ぜて簡潔に。語尾や主語の反復は避け、冗長表現を削る。"],
   "next_steps": ["次にやってみてほしいこと（1〜2項目、必ず渡した nextStepText を自然な日本語にして含める。因果の理由も添える）"],
   "footer": "締めのひとこと。最後に注意書き（※本サービスは医療行為ではなくセルフケア支援です。）も含める。"
 }
 
 制約：
-- 全体で全角250〜350字を目安に（リスト項目は短文）
+- 全体で全角250〜350字を目安に（リスト項目は短文）。keep_doing は基本2件（最大3件）。似た内容は必ず統合し、同じ観点の重複は禁止。
 - 「score_header」「diff_line」は文字加工せず、そのまま入れる
 - 「keep_doing」「next_steps」はリストで返す（各要素は記号なしの文章）
-- keep_doing は **必ず** 与えた候補の範囲で作る（内容の削除・追加をしない、軽い言い換えのみ可）
+- keep_doing は与えた候補の範囲で**統合・要約**して作る（新規内容の追加は不可、ただし冗長な重複は統合して1つにまとめる）
 - **pillar が「体質改善習慣」の場合、睡眠・食事・活動習慣の3要素に必ず触れること**
 `.trim();
 
