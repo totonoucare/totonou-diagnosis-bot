@@ -58,13 +58,13 @@ function readAdvice(adviceInput) {
 function normalizeFollowup(ans = {}) {
   const n = (v, def) => (v === null || v === undefined || v === "" ? def : Number(v));
   return {
-    // Q1（general_level は廃止）
+    // Q1
     symptom_level: n(ans.symptom_level, 3),
     // Q2
     sleep:  n(ans.sleep, 3),
     meal:   n(ans.meal, 3),
     stress: n(ans.stress, 3),
-    // Q3（テキストのまま）
+    // Q3
     habits:    ans.habits ?? "未着手",
     breathing: ans.breathing ?? "未着手",
     stretch:   ans.stretch ?? "未着手",
@@ -79,6 +79,7 @@ function normalizeFollowup(ans = {}) {
 // ※ Q3は「漢方薬」をスコア計算から除外（careValsに含めない）
 const careMap = { "継続": 0, "継続中": 0, "時々": 1, "未着手": 2 };
 const isWeak = (v) => v === "未着手" || v === "時々";
+const isActive = (v) => v === "継続" || v === "継続中";
 
 function adherencePenalty(ans) {
   let add = 0;
@@ -93,9 +94,7 @@ function adherencePenalty(ans) {
   return add;
 }
 
-/** 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正
- *  Q1は general_level 廃止に伴い、「主訴」のみで同等ウエイトになるよう係数を倍に調整。
- */
+/** 減点法：Q1(35%) + Q2(35%) + Q3(20%) + Q4(10%) + アドヒアランス修正 */
 function computeScore(ans) {
   let penalty = 0;
   // Q1（symptom_level のみ。最大減点28を維持するため係数7.0）
@@ -128,7 +127,7 @@ function pickPraise(prev, cur) {
     { key: "stress",        label: "ストレス", d: prev.stress - cur.stress },
     { key: "motion_level",  label: "動作",     d: prev.motion_level - cur.motion_level },
   ];
-  return diffs.filter(x => x.d > 0).sort((a,b) => b.d - a.d).slice(0, 2);
+  return diffs.filter(x => x.d > 0).sort((a,b) => b.d - a.d).slice(0, 3); // 3件まで拾う
 }
 
 // ===== ボトルネック（今回値が高い=乱れ） =====
@@ -153,7 +152,7 @@ function reasonForPillar(pillarKey) {
       return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、深層筋活性や自律神経の安定に直結。乱れたストレス反応を鎮め、全体の調整力を底上げします。";
     case "stretch":
       // stretch = motion_levelの直接改善
-      return "動きのつらさに直結する経絡ラインのストレッチ。ストレッチで動作の抵抗そのものを直接下げていきます。";
+      return "動きのつらさに直結する経絡ラインのストレッチ。動作の抵抗そのものを直接下げていきます。";
     case "tsubo":
       // tsubo = motion_levelの直接改善
       return "指先ほぐしやツボほぐしは局所と全体の連動を促し、動作のひっかかり（motion_level）を直接和らげます。";
@@ -162,6 +161,69 @@ function reasonForPillar(pillarKey) {
     default:
       return "";
   }
+}
+
+/** keep_doing 候補を pillar × 改善差分 から自動生成（最大3件） */
+function buildKeepDoing(cur, prev, score) {
+  const items = [];
+  const diffs = prev ? {
+    sleep:        prev.sleep        - cur.sleep,
+    meal:         prev.meal         - cur.meal,
+    stress:       prev.stress       - cur.stress,
+    motion_level: prev.motion_level - cur.motion_level,
+    symptom:      prev.symptom_level- cur.symptom_level,
+  } : null;
+
+  // 1) 差分に紐づく pillar 因果（改善が大きい順）
+  const sortedKeys = diffs
+    ? Object.entries(diffs).sort((a,b) => b[1]-a[1]).map(([k])=>k).filter(k => diffs[k] > 0)
+    : [];
+
+  for (const k of sortedKeys) {
+    if (items.length >= 3) break;
+
+    if (k === "stress" && isActive(cur.breathing)) {
+      items.push("呼吸法の継続がストレスの落ち着きに表れてきています。無理なく1〜2分でも続けましょう。");
+      continue;
+    }
+    if (k === "sleep" && isActive(cur.habits)) {
+      items.push("体質改善習慣の継続が睡眠の整いに反映されています。この調子で土台づくりを。");
+      continue;
+    }
+    if (k === "meal" && isActive(cur.habits)) {
+      items.push("体質改善習慣を続けたことが食事の乱れを抑える助けになっています。");
+      continue;
+    }
+    if (k === "motion_level" && (isActive(cur.stretch) || isActive(cur.tsubo))) {
+      const which = isActive(cur.stretch) ? "ストレッチ" : "ツボほぐし";
+      items.push(`${which}の継続が動作のつらさ（motion_level）の軽減につながっています。`);
+      continue;
+    }
+    if (k === "symptom" && (isActive(cur.habits) || isActive(cur.breathing))) {
+      const base = isActive(cur.habits) ? "生活の土台づくり" : "呼吸の整え";
+      items.push(`${base}が主訴の軽減にも波及しています。良い流れを保ちましょう。`);
+      continue;
+    }
+  }
+
+  // 2) 改善差分が拾えなかった場合でも、現在の pillar 継続を因果で承認（優先：habits→breathing→stretch/tsubo）
+  if (items.length < 2) {
+    if (isActive(cur.habits)) items.push("体質改善習慣の継続は睡眠・食事・ストレスの土台づくりに直結しています。");
+    if (items.length < 3 && isActive(cur.breathing)) items.push("呼吸法の継続は自律神経の安定を支え、日中の過ごしやすさに効いてきます。");
+    if (items.length < 3 && (isActive(cur.stretch) || isActive(cur.tsubo))) {
+      const which = isActive(cur.stretch) ? "ストレッチ" : "ツボほぐし";
+      items.push(`${which}の継続は動作のラクさを保つベースになります。`);
+    }
+  }
+
+  // 3) 漢方は“最終手段”：他柱が概ねできていてスコア<80、かつ継続時のみ控えめに承認（枠が余っていれば）
+  const othersOk = isActive(cur.habits) && isActive(cur.breathing) && (isActive(cur.stretch) || isActive(cur.tsubo));
+  if (items.length < 3 && othersOk && score < 80 && isActive(cur.kampo)) {
+    items.push("漢方は補助として良い使い方ができています。主軸は生活・呼吸・動きの継続で。");
+  }
+
+  // 上限3件に制限
+  return items.slice(0, 3);
 }
 
 /** 次の一歩（どの柱を前面に）：
@@ -180,24 +242,41 @@ function chooseNextPillar(ans, score) {
   }
 
   // 2) ボトルネックに基づく優先度
-  if (ans.stress >= 3 && weak(ans.breathing)) return "breathing";
-  if (ans.motion_level >= 3) {
-    if (weak(ans.stretch)) return "stretch";
-    if (weak(ans.tsubo))   return "tsubo";
+  if (ans.stress >= 3 && !weak(ans.breathing)) {
+    // 既にやれているなら次候補へ回す
+  } else if (ans.stress >= 3) {
+    return "breathing";
   }
+
+  if (ans.motion_level >= 3) {
+    if (!weak(ans.stretch)) {
+      // 既にやれているなら次候補へ
+    } else {
+      return "stretch";
+    }
+    if (!weak(ans.tsubo)) {
+      // 既にやれているなら次候補へ
+    } else {
+      return "tsubo";
+    }
+  }
+
   if (ans.meal >= 3 || ans.sleep >= 3) {
-    if (weak(ans.habits))     return "habits";
+    if (!weak(ans.habits)) {
+      // 既にやれているなら次候補へ
+    } else {
+      return "habits";
+    }
     if (weak(ans.breathing))  return "breathing";
     if (weak(ans.stretch))    return "stretch";
     if (weak(ans.tsubo))      return "tsubo";
   }
 
   // 3) ここまでで候補が無い＝他の柱はある程度やれている
-  //    → スコアが低い間（<80）のみ、初めて漢方を候補に
   const othersOk =
-    !weak(ans.habits) && !weak(ans.breathing) && !weak(ans.stretch) && !weak(ans.tsubo);
+    !isWeak(ans.habits) && !isWeak(ans.breathing) && !isWeak(ans.stretch) && !isWeak(ans.tsubo);
 
-  if (othersOk && score < 80 && weak(ans.kampo)) {
+  if (othersOk && score < 80 && isWeak(ans.kampo)) {
     return "kampo";
   }
 
@@ -224,7 +303,6 @@ async function callGPTJson(systemPrompt, userPrompt) {
     if (raw.startsWith("```")) {
       raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
     }
-
     try {
       return JSON.parse(raw);
     } catch {
@@ -321,6 +399,9 @@ async function sendFollowupResponse(userId, followupAnswers) {
         ? `今回の課題は「${pillarLabelMap[nextPillar]}」。${reason}${softHint ? " " + softHint : ""} 次のケア案：${base}`
         : `今回は「${pillarLabelMap[nextPillar]}」を少しだけ。${reason}${softHint ? " " + softHint : ""}`;
 
+    // keep_doing 候補（pillar × 差分の因果承認）を生成
+    const keepDoingHints = buildKeepDoing(curN, prevN, score);
+
     // ====== JSON構造出力プロンプト ======
     const systemJson = `
 あなたは「ととのうAI」。東洋医学の体質ケアに基づく“褒めて伸ばす”フィードバックを、日本語で**有効なJSON**のみ出力します。前後に余計なテキストは書かないこと。
@@ -330,7 +411,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
   "lead": "冒頭ひとこと（2〜3文、親しみやすく、絵文字も使って）",
   "score_header": "ヘッダ行（こちらで計算した header をそのまま入れる）",
   "diff_line": "前回比の短評（こちらで渡す diffLine をそのまま入れる）",
-  "keep_doing": ["このまま続けると良い点（2〜3項目、文として自然に）。なぜ良いか因果も一言添える"],
+  "keep_doing": ["このまま続けると良い点（2〜3項目）。必ず与えられた keep_doing候補 から選び、言い換えるだけにする。pillar名と因果を残す。"],
   "next_steps": ["次にやってみてほしいこと（1〜2項目、必ず渡した nextStepText を自然な日本語にして含める。因果の理由も添える）"],
   "footer": "締めのひとこと。最後に注意書き（※本サービスは医療行為ではなくセルフケア支援です。）も含める。"
 }
@@ -339,6 +420,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 - 全体で全角250〜350字を目安に（リスト項目は短文）
 - 「score_header」「diff_line」は文字加工せず、そのまま入れる
 - 「keep_doing」「next_steps」はリストで返す（各要素は記号なしの文章）
+- keep_doing は **必ず** 与えた候補の範囲で作る（内容の削除・追加をしない、軽い言い換えのみ可）
 `.trim();
 
     const userJson = `
@@ -360,11 +442,13 @@ Q4: 動作=${curN.motion_level}
 【次の一歩（柱と本文）】
 pillar: ${pillarLabelMap[nextPillar] || "次の一歩"}
 次の一歩テキスト: ${nextStepText}
+
+【keep_doing候補（必ずこの中から2〜3件を選び、言い換え可・意味改変不可）】
+${keepDoingHints.map(s => `- ${s}`).join("\n")}
 `.trim();
 
     const sections = await callGPTJson(systemJson, userJson);
     if (!sections) {
-      // JSON一本化のため失敗時も固定メッセージで返す（API不調時の最低限）
       return {
         sections: null,
         gptComment: "現在フィードバックの生成に問題が発生しています。しばらくしてからもう一度お試しください。",
