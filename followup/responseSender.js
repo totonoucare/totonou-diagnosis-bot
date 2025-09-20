@@ -1,7 +1,8 @@
 // followup/responseSender.js
 // 定期チェック：前回差分＋「褒めて伸ばす」＋点数/星の確定計算（gpt-5）
-// JSON構造（sections）も返す：{ lead, score_header, diff_line, keep_doing[], next_steps[], footer }
+// JSON構造（sections）を返す：{ lead, score_header, diff_line, keep_doing[], next_steps[], footer }
 // contents.advice は jsonb配列（[{header, body}, ...] または {habits,...}）想定
+// ※本ファイルは「JSON一本化（フォールバック無し）」版
 
 const OpenAI = require("openai");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
@@ -45,11 +46,11 @@ function readAdvice(adviceInput) {
     return item?.body ? String(item.body).trim() : "";
   };
   return {
-    habits:   pick(["体質改善習慣", "まずはここから"]),
-    breathing:pick(["呼吸法", "巡りととのう呼吸"]),
+    habits:   pick(["体質改善習慣"]),
+    breathing:pick(["呼吸法", "巡りととのう呼吸法"]),
     stretch:  pick(["ストレッチ", "経絡", "けいらく"]),
-    tsubo:    pick(["ツボ", "ツボケア"]),
-    kampo:    pick(["漢方", "漢方薬"]),
+    tsubo:    pick(["指先・ツボほぐし", "指先", "ツボ"]),
+    kampo:    pick(["体質で選ぶオススメ漢方薬", "漢方"]),
   };
 }
 
@@ -81,7 +82,7 @@ const isWeak = (v) => v === "未着手" || v === "時々";
 
 function adherencePenalty(ans) {
   let add = 0;
-  // Q2 × advice（因果：habits ↔ sleep/meal、breathing ↔ stress、stretch/tsubo ↔ motion）
+  // 因果：habits ↔ sleep/meal、breathing ↔ stress、stretch/tsubo ↔ motion
   if (ans.sleep >= 3 && isWeak(ans.habits))    add += 1.5;
   if (ans.meal  >= 3 && isWeak(ans.habits))    add += 1.5;
   if (ans.stress>= 3 && isWeak(ans.breathing)) add += 1.5;
@@ -141,21 +142,21 @@ function pickBottleneck(cur) {
   return arr.filter(c => c.v >= 3).sort((a,b) => b.v - a.v)[0] || null;
 }
 
-/** pillarごとの“因果ベース理由文”を返す */
-function reasonForPillar(pillarKey, cur) {
+/** pillarごとの“因果ベース理由文” */
+function reasonForPillar(pillarKey) {
   switch (pillarKey) {
     case "habits":
       // habits ↔ sleep/meal/stress
       return "生活の土台を整えると、睡眠・食事・ストレスのバランスが同時に噛み合いはじめます。";
     case "breathing":
       // breathing = stress改善＆自律調整の底上げ
-      return "呼吸は自律神経に直結。乱れたストレス反応を鎮め、全体の調整力を底上げします。";
+      return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、深層筋活性や自律神経の安定に直結。乱れたストレス反応を鎮め、全体の調整力を底上げします。";
     case "stretch":
       // stretch = motion_levelの直接改善
-      return "動きのつらさに直結。ストレッチで動作の抵抗そのものを直接下げていきます。";
+      return "動きのつらさに直結する経絡ラインのストレッチ。ストレッチで動作の抵抗そのものを直接下げていきます。";
     case "tsubo":
       // tsubo = motion_levelの直接改善
-      return "ツボ刺激は局所と全体の連動を促し、動作のひっかかり（motion_level）を直接和らげます。";
+      return "指先ほぐしやツボほぐしは局所と全体の連動を促し、動作のひっかかり（motion_level）を直接和らげます。";
     case "kampo":
       return "他の柱を十分に整えた上で、足りない部分を漢方で補う“最後の一手”です。";
     default:
@@ -164,7 +165,7 @@ function reasonForPillar(pillarKey, cur) {
 }
 
 /** 次の一歩（どの柱を前面に）：
- * 1) 未着手優先（ただし漢方は最後尾扱い）
+ * 1) 未着手優先（ただし漢方は最後尾）
  * 2) ボトルネック対応：stress→breathing / meal・sleep→habits / motion→stretch→tsubo
  * 3) 漢方の“最終手段”ゲート：他の柱が弱くなく、かつ score<80 のときだけ許可
  */
@@ -202,25 +203,6 @@ function chooseNextPillar(ans, score) {
 
   // 特に乱れが目立たず、未着手もない → 土台強化の habits をデフォルト
   return "habits";
-}
-
-// ===== GPT呼び出し（テキスト：GPT-4o） =====
-async function callGPTWithFallbackText(systemPrompt, userPrompt) {
-  try {
-    const rsp = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user",   content: userPrompt  },
-      ]
-    });
-
-    const text = rsp.choices?.[0]?.message?.content?.trim() || "";
-    return text || null;
-  } catch (err) {
-    console.error("callGPTWithFallbackText error:", err);
-    return null;
-  }
 }
 
 // ===== GPT呼び出し（JSON構造：GPT-4o） =====
@@ -266,7 +248,7 @@ async function callGPTJson(systemPrompt, userPrompt) {
  * @returns {{
  *   sections?: {lead:string, score_header:string, diff_line:string, keep_doing:string[], next_steps:string[], footer:string},
  *   gptComment: string,
- *   statusMessage: "ok"|"fallback"|"error"|"no-current"
+ *   statusMessage: "ok"|"error"|"no-current"
  * }}
  */
 async function sendFollowupResponse(userId, followupAnswers) {
@@ -315,10 +297,9 @@ async function sendFollowupResponse(userId, followupAnswers) {
       ? `今週の整いスコア：${score}点 ${stars}`
       : `前回：${prevScore}点 → 今週：${score}点（${delta>0?'+':''}${delta}） ${stars}`;
 
-    // 褒めポイント・課題
+    // 改善点・課題・pillar決定
     const praise = prevN ? pickPraise(prevN, curN) : [];
     const bottleneck = pickBottleneck(curN);
-
     const praiseTxt = praise.length ? praise.map(p=>`${p.label}が改善`).join("・") : null;
     const bottleneckTxt = bottleneck ? `特に「${bottleneck.label}」の負担が目立ちます。` : "";
 
@@ -328,19 +309,17 @@ async function sendFollowupResponse(userId, followupAnswers) {
       : delta < 0        ? `前回より ${delta} 点の低下です。${bottleneckTxt || "無理なく一箇所だけ整え直しましょう。"}`
                          : "前回と同じスコア（現状維持）です。小さな積み重ねを続けましょう。";
 
-    // 次の一歩（“漢方は最終手段” ルールを反映）
+    // 次の一歩（“漢方は最終手段” ルール込み）
     const nextPillar = chooseNextPillar(curN, score);
 
-    // nextStep テキスト作成：因果の理由を前置きし、必要なら抜粋・補足
+    // nextStep テキスト：因果の理由を前置きし、必要なら抜粋・補足
     const base = (adviceObj[nextPillar] && String(adviceObj[nextPillar]).trim()) || "";
-    const reason = reasonForPillar(nextPillar, curN);
-    // bottleneckに合わせた一言補足（やさしめ）
+    const reason = reasonForPillar(nextPillar);
     const softHint = bottleneck ? `今は「${bottleneck.label}」にフォーカスするとラクになります。` : "";
-
     const nextStepText =
       base
         ? `今回の課題は「${pillarLabelMap[nextPillar]}」。${reason}${softHint ? " " + softHint : ""} 次のケア案：${base}`
-        : `今日は1分だけでも、自分のケア時間を作ってみましょう。${reason}`;
+        : `今回は「${pillarLabelMap[nextPillar]}」を少しだけ。${reason}${softHint ? " " + softHint : ""}`;
 
     // ====== JSON構造出力プロンプト ======
     const systemJson = `
@@ -358,8 +337,8 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
 制約：
 - 全体で全角250〜350字を目安に（リスト項目は短文）
-- 「keep_doing」「next_steps」はリストで返す（各要素は記号なしの文章）
 - 「score_header」「diff_line」は文字加工せず、そのまま入れる
+- 「keep_doing」「next_steps」はリストで返す（各要素は記号なしの文章）
 `.trim();
 
     const userJson = `
@@ -383,100 +362,38 @@ pillar: ${pillarLabelMap[nextPillar] || "次の一歩"}
 次の一歩テキスト: ${nextStepText}
 `.trim();
 
-    // JSON生成
     const sections = await callGPTJson(systemJson, userJson);
-
-    // === テキスト版も生成（JSON失敗時の保険にも利用） ===
-    const systemText = `
-あなたは「ととのうAI」。東洋医学の体質ケアに基づき、定期チェック結果から“褒めて伸ばす”コメントを作ります。
-出力は次の形式・条件を厳守してください。
-
-【形式】
-1) 冒頭：全体の体調・変化をひと言（親しみやすく、絵文字も使って）
-2) 直後に score_header をそのまま1行で記載
-3) 見出し「前回比」：diff_line を1行で記載
-4) 見出し「このまま続けるといいこと」：2〜3点（具体承認＋因果の一言）
-5) 見出し「次にやってみてほしいこと」：1〜2点（必ず nextStep を含む。因果の理由を添える）
-6) 締めのひとこと（前向き）
-※ 箇条書きに絵文字は使って良いが、*-# 等の記号は使わない。
-
-【制約】
-- 全角250〜350字
-- praise が空でも、今できている小さな取り組みを具体承認する
-- bottleneck があれば1点だけ触れる（やさしく課題提示）
-- nextPillar に対応する nextStep を本文に必ず含める（意味改変禁止、言い換え可）
-- 最後に注意書き：「※本サービスは医療行為ではなくセルフケア支援です。」
-`.trim();
-
-    const userText = `
-score_header: ${header}
-diff_line: ${diffLine}
-
-【主訴】${symptomJapanese}
-
-【今回の定期チェック】
-Q1: 主訴=${curN.symptom_level}
-Q2: 睡眠=${curN.sleep} / 食事=${curN.meal} / ストレス=${curN.stress}
-Q3: 習慣=${curN.habits} / 呼吸法=${curN.breathing} / ストレッチ=${curN.stretch} / ツボ=${curN.tsubo} / 漢方薬=${curN.kampo}
-Q4: 動作=${curN.motion_level}
-
-改善点: ${praise.map(p => `${p.label}: ${p.d} 段階改善`).join(" / ") || "（特記事項なし）"}
-課題候補: ${bottleneck ? `${bottleneck.label}（スコア${bottleneck.v}）` : "（特記事項なし）"}
-nextStep（本文そのまま含めること）: ${nextStepText}
-`.trim();
-
-    let gptComment = await callGPTWithFallbackText(systemText, userText);
-
-    // ===== フォールバック（最終手段：最低限“読む価値のある一枚”） =====
-    if (!gptComment) {
-      const praiseLine = (praise && praise.length)
-        ? `👏このまま続けるといいこと：${praise.map(p => `${p.label}が${p.d}段階よくなっています`).join("・")}。`
-        : `👏このまま続けるといいこと：小さな積み重ねができています。`;
-
-      const taskLine = bottleneck
-        ? `🧭今週の課題：${bottleneck.label}（スコア${bottleneck.v}）。`
-        : `🧭今週の課題：基礎の継続。`;
-
-      const pillarJa = pillarLabelMap[nextPillar] || "次の一歩";
-      const reason = reasonForPillar(nextPillar, curN);
-      const softHint = bottleneck ? `今は「${bottleneck.label}」にフォーカスするとラクになります。` : "";
-
-      gptComment =
-        `${header}\n` +
-        `🔁前回比：${diffLine}\n` +
-        `${praiseLine}\n` +
-        `${taskLine}\n` +
-        `➡️次にやってほしいこと（${pillarJa}）：${reason}${softHint ? " " + softHint : ""} ${adviceObj[nextPillar] || ""}\n` +
-        `※本サービスは医療行為ではなくセルフケア支援です。`;
-      return { sections: null, gptComment, statusMessage: "fallback" };
+    if (!sections) {
+      // JSON一本化のため失敗時も固定メッセージで返す（API不調時の最低限）
+      return {
+        sections: null,
+        gptComment: "現在フィードバックの生成に問題が発生しています。しばらくしてからもう一度お試しください。",
+        statusMessage: "error",
+      };
     }
 
-    // sections があれば、後方互換として gptComment も整形し直す（Flex非対応時でも読めるように）
-    if (sections && typeof sections === "object") {
-      const {
-        lead = "",
-        score_header = header,
-        diff_line = diffLine,
-        keep_doing = [],
-        next_steps = [],
-        footer = ""
-      } = sections;
+    // JSON一本化だが、互換のため gptComment も簡易生成（Flex非対応時でも読めるように）
+    const {
+      lead = "",
+      score_header = header,
+      diff_line = diffLine,
+      keep_doing = [],
+      next_steps = [],
+      footer = ""
+    } = sections;
 
-      const keepLines = keep_doing.map(s => `・${s}`).join("\n");
-      const nextLines = next_steps.map(s => `・${s}`).join("\n");
+    const keepLines = keep_doing.map(s => `・${s}`).join("\n");
+    const nextLines = next_steps.map(s => `・${s}`).join("\n");
 
-      gptComment =
-        `${lead}\n` +
-        `${score_header}\n\n` +
-        `【前回比】\n${diff_line}\n\n` +
-        `【このまま続けるといいこと】\n${keepLines}\n\n` +
-        `【次にやってみてほしいこと】\n${nextLines}\n\n` +
-        `${footer}`;
-      return { sections, gptComment, statusMessage: "ok" };
-    }
+    const gptComment =
+      `${lead}\n` +
+      `${score_header}\n\n` +
+      `【前回比】\n${diff_line}\n\n` +
+      `【このまま続けるといいこと】\n${keepLines}\n\n` +
+      `【次にやってみてほしいこと】\n${nextLines}\n\n` +
+      `${footer}`;
 
-    // JSON失敗でもテキストはOK
-    return { sections: null, gptComment, statusMessage: "ok" };
+    return { sections, gptComment, statusMessage: "ok" };
 
   } catch (error) {
     console.error("sendFollowupResponse error:", error);
