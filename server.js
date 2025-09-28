@@ -332,7 +332,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
       // ===== ととのえ方分析（強トリガー）— フロー専用。GPTは反応させない =====
-      if (userMessage === "ととのえ方分析開始") {
+      if (userMessage === "ととのえタイプ分析開始") {
         diagnosis.startSession(lineId);
         const flex = buildCategorySelectionFlex();
         await client.replyMessage(event.replyToken, flex);
