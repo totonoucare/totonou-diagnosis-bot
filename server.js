@@ -114,7 +114,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       }
 
       // 開始確認（分析／フォローアップ）
-      if (userMessage === "ととのえ方分析") {
+      if (userMessage === "ととのえタイプ分析") {
         const flex = buildDiagnosisConfirmFlex();
         return client.replyMessage(event.replyToken, flex);
       }
