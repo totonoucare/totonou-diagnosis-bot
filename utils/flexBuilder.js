@@ -61,8 +61,8 @@ function injectContext(template, context = {}) {
 
 function buildCategorySelectionFlex() {
   return MessageBuilder({
-    altText: 'ととのえ方分析を開始します。どの不調が気になりますか？',
-    header: '🚀 ととのえ方分析スタート！',
+    altText: 'ととのえタイプ分析を開始します。どの不調が気になりますか？',
+    header: '🚀 ととのえタイプ分析スタート！',
     body: 'どんなお悩みをととのえたいですか？1つ選んでください。',
     buttons: [
       { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
@@ -169,7 +169,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
 function buildDiagnosisConfirmFlex() {
   return {
     type: "flex",
-    altText: "ととのえ方分析を始めますか？",
+    altText: "ととのえタイプ分析を始めますか？",
     contents: {
       type: "bubble",
       size: "mega",
@@ -179,7 +179,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "ととのえ方分析を始めますか？",
+            text: "ととのえタイプ分析を始めますか？",
             weight: "bold",
             size: "md",
             color: "#ffffff",
@@ -197,7 +197,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "ととのえ方分析が初めての方は、そのまま分析をスタートしてください🌱",
+            text: "ととのえタイプ分析が初めての方は、そのまま分析をスタートしてください🌱",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
@@ -217,8 +217,8 @@ function buildDiagnosisConfirmFlex() {
             type: "button",
             action: {
               type: "message",
-              label: "ととのえ方分析スタート！",
-              text: "ととのえ方分析開始",
+              label: "ととのえタイプ分析開始！",
+              text: "ととのえタイプ分析開始",
             },
             style: "primary",
             color: "#758A6D",
