@@ -144,7 +144,6 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "   ・週2〜3日の特別ケア：ととのい度チェック結果から、毎日ケアの次に必要優先度の高いadvice内容2つ",
     "   ・トトノウアドバイス：上記の内容の追記や特筆内容、日常の過ごし方についてのワンポイントなどがあれば記載（※この項目は無理に書かなくても良い）",
     "   各項目は、いつ/どこで/どれだけ/どうやって/注意点を完結にわかりやすく。",
-    "8) 箇条書きは絵文字を使う。Markdown記号（#, *, **, ### など）は絶対に出力しない。",
   ].filter(Boolean).join("\n");
 
   return [
