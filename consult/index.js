@@ -89,7 +89,7 @@ module.exports = async function consult(event, client) {
     const rsp = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
-
+      max_completion_tokens: 700,
     });
 
     const text =
