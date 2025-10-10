@@ -505,6 +505,19 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
           color: '#0d0d0d',
           size: 'md',
         },
+        ...(card.link
+          ? [{
+              type: 'button',
+              action: {
+                type: 'uri',
+                label: '🖼 図解を見る',
+                uri: card.link,
+              },
+              style: 'secondary',
+              color: '#A7B8A0',
+              height: 'sm',
+            }]
+          : []),
         {
           type: 'separator',
           margin: 'md',
