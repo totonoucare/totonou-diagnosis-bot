@@ -56,12 +56,14 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
       body: baseAdvice 
     },
     {
-      header: "② 巡りととのう呼吸法🧘",
+      header: "② 巡りととのう呼吸法🧘",,
+      link: "https://totonoucare.jp/guide/breathing" // ← 図解リンク
       body: flowCareAdvice
     },
     {
       header: "③ 経絡(けいらく)ストレッチ🤸",
-      body: stretchData.stretch
+      body: stretchData.stretch,
+      link: "https://totonoucare.jp/guide/stretch" // ← 図解リンク
     },
     {
       header: "④ 指先・ツボほぐし 👍",
