@@ -41,8 +41,13 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
   const flowInfo = flowDictionary[flowType] || "";
   const organInfo = organDictionary[organType] || "";
   const baseAdvice = adviceDictionary[typeName] || "";
-  const stretchData = stretchPointDictionary[organType] || { stretch: "", points: "" };
-  const flowCareAdvice = flowAdviceDictionary[flowType] || "";
+
+  // 呼吸法・ストレッチ・ツボ：構造が { text, link } になった前提
+  const flowData = flowAdviceDictionary[flowType] || { text: "", link: "" };
+  const stretchData = stretchPointDictionary[organType] || {
+    stretch: { text: "", link: "" },
+    points: { text: "", link: "" }
+  };
 
   // flowlabel → 漢方リンク内に埋め込み
   const flowLabel = flowlabelDictionary[flowType] || "";
@@ -53,21 +58,22 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
   const adviceCards = [
     {
       header: "① 体質改善習慣💡",
-      body: baseAdvice 
+      body: baseAdvice
     },
     {
-      header: "② 巡りととのう呼吸法🧘",,
-      link: "https://totonoucare.jp/guide/breathing" // ← 図解リンク
-      body: flowCareAdvice
+      header: "② 巡りととのう呼吸法🧘",
+      body: flowData.text,
+      link: flowData.link || "https://totonoucare.jp/guide/breathing"
     },
     {
       header: "③ 経絡(けいらく)ストレッチ🤸",
-      body: stretchData.stretch,
-      link: "https://totonoucare.jp/guide/stretch" // ← 図解リンク
+      body: stretchData.stretch.text,
+      link: stretchData.stretch.link || "https://totonoucare.jp/guide/stretch"
     },
     {
       header: "④ 指先・ツボほぐし 👍",
-      body: stretchData.points
+      body: stretchData.points.text,
+      link: stretchData.points.link || "https://totonoucare.jp/guide/points"
     },
     {
       header: "⑤ 体質で選ぶオススメ漢方薬 🌿",
