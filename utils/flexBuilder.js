@@ -473,58 +473,66 @@ function buildResultFlex(result, imageUrl) {
 }
 
 function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうケアガイド') {
-  const bubbles = cards.map((card) => ({
-    type: 'bubble',
-    size: 'mega',
-    header: {
-      type: 'box',
-      layout: 'vertical',
-      contents: [
-        {
-          type: 'text',
-          text: card.header,
-          weight: 'bold',
-          size: 'md',
-          color: '#ffffff',
+  const bubbles = cards.map((card) => {
+    const bodyContents = [
+      {
+        type: 'text',
+        text: card.body,
+        wrap: true,
+        color: '#0d0d0d',
+        size: 'md',
+      },
+    ];
+
+    // ✅ 図解ボタンがある場合のみ追加
+    if (card.link) {
+      bodyContents.push({
+        type: 'button',
+        action: {
+          type: 'uri',
+          label: '📖 図解を見る',
+          uri: card.link,
         },
-      ],
-      backgroundColor: '#758A6D',
-      paddingAll: '12px',
-    },
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      backgroundColor: '#F8F9F7', // ← 柔らかいグレー
-      paddingAll: '16px',
-      spacing: 'md',
-      contents: [
-        {
-          type: 'text',
-          text: card.body,
-          wrap: true,
-          color: '#0d0d0d',
-          size: 'md',
-        },
-        ...(card.link
-          ? [{
-              type: 'button',
-              action: {
-                type: 'uri',
-                label: '🖼 図解を見る',
-                uri: card.link,
-              },
-              style: 'secondary',
-              color: '#A7B8A0',
-              height: 'sm',
-            }]
-          : []),
-        {
-          type: 'separator',
-          margin: 'md',
-        },
-      ],
-    },
-  }));
+        style: 'primary',
+        color: '#9e8448', // 全体トーンと統一
+        height: 'sm',
+      });
+
+      // 区切り線もボタンの後にだけ入れる
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md',
+      });
+    }
+
+    return {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: card.header,
+            weight: 'bold',
+            size: 'md',
+            color: '#ffffff',
+          },
+        ],
+        backgroundColor: '#758A6D',
+        paddingAll: '12px',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#F8F9F7',
+        paddingAll: '16px',
+        spacing: 'md',
+        contents: bodyContents,
+      },
+    };
+  });
 
   return {
     type: 'flex',
