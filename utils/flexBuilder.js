@@ -484,8 +484,12 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
       },
     ];
 
-    // ✅ 図解ボタンがある場合のみ追加
+    // ✅ 図解ボタンがある場合のみ、区切り線＋ボタンを追加
     if (card.link) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md',
+      });
       bodyContents.push({
         type: 'button',
         action: {
@@ -494,14 +498,8 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
           uri: card.link,
         },
         style: 'primary',
-        color: '#9e8448', // 全体トーンと統一
+        color: '#9e8448', // トーン統一
         height: 'sm',
-      });
-
-      // 区切り線もボタンの後にだけ入れる
-      bodyContents.push({
-        type: 'separator',
-        margin: 'md',
       });
     }
 
