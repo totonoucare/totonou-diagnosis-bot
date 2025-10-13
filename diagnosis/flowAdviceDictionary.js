@@ -11,7 +11,7 @@ const flowAdviceDictionary = {
 
 これを1呼吸として、3〜5呼吸繰り返しましょう！💨  
 姿勢改善や自律調整力UPも期待できます✨`,
-    link: "https://example.com/ki_tai_breath"
+    link: "https://totonoucare.com/wp-content/themes/totonoucare/images/breath-kitai.png"
   },
 
   "水滞": {
@@ -25,7 +25,7 @@ const flowAdviceDictionary = {
 
 これを1呼吸として、3〜5呼吸繰り返しましょう！💨  
 姿勢改善や自律調整力UPも期待できます✨`,
-    link: "https://example.com/sui_tai_breath"
+    link: "https://totonoucare.com/wp-content/themes/totonoucare/images/breath-suitai.png"
   },
 
   "瘀血": {
@@ -39,7 +39,7 @@ const flowAdviceDictionary = {
 
 これを1呼吸として、3〜5呼吸繰り返しましょう！💨  
 姿勢改善や自律調整力UPも期待できます✨`,
-    link: "https://example.com/oketsu_breath"
+    link: "https://totonoucare.com/wp-content/themes/totonoucare/images/breath-oketsu.png"
   },
 
   "巡りは良好": {
@@ -52,7 +52,7 @@ const flowAdviceDictionary = {
 
 これを1呼吸として、3〜5呼吸繰り返しましょう！💨  
 姿勢改善や自律調整力UPも期待できます✨`,
-    link: "https://example.com/good_flow_breath"
+    link: "https://totonoucare.com/wp-content/themes/totonoucare/images/breath-good-flow.png"
   }
 };
 
