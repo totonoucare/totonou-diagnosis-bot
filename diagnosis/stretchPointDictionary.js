@@ -19,7 +19,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🦶 足の指先ほぐし\n\n脾・胃のラインは\n足の『親指・人差し指』←→ 腹部へ繋がります。\n\n✅ 足の親指・人差し指の爪の両脇を“つまんで10秒→指先を軽く引っ張る10秒”を各3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 商丘（しょうきゅう）／🔘 解渓（かいけい）",
-      link: "https://example.com/points/spleen-stomach"
+      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-hi.png"
     }
   },
 
