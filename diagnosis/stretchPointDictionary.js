@@ -41,7 +41,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🖐️ 手の指先ほぐし\n\n肺と大腸の経絡ラインは、\n手の『親指・人差し指』←→ 胸や横隔膜まで繋がります。\n\n✅ 親指・人差し指の爪の両脇を10秒ずつつまみ、指先を軽く引っ張る10秒を各3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 尺沢（しゃくたく）／🔘 曲池（きょくち）",
-      link: "https://example.com/points/lung-colon"
+      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-hai.png"
     }
   },
 
