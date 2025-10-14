@@ -8,7 +8,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🦶 足の指先ほぐし\n\n肝・胆の経絡ラインは\n足の『親指・薬指』←→ 腹部へ繋がります。\n\n✅ 足の親指・薬指の爪の両脇を“つまんで回す→引っぱる→揉む”を各10〜15秒×3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 曲泉（きょくせん）／🔘 陽輔（ようほ）",
-      link: "https://example.com/points/liver-gallbladder"
+      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-kan.png"
     }
   },
 
