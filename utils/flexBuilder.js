@@ -498,7 +498,7 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
           uri: card.link,
         },
         style: 'primary',
-        color: '#EFF1E9', // トーン統一
+        color: '#758A6D', // トーン統一
         height: 'sm',
       });
     }
