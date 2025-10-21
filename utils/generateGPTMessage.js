@@ -1,4 +1,6 @@
 // utils/generateGPTMessage.js
+// 🌿 トトノウくん伴走リマインダー：4日サイクル仕様＋スコア理解統合版
+
 const OpenAI = require("openai");
 const { createClient } = require("@supabase/supabase-js");
 const { getUserIdFromLineId } = require("./getUserIdFromLineId");
@@ -7,11 +9,9 @@ const supabaseMemoryManager = require("../supabaseMemoryManager");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-function pickTone() {
-  const r = Math.random();
-  return r < 0.45 ? "uranai" : "mame";
+function greeting() {
+  return "こんにちは☺️";
 }
-const greeting = () => "こんにちは！";
 
 function getTodayMeta() {
   const now = new Date();
@@ -23,93 +23,104 @@ function getTodayMeta() {
   return { date, weekdayJp };
 }
 
-function seasonalHint({ date, weekdayJp }) {
-  return [
-    `- 今日の日付: ${date}（${weekdayJp}）`,
-    "- 季節・二十四節気・五行は日本（北半球）基準で解釈",
-    "- 天気の推測はしない（雨/晴れは書かない）",
-  ].join("\n");
+/** スコアの見方（buildConsultMessages.jsから完全移植） */
+function buildScoreLegend() {
+  const lines = [
+    "▼ ととのい度チェックとは？",
+    "・『症状の強さ（symptom_level / motion_level）』と『生活リズム（sleep / meal / stress）』を数値で自己申告。",
+    "・同時に、提案セルフケア（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
+    "・つまり『症状の変化（数値）』×『セルフケア実施度（段階）』をペアで記録し、改善の手応えを見える化する仕組み。",
+    "",
+    "▼ スコアの見方",
+    "・数値スコア（1〜5）は 1 が良好、数値が大きいほど“乱れ”や“つらさ”が強い。",
+    "・Q3〈habits / breathing / stretch / tsubo / kampo〉は段階評価（継続 / 継続中 / 時々 / 未着手）。左ほど実施できている。",
+    "",
+    "Q1: symptom_level（主訴のつらさ） … 1=軽い/支障なし ←→ 5=強い/生活に支障",
+    "Q2: sleep（睡眠の乱れ） … 1=整っている ←→ 5=かなり乱れている",
+    "Q2: meal（食事の乱れ） … 1=整っている ←→ 5=かなり乱れている",
+    "Q2: stress（ストレスの強さ） … 1=軽い ←→ 5=かなり強い",
+    "Q3: habits（体質改善習慣） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: breathing（巡りととのう呼吸法） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: stretch（経絡ストレッチ） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: tsubo（指先・ツボほぐし） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: kampo（おすすめ漢方薬） … 継続 / 継続中 / 時々 / 未着手",
+    "Q4: motion_level（負担経絡の伸展動作のつらさ） … 1=軽い/支障なし ←→ 5=強い/支障大",
+    "　※ここでの『負担経絡の伸展動作』は、その人に提案している stretch の動きそのもの。",
+    "",
+    "▼ 項目どうしの関係",
+    "・habits ↔ sleep / meal / stress：生活リズムを整えると体調も整いやすい。",
+    "・stretch / tsubo ↔ motion_level：動作テストの張りをとるセルフケア。",
+    "・breathing ↔ stress / sleep：呼吸を整えると心身のリズムも整う。",
+  ];
+  return lines.join("\n");
 }
 
 function extractStatusFlag(fu = null) {
   if (!fu) return null;
   const n = v => (v == null ? null : Number(v));
   if (n(fu.symptom_level) >= 4) return "体調がやや不調";
-  if (n(fu.sleep)        >= 4) return "睡眠が乱れ気味";
-  if (n(fu.stress)       >= 4) return "ストレス高め";
-  if (n(fu.meal)         >= 4) return "食事が乱れ気味";
+  if (n(fu.sleep) >= 4) return "睡眠が乱れ気味";
+  if (n(fu.stress) >= 4) return "ストレス高め";
+  if (n(fu.meal) >= 4) return "食事が乱れ気味";
   return null;
 }
 
-async function buildConstitutionSeasonalReminder({
-  constitution, trait, flowType, organType, chiefSymptom,
-  date, weekdayJp, tone, statusFlag
-}) {
-  const styleLine = tone === "uranai"
-    ? "占い風（控えめに吉/巡りのニュアンス）"
-    : "豆知識風（読む人が“へぇー”と感じるような勉強になる小ネタ。具体アクションを1つ添える）";
+/** GPTメッセージ生成：4日サイクルに合わせた伴走リマインド */
+async function buildCycleReminder({ constitution, trait, flowType, organType, chiefSymptom, latest, prev, statusFlag }) {
+  const { date, weekdayJp } = getTodayMeta();
 
-  const sys = `
-あなたは東洋医学に詳しい親しみやすい伴走AI。
-体質と季節の文脈を組み合わせ、LINE通知向けの短い一言リマインドを作る。
+  const system = `
+あなたは『ととのうケアナビ』のAIパートナー「トトノウくん」です。
+ユーザーの体質（context）と、ととのい度チェック（followups）をもとに、
+4日後の次回チェックに向けて「今週の整え方」を優しくサポートする伴走メッセージを届けてください。
 
-【厳守】
-- 出力は必ず「${greeting()}」で始める
-- 本文は 70〜110文字（挨拶込みで全体 100〜150目安）
-- 絵文字は適度に使い、親しみやすく
-- 天気の推測は禁止
-- 医療断定は禁止
-- followup状況があれば “1点だけ” 触れる
-- トーン：${styleLine}
+【目的】
+- 「次の4日間をどう過ごせば整いやすいか」を伝える
+- 催促や評価ではなく、ユーザーの努力や日常に寄り添う
+- 今の状態が良くても悪くても、受け取って前向きになれる言葉にする
 
-【禁止事項】
-- 漢方薬や特定のツボ名、経絡名は出さない
-- 食材や生活アドバイスは自由に提案してよい（ただし、どの体質にも低温の飲食のおすすめはしない。冷性の飲食なら可。）
-- 今日の日付・曜日はメッセージ文内に含めないこと
+【出力構成】
+1. あいさつ＋共感（親しみやすく、絵文字使用）
+2. 今週（次の4日間）の過ごし方のヒント（体質やスコア傾向から）
+3. 小さな励ましや「自分を大切にする」提案
+4. AI相談への自然な導線（例：「最近の整い、どんな感じ？」「気軽に話してね☺️」）
+- 「次のチェックまでの4日間」「今週の整え方」といった表現を1回含める
+- 医療断定や催促は禁止
+- 文字数は200〜250字
+${buildScoreLegend()}
   `.trim();
 
-  const contextLines = [
-    constitution ? `体質: ${constitution}` : null,
-    trait        ? `体質説明: ${trait}` : null,
-    flowType     ? `気の偏り: ${flowType}` : null,
-    organType    ? `負担臓腑: ${organType}` : null,
-    chiefSymptom ? `主なお悩み: ${chiefSymptom}` : null,
-  ].filter(Boolean).join(" / ");
-
-  const statusLine = statusFlag ? `【直近の状況】${statusFlag}` : "【直近の状況】なし";
-
   const user = `
-【体質コンテキスト】
-${contextLines || "不明"}
-
-【季節ヒント】
-${seasonalHint({ date, weekdayJp })}
-
-${statusLine}
+【今日】${date}（${weekdayJp}）
+【体質】${constitution || "不明"}（${trait || "情報なし"}）
+【気の流れ】${flowType || "不明"}
+【負担臓腑】${organType || "不明"}
+【主訴】${chiefSymptom || "未登録"}
+【直近のととのい度チェック】${latest ? JSON.stringify(latest) : "なし"}
+${prev ? `【前回】${JSON.stringify(prev)}` : ""}
+【状態】${statusFlag || "特記なし"}
   `.trim();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o", // モデルは自然さ重視の gpt-4o
+    model: "gpt-4o",
+    temperature: 0.8,
     messages: [
-      { role: "system", content: sys },
-      { role: "user",   content: user },
-    ]
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
   });
 
   const text = completion.choices?.[0]?.message?.content?.trim();
-  console.log("[gm] OAI text:", text?.slice(0, 80));
-  return text;
+  return text || `${greeting()} 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
 }
 
 async function generateGPTMessage(lineId) {
   try {
-    console.log("[gm] start lineId:", lineId);
-
+    console.log("[reminder] start lineId:", lineId);
     const userId = await getUserIdFromLineId(lineId);
-    console.log("[gm] userId:", userId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
-    // contexts
+    // context取得
     const { data: ctxRows } = await supabase
       .from("contexts")
       .select("type, trait, flowType, organType, symptom, created_at")
@@ -118,45 +129,52 @@ async function generateGPTMessage(lineId) {
       .limit(1);
     const mmContext = await supabaseMemoryManager.getContext(lineId) || {};
     const latestContext = ctxRows?.[0] || {};
-    console.log("[gm] context:", latestContext);
-
     const constitution = latestContext?.type || mmContext?.type || null;
-    const trait        = latestContext?.trait || mmContext?.trait || null;
-    const flowType     = latestContext?.flowType || mmContext?.flowType || null;
-    const organType    = latestContext?.organType || mmContext?.organType || null;
+    const trait = latestContext?.trait || mmContext?.trait || null;
+    const flowType = latestContext?.flowType || mmContext?.flowType || null;
+    const organType = latestContext?.organType || mmContext?.organType || null;
     const chiefSymptom = latestContext?.symptom || mmContext?.symptom || null;
 
-    // followups
+    // followups取得
     const { data: fuRows } = await supabase
       .from("followups")
-      .select("symptom_level, sleep, meal, stress, created_at, id")
+      .select("symptom_level, sleep, meal, stress, habits, breathing, stretch, tsubo, kampo, motion_level, created_at, id")
       .eq("user_id", userId)
-      .or("symptom_level.not.is.null,sleep.not.is.null,meal.not.is.null,stress.not.is.null")
       .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(1);
+      .limit(2);
     const latestFollowup = fuRows?.[0] || null;
-    console.log("[gm] followup:", latestFollowup);
-
+    const prevFollowup = fuRows?.[1] || null;
     const statusFlag = extractStatusFlag(latestFollowup);
 
-    // GPT生成
-    const { date, weekdayJp } = getTodayMeta();
-    const tone = pickTone();
-    console.log("[gm] tone/date:", tone, date, weekdayJp);
+    // 2週間経過チェック
+    const now = new Date();
+    const lastCheckDate = latestFollowup
+      ? new Date(latestFollowup.created_at)
+      : (latestContext?.created_at ? new Date(latestContext.created_at) : null);
+    const diffDays = lastCheckDate
+      ? Math.floor((now - lastCheckDate) / (1000 * 60 * 60 * 24))
+      : null;
 
-    const msg = await buildConstitutionSeasonalReminder({
-      constitution, trait, flowType, organType, chiefSymptom,
-      date, weekdayJp, tone, statusFlag,
-    });
+    let msg;
+    if (diffDays && diffDays >= 14) {
+      msg = `${greeting()} 少し間が空きましたね🌱 最近の整い、どんな感じですか？\nゆっくりでも大丈夫☺️\nまた一緒に今の状態を見つめ直していきましょう🌿`;
+    } else {
+      msg = await buildCycleReminder({
+        constitution,
+        trait,
+        flowType,
+        organType,
+        chiefSymptom,
+        latest: latestFollowup,
+        prev: prevFollowup,
+        statusFlag,
+      });
+    }
 
-    if (msg) return msg;
-
-    console.warn("[gm] OpenAI返却が空 → fallback");
-    return `${greeting()} [fallback] 無理せず、自分のペースで“ととのうケア”を続けていきましょうね🌱`;
+    return msg;
   } catch (error) {
-    console.error("⚠️ GPTメッセージ生成エラー:", error?.response?.data || error);
-    return `${greeting()} [fallback] リマインドの生成に失敗しました。次回の診断で状況をお聞かせください😊`;
+    console.error("⚠️ generateGPTMessage error:", error);
+    return `${greeting()} [fallback] 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
   }
 }
 
