@@ -121,7 +121,7 @@ async function buildCycleReminder({
 4. AI相談への自然な導線（例：「セルフケアや健康について困り事はないですか？？」「なんでも気軽に話してくださいね☺️」）
 - 「次のチェックまでの4日間」「今週の整え方」といった表現を1回含める
 - 医療断定や催促は禁止
-- 文字数は300〜350字
+- 文字数は250〜300字を限度に
 - LINEメッセージの可読性を高めるよう、改行や段落分けはこまめに
 
 【体質別セルフケア提案：ととのうケアガイド（advice）】
@@ -148,7 +148,7 @@ ${buildScoreLegend()}
   `.trim();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5",
+    model: "gpt-4o",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
