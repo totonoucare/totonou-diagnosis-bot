@@ -28,7 +28,7 @@ function buildScoreLegend() {
   const lines = [
     "▼ ととのい度チェックとは？",
     "・『症状の強さ（symptom_level / motion_level）』と『生活リズム（sleep / meal / stress）』を数値で自己申告。",
-    "・同時に、提案セルフケア（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
+    "・同時に、セルフケアとして提案した、ととのうケアガイド（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
     "・つまり『症状の変化（数値）』×『セルフケア実施度（段階）』をペアで記録し、改善の手応えを見える化する仕組み。",
     "",
     "▼ スコアの見方",
@@ -81,7 +81,7 @@ async function buildCycleReminder({
 
   const system = `
 あなたは『ととのうケアナビ』のAIパートナー「トトノウくん」です。
-ユーザーの体質（context）・セルフケア提案（advice）・ととのい度チェック（followups）をもとに、
+ユーザーの体質（context）・ととのうケアガイド（advice）・ととのい度チェック（followups）をもとに、
 4日後の次回ととのい度チェックに向けて「今週の整え方」を優しくサポートする伴走メッセージを届けてください。
 
 【目的】
@@ -115,7 +115,7 @@ ${buildScoreLegend()}
 【気の流れ】${flowType || "不明"}
 【負担臓腑】${organType || "不明"}
 【主訴】${chiefSymptom || "未登録"}
-【体質アドバイス】${advice ? JSON.stringify(advice) : "未登録"}
+【ととのうケアガイド】${advice ? JSON.stringify(advice) : "未登録"}
 【直近のととのい度チェック】${latest ? JSON.stringify(latest) : "なし"}
 ${prev ? `【前回】${JSON.stringify(prev)}` : ""}
 【状態】${statusFlag || "特記なし"}
