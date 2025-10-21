@@ -58,26 +58,37 @@ function buildScoreLegend() {
 
 function extractStatusFlag(fu = null) {
   if (!fu) return null;
+
   const n = v => (v == null ? null : Number(v));
   const s = v => (v == null ? "" : String(v).trim());
-  const flags = [];
 
-  if (n(fu.symptom_level) >= 4) flags.push("不調のつらさが強め");
-  if (n(fu.motion_level) >= 4) flags.push("動作時の張りが強い");
-  if (n(fu.sleep) >= 4) flags.push("睡眠が乱れ気味");
-  if (n(fu.meal) >= 4) flags.push("食事リズムが乱れ気味");
-  if (n(fu.stress) >= 4) flags.push("ストレスが強め");
+  // --- Q1・Q2群：数値スコア評価（1=良好, 5=乱れ強）
+  if (n(fu.symptom_level) >= 4) return "不調のつらさがやや強いようです";
+  if (n(fu.motion_level) >= 4)  return "動作時の張りやつらさが少し強いようです";
+  if (n(fu.sleep) >= 4)         return "睡眠リズムが乱れ気味です";
+  if (n(fu.meal) >= 4)          return "食生活が少し乱れ気味のようです";
+  if (n(fu.stress) >= 4)        return "ストレスが少し強く出ているようです";
 
-  const care = [s(fu.habits), s(fu.breathing), s(fu.stretch), s(fu.tsubo), s(fu.kampo)];
-  const unstarted = care.filter(v => v.includes("未着手")).length;
-  const sometimes = care.filter(v => v.includes("時々")).length;
-  const ongoing = care.filter(v => v.includes("継続中")).length;
+  // --- Q3群：セルフケア実施度（継続中 / 時々 / 未着手）
+  const careStates = [
+    s(fu.habits),
+    s(fu.breathing),
+    s(fu.stretch),
+    s(fu.tsubo),
+    s(fu.kampo),
+  ];
 
-  if (unstarted >= 3) flags.push("セルフケアはこれからの段階");
-  else if (sometimes >= 3) flags.push("ケアが少し途切れがち");
-  else if (ongoing >= 3) flags.push("ケアが安定している");
+  // 「未着手」や「時々」が多いほど “ケアがまだ安定していない” と判断
+  const countUnstarted = careStates.filter(v => v.includes("未着手")).length;
+  const countSometimes = careStates.filter(v => v.includes("時々")).length;
+  const countOngoing   = careStates.filter(v => v.includes("継続中")).length;
 
-  return flags.length ? flags.join("・") : "全体的に安定している様子";
+  if (countUnstarted >= 3) return "セルフケアはまだこれからの段階です";
+  if (countSometimes >= 3) return "ケアが少し途切れがちな様子です";
+  if (countOngoing >= 3)   return "コツコツ取り組めているようです";
+
+  // --- 特に問題がなければ null
+  return null;
 }
 
 /** GPTメッセージ生成：4日サイクルに合わせた伴走リマインド */
