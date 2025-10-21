@@ -144,7 +144,7 @@ ${buildScoreLegend()}
 【主訴】${chiefSymptom || "未登録"}
 【ととのうケアガイド】${advice ? JSON.stringify(advice) : "未登録"}
 【直近のととのい度チェック】${latest ? JSON.stringify(latest) : "なし"}
-【状態】${statusFlag || "特記なし"}
+【状態】${statusFlag || "全体的に安定している様子"}
   `.trim();
 
   const completion = await openai.chat.completions.create({
@@ -187,7 +187,7 @@ async function generateGPTMessage(lineId) {
       .select("symptom_level, sleep, meal, stress, habits, breathing, stretch, tsubo, kampo, motion_level, created_at, id")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(2);
+      .limit(1);
     const latestFollowup = fuRows?.[0] || null;
     const statusFlag = extractStatusFlag(latestFollowup);
 
