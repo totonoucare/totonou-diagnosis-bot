@@ -61,27 +61,34 @@ function extractStatusFlag(fu = null) {
 
   const n = v => (v == null ? null : Number(v));
   const s = v => (v == null ? "" : String(v).trim());
-  const flags = [];
 
-  // --- Q1/Q2: スコア傾向
-  if (n(fu.symptom_level) >= 4) flags.push("不調のつらさが強め");
-  if (n(fu.motion_level) >= 4)  flags.push("動作時の張りが強い");
-  if (n(fu.sleep) >= 4)         flags.push("睡眠が乱れ気味");
-  if (n(fu.meal) >= 4)          flags.push("食事リズムが乱れ気味");
-  if (n(fu.stress) >= 4)        flags.push("ストレスが強め");
+  // --- Q1・Q2群：数値スコア評価（1=良好, 5=乱れ強）
+  if (n(fu.symptom_level) >= 4) return "不調のつらさがやや強いようです";
+  if (n(fu.motion_level) >= 4)  return "動作時の張りやつらさが少し強いようです";
+  if (n(fu.sleep) >= 4)         return "睡眠リズムが乱れ気味です";
+  if (n(fu.meal) >= 4)          return "食生活が少し乱れ気味のようです";
+  if (n(fu.stress) >= 4)        return "ストレスが少し強く出ているようです";
 
-  // --- Q3: 実施状況
-  const careStates = [s(fu.habits), s(fu.breathing), s(fu.stretch), s(fu.tsubo), s(fu.kampo)];
-  const unstarted = careStates.filter(v => v.includes("未着手")).length;
-  const sometimes = careStates.filter(v => v.includes("時々")).length;
-  const ongoing = careStates.filter(v => v.includes("継続中")).length;
+  // --- Q3群：セルフケア実施度（継続中 / 時々 / 未着手）
+  const careStates = [
+    s(fu.habits),
+    s(fu.breathing),
+    s(fu.stretch),
+    s(fu.tsubo),
+    s(fu.kampo),
+  ];
 
-  if (unstarted >= 3) flags.push("セルフケアはこれからの段階");
-  else if (sometimes >= 3) flags.push("ケアが少し途切れがち");
-  else if (ongoing >= 3) flags.push("ケアが安定している");
+  // 「未着手」や「時々」が多いほど “ケアがまだ安定していない” と判断
+  const countUnstarted = careStates.filter(v => v.includes("未着手")).length;
+  const countSometimes = careStates.filter(v => v.includes("時々")).length;
+  const countOngoing   = careStates.filter(v => v.includes("継続中")).length;
 
-  if (flags.length === 0) return "全体的に安定している様子";
-  return flags.join("・");
+  if (countUnstarted >= 3) return "セルフケアはまだこれからの段階です";
+  if (countSometimes >= 3) return "ケアが少し途切れがちな様子です";
+  if (countOngoing >= 3)   return "コツコツ取り組めているようです";
+
+  // --- 特に問題がなければ null
+  return null;
 }
 
 /** GPTメッセージ生成：4日サイクルに合わせた伴走リマインド */
@@ -99,28 +106,39 @@ async function buildCycleReminder({
 
 const system = `
 あなたは『ととのうケアナビ』のAIパートナー「トトノウくん」です。
-ユーザーの不調種類(chiefSymptom＝体質分析時に登録された主な悩み)や体質（trait / flowType / organType）や直近のととのい度チェック（followup）をもとに、
-「体がどんなサインを出しているのか」「それが何を意味するのか」をやさしく教えるメッセージを作成してください。
+ユーザーの体質（context）、ととのうケアガイド（advice）、そして直近のととのい度チェック（followups）をもとに、
+次の4日間を前向きに過ごせるように“気持ちを整えるリマインドメッセージ”を届けてください。
+
+【あなたの役割】
+- ユーザーにはすでに『ととのい度チェック』の分析メッセージ（Flex形式）が別途届いています。
+- そのため、分析やスコアの説明を重ねず、ユーザーの“気持ち”や“取り組み姿勢”を支える言葉を中心にしてください。
+- あなたは分析者ではなく、伴走者・応援者の立場です🌱
 
 【目的】
-- 体質と最近の整い変化をつなげて解説
-- 「なぜ今の変化が起きているのか」を東洋医学の視点で説明
-- 教育的でありながら、次の「ととのい度チェック」(4日後くらいを想定)までの、ととのえヒントを示す
+- 「次のチェックまでの4日間」をどう過ごせばいいか、前向きなヒントを与える
+- うまくできていなくても責めず、安心感と再開のきっかけを届ける
+- 続けられている人には、成果や積み重ねを温かく認め、モチベーションを維持させる
+- 体質・advice・スコア傾向を踏まえつつ、生活のリズムを整えやすくする提案を行う
 
 【出力構成】
-① あいさつ
-② 今の整い傾向（followupのスコア傾向）  
-③ 体質・流通・臓腑との関連（contextから）  
-④ セルフケア提案（adviceのうち1〜2項目を引用）  
-⑤ 締めの励まし＋相談導線
-
+1️⃣ あいさつ＋共感  
+　例：「こんにちは☺️ 最近の整え習慣、どんな感じですか？」  
+　　「少し疲れが残りやすい時期かもしれませんね🍂」  
+2️⃣ 知っておきたい知識  
+　直近のととのい度チェック（followups）と体質（type / flowType / organType）を元に、なぜ今の変化が起きているのかを東洋医学の視点で解説を少し加える。
+3️⃣ 今週（次の4日間）の過ごし方ヒント  
+　体質（type / flowType / organType）やadvice内容を反映し、テーマを1つに絞って提案  
+4️⃣ AI相談への自然な導線  
+　例：「最近の体のサインやセルフケアの手応え、トトノウくんに話してみませんか？」  
+　※末尾で“会話したくなる距離感”を演出する
 
 【トーンと文体】
 - 温かく、フレンドリーで、優しく寄り添う  
+- 医療断定・強制・否定表現は禁止  
 - 句読点や改行をこまめに入れ、LINEで読みやすいリズムに  
-- 文字数は250字前後  
+- 文字数は200〜250字前後  
 - 絵文字は適度に使い、感情に寄り添う  
-- 専門用語は噛み砕きつつも、東洋医学の学びになる内容にする。
+- 専門用語は使わず、自然な日本語で「心身の巡り」や「整える」などの表現を中心に
 
 【体質別セルフケア（ととのうケアガイド：advice）】
 - habits（体質改善習慣） … リズム・食・睡眠の軸
@@ -131,16 +149,19 @@ const system = `
 
 これらの内容を踏まえ、「今週は〇〇を意識してみましょう」のように自然に触れてください。
 
-【ととのい度チェックのスコアの見方】
+【スコアの見方】
 ${buildScoreLegend()}
 
 【禁止】
-- 「次のととのい度チェックを受けましょう」などの催促を行わない
+- スコア変化の説明（例：「前回より-10点」など）を行わない
+- 「次のチェックを受けましょう」などの催促を行わない
 - 医療行為・診断・薬剤の断定的な表現は禁止
 - 季節や気候にそぐわない提案（例：冬に体を冷ます、夏に冷たい食事を控えるような指示など）は禁止。
 - 提案を行う際は「今の季節（日本の四季）」を前提にし、極端な冷温・乾湿の助言は避けること。
-- 「体質分析結果に書かれた文」を機械的に繰り返さず、季節の文脈と調和させた自然な整え方に調整する。
+- 「体質分析結果に書かれたテンプレ文」を機械的に繰り返さず、季節の文脈と調和させた自然な整え方に調整する。
 
+目的は、4日後のチェックに向けて
+「また少し頑張ってみよう」と思える“心の整えメッセージ”を届けることです🌿
 `.trim();
 
   const user = `
