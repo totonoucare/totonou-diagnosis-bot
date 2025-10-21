@@ -74,7 +74,6 @@ async function buildCycleReminder({
   chiefSymptom,
   advice,
   latest,
-  prev,
   statusFlag
 }) {
   const { date, weekdayJp } = getTodayMeta();
@@ -98,13 +97,14 @@ async function buildCycleReminder({
 - 医療断定や催促は禁止
 - 文字数は200〜250字
 
-【体質別セルフケア提案（advice）】
+【体質別セルフケア提案：ととのうケアガイド（advice）】
 - habits（体質改善習慣）
 - breathing（巡りととのう呼吸法）
 - stretch（経絡ストレッチ）
 - tsubo（ツボほぐし）
 - kampo（おすすめ漢方薬）
 これらの内容を踏まえ、どのセルフケアをどう意識すると良いかを自然に織り交ぜて声かけをしてください。
+※ただし、漢方薬に関しては他のケア内容より優先度を低くし、最終手段として位置付けること。
 
 ${buildScoreLegend()}
   `.trim();
@@ -156,7 +156,7 @@ async function generateGPTMessage(lineId) {
     const chiefSymptom = latestContext?.symptom || mmContext?.symptom || null;
     const advice = latestContext?.advice || mmContext?.advice || null;
 
-    // followups取得（最新＋1件）
+    // followups取得（最新のみ）
     const { data: fuRows } = await supabase
       .from("followups")
       .select("symptom_level, sleep, meal, stress, habits, breathing, stretch, tsubo, kampo, motion_level, created_at, id")
@@ -164,7 +164,6 @@ async function generateGPTMessage(lineId) {
       .order("created_at", { ascending: false })
       .limit(2);
     const latestFollowup = fuRows?.[0] || null;
-    const prevFollowup = fuRows?.[1] || null;
     const statusFlag = extractStatusFlag(latestFollowup);
 
     // 2週間経過チェック
@@ -188,7 +187,6 @@ async function generateGPTMessage(lineId) {
         chiefSymptom,
         advice,
         latest: latestFollowup,
-        prev: prevFollowup,
         statusFlag,
       });
     }
