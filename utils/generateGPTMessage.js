@@ -1,5 +1,5 @@
 // utils/generateGPTMessage.js
-// 🌿 トトノウくん伴走リマインダー：4日サイクル仕様＋スコア理解統合版
+// 🌿 トトノウくん伴走リマインダー：体質＋advice＋ととのい度チェック対応 完全版
 
 const OpenAI = require("openai");
 const { createClient } = require("@supabase/supabase-js");
@@ -23,7 +23,7 @@ function getTodayMeta() {
   return { date, weekdayJp };
 }
 
-/** スコアの見方（buildConsultMessages.jsから完全移植） */
+/** スコアの見方（buildConsultMessages.jsから移植） */
 function buildScoreLegend() {
   const lines = [
     "▼ ととのい度チェックとは？",
@@ -66,12 +66,22 @@ function extractStatusFlag(fu = null) {
 }
 
 /** GPTメッセージ生成：4日サイクルに合わせた伴走リマインド */
-async function buildCycleReminder({ constitution, trait, flowType, organType, chiefSymptom, latest, prev, statusFlag }) {
+async function buildCycleReminder({
+  constitution,
+  trait,
+  flowType,
+  organType,
+  chiefSymptom,
+  advice,
+  latest,
+  prev,
+  statusFlag
+}) {
   const { date, weekdayJp } = getTodayMeta();
 
   const system = `
 あなたは『ととのうケアナビ』のAIパートナー「トトノウくん」です。
-ユーザーの体質（context）と、ととのい度チェック（followups）をもとに、
+ユーザーの体質（context）・セルフケア提案（advice）・ととのい度チェック（followups）をもとに、
 4日後の次回チェックに向けて「今週の整え方」を優しくサポートする伴走メッセージを届けてください。
 
 【目的】
@@ -81,12 +91,21 @@ async function buildCycleReminder({ constitution, trait, flowType, organType, ch
 
 【出力構成】
 1. あいさつ＋共感（親しみやすく、絵文字使用）
-2. 今週（次の4日間）の過ごし方のヒント（体質やスコア傾向から）
+2. 今週（次の4日間）の過ごし方のヒント（体質やスコア傾向、advice内容から）
 3. 小さな励ましや「自分を大切にする」提案
 4. AI相談への自然な導線（例：「最近の整い、どんな感じ？」「気軽に話してね☺️」）
 - 「次のチェックまでの4日間」「今週の整え方」といった表現を1回含める
 - 医療断定や催促は禁止
 - 文字数は200〜250字
+
+【体質別セルフケア提案（advice）】
+- habits（体質改善習慣）
+- breathing（巡りととのう呼吸法）
+- stretch（経絡ストレッチ）
+- tsubo（ツボほぐし）
+- kampo（おすすめ漢方薬）
+これらの内容を踏まえ、どのセルフケアをどう意識すると良いかを自然に織り交ぜて声かけをしてください。
+
 ${buildScoreLegend()}
   `.trim();
 
@@ -96,13 +115,15 @@ ${buildScoreLegend()}
 【気の流れ】${flowType || "不明"}
 【負担臓腑】${organType || "不明"}
 【主訴】${chiefSymptom || "未登録"}
+【体質アドバイス】${advice ? JSON.stringify(advice) : "未登録"}
 【直近のととのい度チェック】${latest ? JSON.stringify(latest) : "なし"}
 ${prev ? `【前回】${JSON.stringify(prev)}` : ""}
 【状態】${statusFlag || "特記なし"}
   `.trim();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5",
+    model: "gpt-4o",
+    temperature: 0.8,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -119,10 +140,10 @@ async function generateGPTMessage(lineId) {
     const userId = await getUserIdFromLineId(lineId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
-    // context取得
+    // context取得（adviceも含める）
     const { data: ctxRows } = await supabase
       .from("contexts")
-      .select("type, trait, flowType, organType, symptom, created_at")
+      .select("type, trait, flowType, organType, symptom, advice, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -133,8 +154,9 @@ async function generateGPTMessage(lineId) {
     const flowType = latestContext?.flowType || mmContext?.flowType || null;
     const organType = latestContext?.organType || mmContext?.organType || null;
     const chiefSymptom = latestContext?.symptom || mmContext?.symptom || null;
+    const advice = latestContext?.advice || mmContext?.advice || null;
 
-    // followups取得
+    // followups取得（最新＋1件）
     const { data: fuRows } = await supabase
       .from("followups")
       .select("symptom_level, sleep, meal, stress, habits, breathing, stretch, tsubo, kampo, motion_level, created_at, id")
@@ -164,6 +186,7 @@ async function generateGPTMessage(lineId) {
         flowType,
         organType,
         chiefSymptom,
+        advice,
         latest: latestFollowup,
         prev: prevFollowup,
         statusFlag,
