@@ -48,9 +48,9 @@ function buildScoreLegend() {
     "　※ここでの『負担経絡の伸展動作』は、その人に提案している stretch の動きそのもの。",
     "",
     "▼ 項目どうしの関係",
-    "・habits ↔ sleep / meal / stress：生活習慣を整えると体調も整いやすい。",
-    "・stretch / tsubo ↔ motion_level：動作テストの張りをとって経絡の負担(関連臓腑)を改善するセルフケア。",
-    "・breathing ↔ stress / sleep：呼吸を整えると心身のリズムや睡眠の質も整う。",
+    "・habits ↔ sleep / meal / stress：生活リズム（睡眠・食事・ストレス）は habits の実践度に強く影響し、逆に habits を整えるとこれらの乱れも改善しやすい。",
+    "・stretch / tsubo ↔ motion_level：stretch / tsubo は motion_level（動作テストの経絡ライン張りや負担）を直接下げる目的のセルフケア。motion_level の悪化は stretch / tsubo の未実施や負荷過多を示唆する。",
+    "・breathing ↔ stress / sleep：breathing（巡りととのう呼吸法）は自律神経と深層呼吸筋を整え、ストレス緩和や睡眠改善を助ける。"
   ];
   return lines.join("\n");
 }
