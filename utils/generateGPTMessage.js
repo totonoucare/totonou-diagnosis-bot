@@ -117,7 +117,6 @@ ${buildScoreLegend()}
 【主訴】${chiefSymptom || "未登録"}
 【ととのうケアガイド】${advice ? JSON.stringify(advice) : "未登録"}
 【直近のととのい度チェック】${latest ? JSON.stringify(latest) : "なし"}
-${prev ? `【前回】${JSON.stringify(prev)}` : ""}
 【状態】${statusFlag || "特記なし"}
   `.trim();
 
