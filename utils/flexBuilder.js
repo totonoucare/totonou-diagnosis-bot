@@ -17,7 +17,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#7B9E76',
         paddingAll: '12px',
       },
       body: {
@@ -47,7 +47,7 @@ function MessageBuilder({ altText, header, body, buttons }) {
             style: 'primary',
             height: 'sm',
             margin: 'sm',
-            color: '#758A6D',
+            color: '#7B9E76',
           })),
         ],
       },
@@ -116,7 +116,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
         },
         height: 'sm',
         style: 'primary',
-        color: '#758A6D',
+        color: '#7B9E76',
         flex: 1,
       })),
     },
@@ -140,7 +140,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#7B9E76',
         paddingAll: '12px',
       },
       body: {
@@ -185,7 +185,7 @@ function buildDiagnosisConfirmFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#758A6D",
+        backgroundColor: "#7B9E76",
         paddingAll: "12px",
       },
       body: {
@@ -221,7 +221,7 @@ function buildDiagnosisConfirmFlex() {
               text: "ととのえタイプ分析開始",
             },
             style: "primary",
-            color: "#758A6D",
+            color: "#7B9E76",
           },
         ],
       },
@@ -248,7 +248,7 @@ function buildFollowupConfirmFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#758A6D",
+        backgroundColor: "#7B9E76",
         paddingAll: "12px",
       },
       body: {
@@ -284,7 +284,7 @@ function buildFollowupConfirmFlex() {
               text: "ととのい度チェック開始",
             },
             style: "primary",
-            color: "#758A6D",
+            color: "#7B9E76",
           },
         ],
       },
@@ -323,7 +323,7 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
           },
           height: 'sm',
           style: 'primary',
-          color: '#758A6D',
+          color: '#7B9E76',
           flex: 1,
         })),
       },
@@ -339,7 +339,7 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
           type: 'box',
           layout: 'vertical',
           contents: [{ type: 'text', text: injectedHeader, weight: 'bold', size: 'md', color: '#ffffff' }],
-          backgroundColor: '#758A6D',
+          backgroundColor: '#7B9E76',
           paddingAll: '12px',
         },
         body: {
@@ -388,7 +388,7 @@ function buildResultFlex(result, imageUrl) {
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#7B9E76',
         paddingAll: '12px',
       },
       body: {
@@ -498,7 +498,7 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
           uri: card.link,
         },
         style: 'primary',
-        color: '#758A6D', // トーン統一
+        color: '#7B9E76', // トーン統一
         height: 'sm',
       });
     }
@@ -518,7 +518,7 @@ function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのう�
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#7B9E76',
         paddingAll: '12px',
       },
       body: {
@@ -565,7 +565,7 @@ function buildReminderFlex() {
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#7B9E76',
         paddingAll: '12px',
       },
       body: {
@@ -592,7 +592,7 @@ function buildReminderFlex() {
               text: 'ととのい度チェック',
             },
             style: 'primary',
-            color: '#758A6D',
+            color: '#7B9E76',
           },
         ],
       },
@@ -619,7 +619,7 @@ function buildChatConsultOptionsFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#758A6D", // 落ち着いたアースグリーン27AE60
+        backgroundColor: "#7B9E76", // 落ち着いたアースグリーン27AE60
         paddingAll: "12px",
       },
       body: {
@@ -637,7 +637,7 @@ function buildChatConsultOptionsFlex() {
               text: "ととのうGPTでAI相談",
             },
             style: "primary",
-            color: "#758A6D", // ナチュラルグリーン
+            color: "#7B9E76", // ナチュラルグリーン
           },
           {
             type: "button",
@@ -675,7 +675,7 @@ function buildTrialStartFlex() {
             color: '#ffffff',
           },
         ],
-        backgroundColor: '#758A6D',
+        backgroundColor: '#7B9E76',
         paddingAll: '12px',
       },
       body: {
@@ -711,7 +711,7 @@ function buildTrialStartFlex() {
               displayText: '無料トライアルを開始！',
             },
             style: 'primary',
-            color: '#758A6D',
+            color: '#7B9E76',
           },
         ],
       },
@@ -733,7 +733,7 @@ function buildTotonouConsultExamplesFlex() {
         contents: [
           { type: "text", text: "🌿 トトノウくんに話しかけてみよう", weight: "bold", size: "md", color: "#ffffff" }
         ],
-        backgroundColor: "#758A6D",
+        backgroundColor: "#7B9E76",
         paddingAll: "12px",
       },
       body: {
