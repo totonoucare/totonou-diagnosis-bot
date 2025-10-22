@@ -158,7 +158,7 @@ async function handleDiagnosis(userId, userMessage, rawEvent = null) {
             {
               type: 'button',
               style: 'primary',
-              color: '#758A6D',
+              color: '#7B9E76',
               action: {
                 type: 'message',
                 label: 'ととのうケアガイドを見る🎁',
