@@ -719,6 +719,65 @@ function buildTrialStartFlex() {
   };
 }
 
+// トトノウ相談（AIへの質問例Flex）
+function buildTotonouConsultExamplesFlex() {
+  return {
+    type: "flex",
+    altText: "トトノウくんに相談してみよう",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          { type: "text", text: "🌿 トトノウくんに話しかけてみよう", weight: "bold", size: "md", color: "#ffffff" }
+        ],
+        backgroundColor: "#758A6D",
+        paddingAll: "12px",
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          { type: "text", text: "体質や最近の整い度をもとに、AIトトノウくんがセルフケアをサポートします。気になるテーマを選んでください☺️", wrap: true, size: "sm" },
+          {
+            type: "button",
+            style: "primary",
+            color: "#A8C9A0",
+            action: { type: "message", label: "📝 今週のケアプラン作成", text: "今週のケアプランを立ててほしい！" }
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#A8C9A0",
+            action: { type: "message", label: "🍴 自分に合う今日の食事", text: "自分に合った今日の食事メニューを考えて！" }
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#A8C9A0",
+            action: { type: "message", label: "💤 眠りが浅いときの整え方", text: "最近眠りが浅いんだけど、どう整えたらいい？" }
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#A8C9A0",
+            action: { type: "message", label: "🌀 私のストレス対策法", text: "私の体質に合うストレス対処法を教えて！" }
+          },
+          {
+            type: "button",
+            style: "primary",
+            color: "#A8C9A0",
+            action: { type: "message", label: "🌿 漢方薬の選び方", text: "漢方薬の選び方を教えて！" }
+          }
+        ],
+      },
+    },
+  };
+}
+
 // utils/flexBuilder.js
 function textBlock(text) {
   return { type: "text", text, wrap: true, size: "sm" };
@@ -781,4 +840,5 @@ module.exports = {
   buildTrialStartFlex, 
   buildResultFlex, 
   buildFollowupCarousel,
+  buildTotonouConsultExamplesFlex
 };
