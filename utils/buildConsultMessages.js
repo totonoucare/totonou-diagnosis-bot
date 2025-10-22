@@ -145,8 +145,10 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "   各項目は、いつ/どこで/どれだけ/どうやって/注意点を短文でわかりやすく。関連する追加提案があればしても良い。",
   ].filter(Boolean).join("\n");
 
-  return [
-    { role: "system", content: system },
-    { role: "user",   content: (userText || "").trim() }
-  ];
+// 改善版
+return [
+  { role: "system", content: systemHeader },
+  ...recentChats.map(c => ({ role: c.role, content: c.message })),
+  { role: "user", content: (userText || "").trim() }
+];
 };
