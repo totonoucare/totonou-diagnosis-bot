@@ -80,22 +80,11 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   style: "primary",
                   color: "#758A6D",
                   action: {
-                    type: "message",
-                    label: "✉️ 身近な人への紹介",
-                    text: "身近な人への紹介"
-                  }
-                },
-                {
-                  type: "button",
-                  style: "primary",
-                  color: "#758A6D",
-                  action: {
                     type: "uri",
                     label: "🔐 サブスク登録 / 解約ページ",
                     uri: subscribeUrl
                   }
                 },
-
                 {
                   type: "button",
                   style: "primary",
@@ -105,7 +94,17 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                     label: "🌐 ホームページ",
                     uri: "https://totonoucare.com"
                   }
-                }
+                },
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#758A6D",
+                  action: {
+                    type: "message",
+                    label: "✉️ 身近な人へのご紹介",
+                    text: "身近な人への紹介"
+                  }
+                },
               ]
             }
           }
