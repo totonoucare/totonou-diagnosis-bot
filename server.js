@@ -8,6 +8,7 @@ const {
   buildCategorySelectionFlex, 
   buildDiagnosisConfirmFlex, 
   buildFollowupConfirmFlex, 
+  buildTotonouConsultExamplesFlex,
 } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
@@ -190,6 +191,13 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
       // チャット相談メニュー（既存UIを残すだけ／AIとは別物）
       if (userMessage === "チャット相談") {
         const flex = buildChatConsultOptionsFlex();
+        await client.replyMessage(event.replyToken, flex);
+        return;
+      }
+
+      // トトノウ相談（AIへの質問例Flex）
+      if (userMessage === "トトノウくんに相談") {
+        const flex = buildTotonouConsultExamplesFlex();
         await client.replyMessage(event.replyToken, flex);
         return;
       }
