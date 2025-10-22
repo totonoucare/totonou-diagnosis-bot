@@ -97,21 +97,28 @@ function buildScoreLegend() {
   return lines.join("\n");
 }
 
+// utils/buildConsultMessages.js（抜粋・置き換え）
+
 module.exports = function buildConsultMessages({ context, followups, userText, recentChats = [] }) {
   const ctx = pickContext(context);
   const latest = followups?.latest ?? null;
   const prev   = followups?.prev   ?? null;
 
-  // 直近チャット（古→新、最大3件）。300字で軽くトリムして過大トークンを回避
-  const chats = (recentChats || []).map(c => {
-    const who = c.role === 'assistant' ? 'アシスタント' : 'ユーザー';
-    const body = String(c.message || c.content || "").slice(0, 300);
-    return `${who}: ${body}`;
-  });
+  // 直近チャットを role 付きで messages に渡す（古→新、最大3件、各300字）
+  const chatHistory = (recentChats || [])
+    .slice(-3) // 念のため最大3件に
+    .map(c => {
+      const role = c?.role === 'assistant' ? 'assistant' : 'user';
+      const content = String(c?.message ?? c?.content ?? '').slice(0, 300);
+      if (!content) return null;
+      return { role, content };
+    })
+    .filter(Boolean);
 
-  const system = [
+  // system用のヘッダ（※「直近の会話」はここに入れない）
+  const systemHeader = [
     "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のウェルネスパートナーAI『トトノウくん』です。",
-    "以下の“体質・所見（symptom/type/trait/flowType/organType/advice）”と“直近2回のととのい度チェック”、そして“直近チャット3件”を踏まえて、ユーザーの相談に親身に答えてください。",
+    "以下の“体質・所見（symptom/type/trait/flowType/organType/advice）”と“直近2回のととのい度チェック”、そして“直近会話（messages 配列の過去発話）”を踏まえて、ユーザーの相談に親身に答えてください。",
     "",
     "▼ 体質・所見（contexts 直参照）",
     toJSON(ctx),
@@ -122,9 +129,7 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "▼ ととのい度チェック（前回・全カラム）",
     toJSON(prev),
     "",
-    chats.length ? "▼ 直近の会話（古→新, 最大3件）\n" + chats.join("\n") : "",
-    "",
-    buildScoreLegend(), // ← 追加：スコアの見方
+    buildScoreLegend(),
     "",
     "【回答方針】",
     "1) まずはユーザーの質問に端的に答える（結論→理由→やること）。",
@@ -145,10 +150,10 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "   各項目は、いつ/どこで/どれだけ/どうやって/注意点を短文でわかりやすく。関連する追加提案があればしても良い。",
   ].filter(Boolean).join("\n");
 
-// 改善版
-return [
-  { role: "system", content: systemHeader },
-  ...recentChats.map(c => ({ role: c.role, content: c.message })),
-  { role: "user", content: (userText || "").trim() }
-];
+  // ← ここが肝心：system に long テキスト、続けて直近会話、最後に今回のユーザー発話
+  return [
+    { role: "system", content: systemHeader },
+    ...chatHistory,
+    { role: "user", content: String(userText || "").trim() }
+  ];
 };
