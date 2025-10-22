@@ -11,6 +11,23 @@ const {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// 🧹 Markdown整形解除関数（#, **, > などを除去してプレーンテキスト化）
+function stripMarkdown(text) {
+  if (!text) return "";
+  return text
+    .replace(/^#{1,6}\s*/gm, "")              // 見出し #
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")       // **太字**
+    .replace(/(\*|_)(.*?)\1/g, "$2")          // *斜体*
+    .replace(/^[\s]*([-*+])\s+/gm, "")        // 箇条書き
+    .replace(/^\s*\d+\.\s+/gm, "")            // 番号付きリスト
+    .replace(/^\s*>+\s?/gm, "")               // 引用 >
+    .replace(/`([^`]*)`/g, "$1")              // インラインコード
+    .replace(/```[\s\S]*?```/g, "")           // コードブロック
+    .replace(/$begin:math:display$([^$end:math:display$]+)\]$begin:math:text$([^)]+)$end:math:text$/g, "$1")// リンク [text](url)
+    .replace(/\n{3,}/g, "\n\n")               // 余分な改行
+    .trim();
+}
+
 function isAllowed(user) {
   return user?.trial_intro_done === true ||
          (user?.subscribed === true && user?.plan_type === "standard");
@@ -91,9 +108,11 @@ module.exports = async function consult(event, client) {
       messages,
     });
 
-    const text =
+    // 🧹 Markdown整形解除してから返信
+    const text = stripMarkdown(
       rsp.choices?.[0]?.message?.content?.trim() ||
-      "（すみません、回答を生成できませんでした）";
+      "（すみません、回答を生成できませんでした）"
+    );
 
     // 先にユーザーへ返信
     await safeReplyThenPushFallback({ client, event, text });
