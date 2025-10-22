@@ -67,7 +67,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#ffffff"
                 }
               ],
-              backgroundColor: "#758A6D",
+              backgroundColor: "#7B9E76",
               paddingAll: "12px"
             },
             body: {
@@ -78,7 +78,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                 {
                   type: "button",
                   style: "primary",
-                  color: "#758A6D",
+                  color: "#7B9E76",
                   action: {
                     type: "uri",
                     label: "🔐 サブスク登録 / 解約ページ",
@@ -88,7 +88,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                 {
                   type: "button",
                   style: "primary",
-                  color: "#758A6D",
+                  color: "#7B9E76",
                   action: {
                     type: "uri",
                     label: "🌐 ホームページ",
@@ -98,7 +98,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                 {
                   type: "button",
                   style: "primary",
-                  color: "#758A6D",
+                  color: "#7B9E76",
                   action: {
                     type: "message",
                     label: "✉️ 身近な人へのご紹介",
