@@ -745,31 +745,31 @@ function buildTotonouConsultExamplesFlex() {
           {
             type: "button",
             style: "primary",
-            color: "#ABBFA5",
+            color: "#7B9E76",
             action: { type: "message", label: "📝 今週のケアプラン作成", text: "今週のケアプランを立ててほしい！" }
           },
           {
             type: "button",
             style: "primary",
-            color: "#ABBFA5",
+            color: "#7B9E76",
             action: { type: "message", label: "🍴 自分に合う今日の食事", text: "自分に合った今日の食事メニューを考えて！" }
           },
           {
             type: "button",
             style: "primary",
-            color: "#ABBFA5",
+            color: "#7B9E76",
             action: { type: "message", label: "💤 眠りが浅いときの整え方", text: "最近眠りが浅いんだけど、どう整えたらいい？" }
           },
           {
             type: "button",
             style: "primary",
-            color: "#ABBFA5",
+            color: "#7B9E76",
             action: { type: "message", label: "🌀 私のストレス対策法", text: "私の体質に合うストレス対処法を教えて！" }
           },
           {
             type: "button",
             style: "primary",
-            color: "#ABBFA5",
+            color: "#7B9E76",
             action: { type: "message", label: "🌿 漢方薬の選び方", text: "漢方薬の選び方を教えて！" }
           }
         ],
