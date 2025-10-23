@@ -4,11 +4,11 @@ const stretchPointDictionary = {
   "肝・胆": {
     stretch: {
       text: "＼スキマ時間に1分でリセット／\n肝・胆の経絡（けいらく）をゆるめるストレッチ🌿\n\n✅ 肩幅で立ち、両腕を胸の前で交差し、腰から上半身を左右にねじります。\n\n🎯Point\n• 反動はつけず、わき腹と股関節が“心地よく伸びる”強さで\n• ねじった状態で呼吸を3〜5回\n• 左右2セットずつ。特に入浴後が効果的♨️\n\nねじる動きで体の対角線と体側ラインがほぐれ、胸と骨盤のバランスが整いやすくなります✨",
-      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/stretch-kan.png"
+      link: "https://x.gd/uBjOe"
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🦶 足の指先ほぐし\n\n肝・胆の経絡ラインは\n足の『親指・薬指』←→ 腹部へ繋がります。\n\n✅ 足の親指・薬指の爪の両脇を“つまんで回す→引っぱる→揉む”を各10〜15秒×3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 曲泉（きょくせん）／🔘 陽輔（ようほ）",
-      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-kan.png"
+      link: "https://x.gd/RogVL"
     }
   },
 
@@ -19,7 +19,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🦶 足の指先ほぐし\n\n脾・胃のラインは\n足の『親指・人差し指』←→ 腹部へ繋がります。\n\n✅ 足の親指・人差し指の爪の両脇を“つまんで10秒→指先を軽く引っ張る10秒”を各3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 商丘（しょうきゅう）／🔘 解渓（かいけい）",
-      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-hi.png"
+      link: "https://x.gd/akhis"
     }
   },
 
@@ -30,7 +30,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🦶 足裏＆小指ケア\n\n腎・膀胱のラインは\n足の『土踏まず・小指』←→ 腰・背中へ繋がります。\n\n✅ 土踏まずを親指で円を描くように揉み30秒、小指先は“爪の両脇をつまんで回す→引っ張る”を各10秒×3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 復溜（ふくりゅう）／🔘 束骨（そっこつ）",
-      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-jin.png"
+      link: "https://x.gd/QMmX9"
     }
   },
 
@@ -41,7 +41,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🖐️ 手の指先ほぐし\n\n肺と大腸の経絡ラインは、\n手の『親指・人差し指』←→ 胸や横隔膜まで繋がります。\n\n✅ 親指・人差し指の爪の両脇を10秒ずつつまみ、指先を軽く引っ張る10秒を各3回。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 尺沢（しゃくたく）／🔘 曲池（きょくち）",
-      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-hai.png"
+      link: "https://x.gd/9AHfl"
     }
   },
 
@@ -52,7 +52,7 @@ const stretchPointDictionary = {
     },
     points: {
       text: "＼お風呂上がり・就寝前に／\n🖐️ 手の指先ほぐし\n\n心臓と小腸の経絡ラインは、\n手の『小指』←→ 背中や胸郭まで繋がります。\n\n✅ 小指の爪の両脇を“つまむ→回す→引っ張る”各10秒を3セット。合わせて手のひら中央も、軽く円を描くように揉み20秒。\n🌱 ライン全体がほぐれる他、指先は自律神経も整えます\n\n余裕があれば、以下のツボも円を描くように30秒揉むとさらに効果的です！\n🔘 労宮（ろうきゅう）／🔘 後渓（こうけい）",
-      link: "https://totonoucare.com/wp-content/themes/totonoucare/images/points-shin.png"
+      link: "https://x.gd/L0THT"
     }
   }
 };
