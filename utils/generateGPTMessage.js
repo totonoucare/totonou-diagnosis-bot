@@ -177,7 +177,7 @@ ${buildScoreLegend()}
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
-    temperature: 0.85,
+    temperature: 0.95,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
