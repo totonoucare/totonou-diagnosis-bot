@@ -11,21 +11,26 @@ function normalizeAdvice(advice) {
     (advice.habits || advice.breathing || advice.stretch || advice.tsubo || advice.kampo);
   if (looksLikePillars) return advice;
 
-  // カルーセル配列 [{header, body}, ...] を5本柱に分類
-  // header のキーワードで判定（完全一致でなく “含む” 判定）
+  // カルーセル配列 [{header, body, link}, ...] を5本柱に分類
   const r = { habits: null, breathing: null, stretch: null, tsubo: null, kampo: null };
   const arr = Array.isArray(advice) ? advice : [];
+
   for (const card of arr) {
     const header = String(card?.header || "");
     const body = String(card?.body || "");
+    const link = String(card?.link || ""); // ← 🔸ここを追加
     const h = header;
 
-    if (/体質改善|習慣/.test(h))             { r.habits = body;    continue; }
-    if (/巡りととのう呼吸法|呼吸/.test(h))     { r.breathing = body; continue; }
-    if (/経絡ストレッチ|ストレッチ/.test(h))   { r.stretch = body;   continue; }
-    if (/指先・ツボほぐし|ツボ/.test(h))       { r.tsubo = body;     continue; }
-    if (/おすすめ漢方薬|漢方/.test(h))        { r.kampo = body;     continue; }
+    // 🔸リンクがある場合は本文の末尾に追記（GPTが参照できるように）
+    const combined = link ? `${body}\n\n【参考リンク】${link}` : body;
+
+    if (/体質改善|習慣/.test(h))             { r.habits = combined;    continue; }
+    if (/巡りととのう呼吸法|呼吸/.test(h))     { r.breathing = combined; continue; }
+    if (/経絡ストレッチ|ストレッチ/.test(h))   { r.stretch = combined;   continue; }
+    if (/指先・ツボほぐし|ツボ/.test(h))       { r.tsubo = combined;     continue; }
+    if (/おすすめ漢方薬|漢方/.test(h))        { r.kampo = combined;     continue; }
   }
+
   return r;
 }
 
@@ -142,6 +147,7 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "   提案の出し方例：『必要なら○○もご提案できます（要りますか？)』",
     "4) 表現ルール：LINE向けに短文＋改行で見やすく。絵文字も使用し温かく優しく寄り添う口調で。専門語は短く訳す。",
     "   見出しや箇条書きには、適切な絵文字や記号を使い、LINE上で読みやすく表現する。",
+    "   ※ URL(adviceの画像リンク)はMarkdownではなく、「https://〜」形式で書いてください。LINEが自動でリンク化します。",
     "5) セーフティ：西洋医学的な診断・処方はしない。急性/重篤の兆候は受診案内を優先。",
     "6) 推奨の粒度：費用/手間は現実的に。セルフケアやセルフメディケーション(OTC漢方薬や栄養サプリ)の範囲内で。",
     "7) 『今週のケアプラン』を求められた場合は、以下の2部構成で提示する：",
