@@ -825,6 +825,58 @@ function buildFollowupCarousel(cards) {
   };
 }
 
+/** GPTメッセージをFlexカード化（ととのいリマインド用） */
+function buildReminderFlexFromText(text) {
+  if (!text) return null;
+
+  const parts = text.split(/\n+/).map(p => p.trim()).filter(Boolean);
+  const [intro, learning, hint, outro] = parts;
+
+  return {
+    type: "flex",
+    altText: "今週の整えリマインド🌿",
+    contents: {
+      type: "bubble",
+      hero: {
+        type: "image",
+        url: "https://totonoucare.com/images/flex/reminder-hero.jpg",
+        size: "full",
+        aspectMode: "cover",
+        aspectRatio: "16:9"
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          { type: "text", text: "🌿 今週の整えリマインド", weight: "bold", size: "md", color: "#5A745C" },
+          { type: "text", text: intro || "", wrap: true, size: "sm", margin: "md" },
+          { type: "separator", margin: "md" },
+          { type: "text", text: learning || "", wrap: true, size: "sm", margin: "md" },
+          { type: "text", text: hint || "", wrap: true, size: "sm", margin: "md" },
+          { type: "separator", margin: "md" },
+          { type: "text", text: outro || "無理せず、自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", margin: "md", color: "#4D5F4A" }
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "horizontal",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#7BA37C",
+            action: {
+              type: "message",
+              label: "AIに相談する 💬",
+              text: "トトノウくんに相談したい"
+            }
+          }
+        ]
+      }
+    }
+  };
+}
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
@@ -837,6 +889,7 @@ module.exports = {
   buildFollowupQuestionFlex,
   buildChatConsultOptionsFlex,
   buildReminderFlex,
+  buildReminderFlexFromText,
   buildTrialStartFlex, 
   buildResultFlex, 
   buildFollowupCarousel,
