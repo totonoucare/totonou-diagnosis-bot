@@ -758,7 +758,7 @@ function buildTotonouConsultExamplesFlex() {
             type: "button",
             style: "primary",
             color: "#7B9E76",
-            action: { type: "message", label: "💤 眠りが浅いときの整え方", text: "最近眠りが浅いんだけど、どう整えたらいい？" }
+            action: { type: "message", label: "💤 眠りが浅いときの整え方", text: "最近眠りが浅いんだけど、考えられる原因と対策は？" }
           },
           {
             type: "button",
@@ -770,7 +770,7 @@ function buildTotonouConsultExamplesFlex() {
             type: "button",
             style: "primary",
             color: "#7B9E76",
-            action: { type: "message", label: "🌿 漢方薬の選び方", text: "漢方薬の選び方を教えて！" }
+            action: { type: "message", label: "🌿 漢方薬の選び方・飲み方", text: "漢方薬の選び方や効果的な飲み方を教えて！" }
           }
         ],
       },
@@ -848,13 +848,13 @@ function buildReminderFlexFromText(text) {
         type: "box",
         layout: "vertical",
         contents: [
-          { type: "text", text: "🌿 今週の整えリマインド", weight: "bold", size: "md", color: "#5A745C" },
-          { type: "text", text: intro || "", wrap: true, size: "sm", margin: "md" },
+          { type: "text", text: "🌿 今週のととのうケアレター", weight: "bold", size: "lg", color: "#5A745C" },
+          { type: "text", text: intro || "", wrap: true, size: "md", margin: "md" },
           { type: "separator", margin: "md" },
-          { type: "text", text: learning || "", wrap: true, size: "sm", margin: "md" },
-          { type: "text", text: hint || "", wrap: true, size: "sm", margin: "md" },
+          { type: "text", text: learning || "", wrap: true, size: "md", margin: "md" },
+          { type: "text", text: hint || "", wrap: true, size: "md", margin: "md" },
           { type: "separator", margin: "md" },
-          { type: "text", text: outro || "無理せず、自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", margin: "md", color: "#4D5F4A" }
+          { type: "text", text: outro || "次のととのい度チェックに向けて、今週も自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", margin: "md", color: "#4D5F4A" }
         ]
       },
       footer: {
@@ -864,11 +864,11 @@ function buildReminderFlexFromText(text) {
           {
             type: "button",
             style: "primary",
-            color: "#7BA37C",
+            color: "#5A745C",
             action: {
               type: "message",
-              label: "AIに相談する 💬",
-              text: "トトノウくんに相談したい"
+              label: "トトノウくんに相談 💬",
+              text: "トトノウくんに相談"
             }
           }
         ]
