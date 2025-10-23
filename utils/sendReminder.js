@@ -1,7 +1,7 @@
 const supabase = require('../supabaseClient');
 const line = require('../line');
 const { getLatestFollowup } = require('../supabaseMemoryManager');
-const { buildReminderFlex } = require('./flexBuilder');
+const { buildReminderFlex, buildReminderFlexFromText } = require('./flexBuilder');
 const { generateGPTMessage } = require('./generateGPTMessage');
 
 console.log('🚀 リマインダー実行開始');
@@ -88,12 +88,19 @@ async function sendReminders() {
       try {
         if (isEven) {
           const msg = await generateGPTMessage(user.line_id);
-          await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
-          console.log('✅ GPTメッセージ送信完了');
+          const flex = buildReminderFlexFromText(msg); // ← GPT出力をFlex化！
+
+          if (flex) {
+            await line.client.pushMessage(user.line_id, flex);
+            console.log('✅ GPTリマインド(Flexカード)送信完了');
+          } else {
+            await line.client.pushMessage(user.line_id, { type: 'text', text: msg });
+            console.log('✅ GPTリマインド(テキストfallback)送信完了');
+          }
         } else {
           const flex = buildReminderFlex();
           await line.client.pushMessage(user.line_id, flex);
-          console.log('✅ Flexメッセージ送信完了');
+          console.log('✅ 通常Flexメッセージ送信完了');
         }
       } catch (err) {
         console.error('❌ メッセージ送信エラー:', err);
