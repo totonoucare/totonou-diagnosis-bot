@@ -845,29 +845,39 @@ function buildReminderFlexFromText(text) {
         aspectRatio: "16:9"
       },
       body: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          // 🪷 タイトル
-          { type: "text", text: "🌿 今週のととのうケアレター", weight: "bold", size: "lg", color: "#5A745C" },
-          { type: "separator", margin: "md" },
-
-          // 💬 導入
-          { type: "text", text: intro || "", wrap: true, size: "md", margin: "md", color: "#333" },
-
-          // 🌸 区切りとテーマ小見出し
-          { type: "separator", margin: "md" },
-          { type: "text", text: "🪷 今のカラダのサイン", weight: "bold", size: "sm", color: "#6A8265", margin: "md" },
-          { type: "text", text: learning || "", wrap: true, size: "sm", margin: "sm", color: "#444" },
-
-          { type: "separator", margin: "md" },
-          { type: "text", text: "🌼 今週の整えヒント", weight: "bold", size: "sm", color: "#6A8265", margin: "md" },
-          { type: "text", text: hint || "", wrap: true, size: "sm", margin: "sm", color: "#444" },
-
-          { type: "separator", margin: "md" },
-          { type: "text", text: outro || "次のととのい度チェックまで、自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", margin: "md", color: "#4D5F4A" }
-        ]
-      },
+  type: "box",
+  layout: "vertical",
+  contents: [
+    { type: "text", text: "🌿 今週のととのうケアレター", weight: "bold", size: "lg", color: "#5A745C" },
+    {
+      type: "box",
+      layout: "vertical",
+      margin: "md",
+      contents: [
+        { type: "text", text: intro || "", wrap: true, size: "md", color: "#333" }
+      ]
+    },
+    {
+      type: "box",
+      layout: "vertical",
+      margin: "md",
+      contents: [
+        { type: "text", text: "🪷 今のカラダのサイン", weight: "bold", size: "sm", color: "#6A8265" },
+        { type: "text", text: learning || "", wrap: true, size: "sm", color: "#444", margin: "sm" }
+      ]
+    },
+    {
+      type: "box",
+      layout: "vertical",
+      margin: "md",
+      contents: [
+        { type: "text", text: "🌼 今週の整えヒント", weight: "bold", size: "sm", color: "#6A8265" },
+        { type: "text", text: hint || "", wrap: true, size: "sm", color: "#444", margin: "sm" }
+      ]
+    },
+    { type: "text", text: outro || "次のととのい度チェックまで、自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", color: "#4D5F4A", margin: "md" }
+  ]
+},
       footer: {
         type: "box",
         layout: "vertical",
@@ -896,6 +906,7 @@ function buildReminderFlexFromText(text) {
     }
   };
 }
+
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
