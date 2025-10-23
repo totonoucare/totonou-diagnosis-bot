@@ -825,7 +825,7 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-/** GPTメッセージをFlexカード化（ととのいリマインド用） */
+/** GPTメッセージをFlexカード化（記事風ととのいレター） */
 function buildReminderFlexFromText(text) {
   if (!text) return null;
 
@@ -834,7 +834,7 @@ function buildReminderFlexFromText(text) {
 
   return {
     type: "flex",
-    altText: "今週の整えリマインド🌿",
+    altText: "🌿 今週のととのうケアレター",
     contents: {
       type: "bubble",
       hero: {
@@ -848,18 +848,30 @@ function buildReminderFlexFromText(text) {
         type: "box",
         layout: "vertical",
         contents: [
+          // 🪷 タイトル
           { type: "text", text: "🌿 今週のととのうケアレター", weight: "bold", size: "lg", color: "#5A745C" },
-          { type: "text", text: intro || "", wrap: true, size: "md", margin: "md" },
           { type: "separator", margin: "md" },
-          { type: "text", text: learning || "", wrap: true, size: "md", margin: "md" },
-          { type: "text", text: hint || "", wrap: true, size: "md", margin: "md" },
+
+          // 💬 導入
+          { type: "text", text: intro || "", wrap: true, size: "md", margin: "md", color: "#333" },
+
+          // 🌸 区切りとテーマ小見出し
           { type: "separator", margin: "md" },
-          { type: "text", text: outro || "次のととのい度チェックに向けて、今週も自分のペースで整えていきましょうね🌿", wrap: true, size: "md", margin: "md", color: "#4D5F4A" }
+          { type: "text", text: "🪷 今のカラダのサイン", weight: "bold", size: "sm", color: "#6A8265", margin: "md" },
+          { type: "text", text: learning || "", wrap: true, size: "sm", margin: "sm", color: "#444" },
+
+          { type: "separator", margin: "md" },
+          { type: "text", text: "🌼 今週の整えヒント", weight: "bold", size: "sm", color: "#6A8265", margin: "md" },
+          { type: "text", text: hint || "", wrap: true, size: "sm", margin: "sm", color: "#444" },
+
+          { type: "separator", margin: "md" },
+          { type: "text", text: outro || "次のととのい度チェックまで、自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", margin: "md", color: "#4D5F4A" }
         ]
       },
       footer: {
         type: "box",
-        layout: "horizontal",
+        layout: "vertical",
+        spacing: "sm",
         contents: [
           {
             type: "button",
@@ -870,13 +882,20 @@ function buildReminderFlexFromText(text) {
               label: "トトノウくんに相談 💬",
               text: "トトノウくんに相談"
             }
+          },
+          {
+            type: "text",
+            text: "ゆるく、心地よく整えていこう🍵",
+            size: "xs",
+            color: "#999",
+            align: "center",
+            margin: "sm"
           }
         ]
       }
     }
   };
 }
-
 module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
