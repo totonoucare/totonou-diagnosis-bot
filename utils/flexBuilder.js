@@ -910,7 +910,7 @@ function buildReminderFlexFromText(text) {
       },
       footer: {
         type: "box",
-        layout: "vertical",
+        layout: "horizontal",
         contents: [
           {
             type: "button",
@@ -921,14 +921,6 @@ function buildReminderFlexFromText(text) {
               label: "トトノウくんに相談 💬",
               text: "トトノウくんに相談"
             }
-          },
-          {
-            type: "text",
-            text: "ゆるく、心地よく整えていこう🍵",
-            size: "xs",
-            color: "#999",
-            align: "center",
-            margin: "sm"
           }
         ]
       }
