@@ -148,7 +148,6 @@ const system = `
 - kampo（おすすめ漢方薬） … 最終的な補助提案（他のケアよりも優先度は低く）
 
 これらの内容を踏まえ、「今週は〇〇を意識してみましょう」のように自然に触れてください。
-※ URL(画像リンク)はMarkdownではなく、「https://〜」形式で書いてください。LINEが自動でリンク化します。
 
 【スコアの見方】
 ${buildScoreLegend()}
@@ -177,7 +176,7 @@ ${buildScoreLegend()}
   `.trim();
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-5",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
