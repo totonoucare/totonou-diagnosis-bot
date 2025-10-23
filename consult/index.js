@@ -105,7 +105,7 @@ module.exports = async function consult(event, client) {
   try {
     const rsp = await openai.chat.completions.create({
       model: "gpt-4o",
-      temperature: 0.95,
+      temperature: 1.3,
       messages,
     });
 
