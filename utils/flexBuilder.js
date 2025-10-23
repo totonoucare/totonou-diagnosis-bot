@@ -854,7 +854,7 @@ function buildReminderFlexFromText(text) {
           { type: "text", text: learning || "", wrap: true, size: "md", margin: "md" },
           { type: "text", text: hint || "", wrap: true, size: "md", margin: "md" },
           { type: "separator", margin: "md" },
-          { type: "text", text: outro || "次のととのい度チェックに向けて、今週も自分のペースで整えていきましょうね🌿", wrap: true, size: "sm", margin: "md", color: "#4D5F4A" }
+          { type: "text", text: outro || "次のととのい度チェックに向けて、今週も自分のペースで整えていきましょうね🌿", wrap: true, size: "md", margin: "md", color: "#4D5F4A" }
         ]
       },
       footer: {
@@ -864,7 +864,7 @@ function buildReminderFlexFromText(text) {
           {
             type: "button",
             style: "primary",
-            color: "#5A745C",
+            color: "#7B9E76",
             action: {
               type: "message",
               label: "トトノウくんに相談 💬",
