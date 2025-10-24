@@ -839,7 +839,7 @@ function buildReminderFlexFromText(text) {
       type: "bubble",
       hero: {
         type: "image",
-        url: "https://totonoucare.com/wp-content/themes/totonoucare/images/hero-pc.png",
+        url: "https://totonoucare.com/wp-content/themes/totonoucare/images/flex-hero-autumn.png",
         size: "full",
         aspectMode: "cover",
         aspectRatio: "16:9"
