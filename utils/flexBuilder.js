@@ -834,7 +834,7 @@ function buildReminderFlexFromText(text) {
 
   return {
     type: "flex",
-    altText: "今週の整えリマインド🌿",
+    altText: "今週のととのうケアレター🌿",
     contents: {
       type: "bubble",
       hero: {
