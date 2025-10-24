@@ -223,7 +223,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           if ((user.remaining_consultations || 0) <= 0) {
             await client.replyMessage(event.replyToken, {
               type: "text",
-              text: `ご相談回数の上限に達しています🙏\n\nスタンダード会員様は月ごとにリセットされます。\nもう一度ご相談されたい場合は、来月までお待ちいただくか、サポートまでご連絡ください。`,
+              text: `ご相談回数の上限に達しています🙏\n\nサブスク利用ユーザー様は月ごとにリセットされます。\nもう一度ご相談されたい場合は、来月までお待ちいただくか、サポートまでご連絡ください。`,
             });
             return;
           }
@@ -276,7 +276,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
             const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineIdIn}`;
             await client.replyMessage(replyToken, {
               type: "text",
-              text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+              text: `恐れ入りますが、この機能はサブスク利用ユーザー様またはトライアル中のユーザー様限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
             });
             return;
           }
@@ -422,7 +422,7 @@ if (event.type === "message" && event.message.type === "text") {
     const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
     await client.replyMessage(event.replyToken, {
       type: "text",
-      text: `恐れ入りますが、この機能はスタンダード会員またはトライアル中の方限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
+      text: `恐れ入りますが、この機能はサブスク利用ユーザー様またはトライアル中のユーザー様限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
     });
     return;
   }
