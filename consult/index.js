@@ -67,7 +67,7 @@ module.exports = async function consult(event, client) {
     return safeReplyThenPushFallback({
       client, event,
       text:
-        "このAI相談は「スタンダード」またはトライアルの方限定です🙏\n" +
+        "恐れ入りますが、この機能はサブスク利用ユーザー様またはトライアル中のユーザー様限定となります🙏\n" +
         "ご利用希望は『サービス案内』→ サブスク登録をご確認ください。\n\n" +
         `🔗 ${subscribeUrl}`
     });
