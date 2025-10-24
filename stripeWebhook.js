@@ -47,7 +47,7 @@ router.post(
           const priceId = subscription.items.data[0]?.price.id;
 
           const planType =
-            priceId === "price_1RitWqEVOs4YPHrumBOdaMVJ"
+            priceId === "price_1SLjHsEVOs4YPHruUlyG16SF"
               ? "standard"
               : priceId === "price_1RitG7EVOs4YPHruuPtlHrpV"
               ? "light"
