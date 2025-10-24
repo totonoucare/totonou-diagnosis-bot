@@ -278,7 +278,7 @@ function chooseNextPillar(ans, score) {
 async function callGPTJson(systemPrompt, userPrompt) {
   try {
     const rsp = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user",   content: userPrompt  },
