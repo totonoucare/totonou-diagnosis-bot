@@ -188,7 +188,7 @@ async function handleFollowup(event, client, lineId) {
       if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
         await client.replyMessage(replyToken, [{
           type: 'text',
-          text: 'この機能はサブスク会員様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『サービス案内』からアクセスいただけます✨'
+          text: 'この機能はサブスク利用ユーザー様、もしくは無料お試し期間限定となっています🙏\n\nサブスク登録ページはメニュー内『サービス案内』からアクセスいただけます✨'
         }]);
         return null;
       }
