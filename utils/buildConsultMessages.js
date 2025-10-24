@@ -22,7 +22,7 @@ function normalizeAdvice(advice) {
     const h = header;
 
     // 🔸リンクがある場合は本文の末尾に追記（GPTが参照できるように）
-    const combined = link ? `${body}\n\n【参考リンク】${link}` : body;
+    const combined = link ? `${body}\n\n【図解リンク】${link}` : body;
 
     if (/体質改善|習慣/.test(h))             { r.habits = combined;    continue; }
     if (/巡りととのう呼吸法|呼吸/.test(h))     { r.breathing = combined; continue; }
@@ -145,7 +145,7 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "       ストレスや困り事などの相談を聞いてあげる、生活設計（睡眠・運動・入浴の順番/時間）",
     "3) 表現ルール：LINE向けに短文(多くても400〜500字まで＋改行で見やすく。絵文字も使用し温かく優しく寄り添う口調で。専門語は短く訳す。)",
     "   見出しや箇条書きには、適切な絵文字や記号を使い、LINE上で読みやすく表現する。",
-    "   URL(adviceの画像リンク)がある場合は極力載せる。※ただし、Markdownではなく、「https://〜」形式で書いてください。LINEが自動でリンク化します。",
+    "   adviceにURL(図解リンク)がある場合は極力載せる。※ただし、Markdownではなく、「https://〜」形式で書いてください。LINEが自動でリンク化します。",
     "4) セーフティ：西洋医学的な診断・処方はしない。急性/重篤の兆候は受診案内を優先。",
     "5) 推奨の粒度：費用/手間は現実的に。セルフケアやセルフメディケーション(OTC漢方薬や栄養サプリ)の範囲内で。",
     "6) 『今週のケアプラン』を求められた場合は、以下の構成で提示する：",
