@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
   }
 
   const priceIdMap = {
-    standard: 'price_1RitWqEVOs4YPHrumBOdaMVJ', // ← スタンダード（月額980円）
+    standard: 'price_1SLjHsEVOs4YPHruUlyG16SF', // ← スタンダード（月額980円）
     light: 'price_1RitG7EVOs4YPHruuPtlHrpV',    // ← ライト（月額580円）
   };
 
