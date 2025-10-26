@@ -284,6 +284,7 @@ async function callGPTJson(systemPrompt, userPrompt) {
         { role: "user",   content: userPrompt  },
       ],
       response_format: { type: "json_object" },
+      temperature: 1.0,
     });
 
     let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
