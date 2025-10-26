@@ -104,9 +104,8 @@ module.exports = async function consult(event, client) {
   // 生成＆返信
   try {
     const rsp = await openai.chat.completions.create({
-      model: "gpt-4-mini",
+      model: "gpt-5",
       messages,
-      temperature: 1.0,
     });
 
     // 🧹 Markdown整形解除してから返信
