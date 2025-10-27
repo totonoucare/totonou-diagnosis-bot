@@ -112,12 +112,18 @@ module.exports = async function consult(event, client) {
     // ✅ GPT-5 Responses API（chat.completionsではなく responses.create）
     const rsp = await openai.responses.create({
       model: "gpt-5",
-      input: messages, // messages互換
-      reasoning: { effort: "low" },   // 思考深度
-      text: { verbosity: "medium" },  // 詳細度
-      max_output_tokens: 500,         // 必要に応じて制限
+      input: [
+        {
+          role: "system",
+          // messages配列をテキスト化して1つにまとめる
+          content: messages.map(m => `${m.role}: ${m.content}`).join("\n")
+        }
+      ],
+      reasoning: { effort: "low" },
+      text: { verbosity: "medium" },
+      max_output_tokens: 500,
     });
-
+    
     // GPT-5の標準出力
     const text =
       (rsp.output_text || rsp.output?.[0]?.content?.[0]?.text || "").trim() ||
