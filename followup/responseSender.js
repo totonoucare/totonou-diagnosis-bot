@@ -274,33 +274,54 @@ function chooseNextPillar(ans, score) {
   return "habits";
 }
 
-// ===== GPT呼び出し（JSON構造：GPT-4o） =====
+// ===== GPT呼び出し（JSON構造：GPT-5 / Responses API） =====
 async function callGPTJson(systemPrompt, userPrompt) {
   try {
-    const rsp = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
+    // 1発目：生成キック
+    const rsp = await openai.responses.create({
+      model: "gpt-5",
+      input: [
         { role: "system", content: systemPrompt },
         { role: "user",   content: userPrompt  },
       ],
-      response_format: { type: "json_object" },
-      temperature: 1.0,
+      // 速度と安定のバランス：長文化を避ける
+      reasoning: { effort: "minimal" },
+      text: { verbosity: "medium" },
+      // max_output_tokens は付けない（途中切れ防止）
     });
 
-    let raw = rsp.choices?.[0]?.message?.content?.trim() || "";
-    if (!raw) return null;
+    // 生成完了待ち（短ポーリング）：output_text が空なケースの保険
+    let out = rsp;
+    let rawText =
+      out.output_text ||
+      (out.output?.[0]?.content?.map(c => c?.text || "").join("\n").trim()) ||
+      "";
 
-    // ```json ... ``` に包まれている場合を除去
-    if (raw.startsWith("```")) {
-      raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+    const started = Date.now();
+    while (!rawText && out?.status !== "failed" && Date.now() - started < 8000) {
+      await new Promise(r => setTimeout(r, 500));
+      out = await openai.responses.retrieve(out.id);
+      rawText =
+        out.output_text ||
+        (out.output?.[0]?.content?.map(c => c?.text || "").join("\n").trim()) ||
+        "";
     }
+
+    if (!rawText) return null;
+
+    // ```json ... ``` で返る場合の除去
+    const cleaned = rawText.startsWith("```")
+      ? rawText.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim()
+      : rawText.trim();
+
+    // JSONパース（壊れてても {..} 最外を拾う）
     try {
-      return JSON.parse(raw);
+      return JSON.parse(cleaned);
     } catch {
-      const s = raw.indexOf("{");
-      const e = raw.lastIndexOf("}");
+      const s = cleaned.indexOf("{");
+      const e = cleaned.lastIndexOf("}");
       if (s >= 0 && e > s) {
-        try { return JSON.parse(raw.slice(s, e + 1)); } catch { /* noop */ }
+        try { return JSON.parse(cleaned.slice(s, e + 1)); } catch { /* noop */ }
       }
       return null;
     }
