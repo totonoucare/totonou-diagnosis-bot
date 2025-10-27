@@ -110,7 +110,7 @@ module.exports = async function consult(event, client) {
       ],
       reasoning: { effort: "low" },
       text: { verbosity: "medium" },
-      max_output_tokens: 1000,
+
     });
     
 
