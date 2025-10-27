@@ -110,7 +110,7 @@ module.exports = async function consult(event, client) {
       ],
       reasoning: { effort: "low" },
       text: { verbosity: "low" },
-      max_output_tokens: 700,
+      max_output_tokens: 400,
     });
 
     // ✅ 出力抽出（全フォーマット対応）
