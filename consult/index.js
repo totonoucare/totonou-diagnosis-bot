@@ -101,7 +101,7 @@ module.exports = async function consult(event, client) {
   try {
     // ✅ GPT-5 Responses API（chat.completionsではなく responses.create）
     const rsp = await openai.responses.create({
-      model: "gpt-5-mini",
+      model: "gpt-5",
       input: [
         {
           role: "system",
