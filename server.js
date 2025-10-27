@@ -395,40 +395,9 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-// ====== ここから：常時オンの AI 相談（トリガー不要） ======
+// === どの条件にも該当しなかった場合はAI相談へ ===
 if (event.type === "message" && event.message.type === "text") {
-  // ユーザーの利用可否チェック
-  const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("id, subscribed, plan_type, trial_intro_done")
-    .eq("line_id", lineId)
-    .single();
-
-  if (userError || !userData) {
-    console.error("❌ ユーザー情報取得失敗:", userError);
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: "ユーザー情報の取得に失敗しました🙏\n一度メニューからととのえ方分析を受け直してください。",
-    });
-    return;
-  }
-
-  // 利用可否チェック：trial または standard
-  const allowed =
-    userData.trial_intro_done === true ||
-    (userData.subscribed === true && userData.plan_type === "standard");
-
-  if (!allowed) {
-    const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-    await client.replyMessage(event.replyToken, {
-      type: "text",
-      text: `恐れ入りますが、この機能はサブスク利用ユーザー様またはトライアル中のユーザー様限定となります🙏\n以下よりご登録いただくと、ご利用可能になります✨\n\n🔗 ${subscribeUrl}`,
-    });
-    return;
-  }
-
-  // ===== 利用可なら GPT相談へ投げる =====
-  await consult(event, client); // consult/index.js 側で reply→push フォールバック処理済み
+  await consult(event, client); // consult/index.js 側でフォールバック処理済み
   return;
 }
 
