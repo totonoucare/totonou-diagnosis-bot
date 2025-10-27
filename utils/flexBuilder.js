@@ -741,7 +741,13 @@ function buildTotonouConsultExamplesFlex() {
         layout: "vertical",
         spacing: "md",
         contents: [
-          { type: "text", text: "体質や最近の整い度をもとに、AIトトノウくんがセルフケアをサポートします。気になるテーマを選んでください☺️", wrap: true, size: "sm" },
+          { type: "text", text: "体質や最近の整い度をもとに、AIトトノウくんが何でも答えます！質問メッセージを送るか、以下の参考テーマのボタンを押すと会話が始まります☺️", wrap: true, size: "sm" },
+          {
+            type: "button",
+            style: "primary",
+            color: "#7B9E76",
+            action: { type: "message", label: "😣 自分の不調と体質の関係", text: "私の主訴と体質はどう関係あるの？" }
+          },
           {
             type: "button",
             style: "primary",
@@ -770,7 +776,7 @@ function buildTotonouConsultExamplesFlex() {
             type: "button",
             style: "primary",
             color: "#7B9E76",
-            action: { type: "message", label: "🌿 漢方薬の選び方・飲み方", text: "漢方薬の選び方や効果的な飲み方を教えて！" }
+            action: { type: "message", label: "🌿 漢方薬の選び方", text: "最適な漢方薬の選び方を教えてほしい！" }
           }
         ],
       },
