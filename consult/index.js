@@ -119,6 +119,7 @@ while (output.status !== "completed" && Date.now() - start < 60000) {
   await new Promise((r) => setTimeout(r, 1000));
   output = await openai.responses.retrieve(rsp.id);
 }
+    
 
     // ✅ 出力抽出（全フォーマット対応）
     const text =
