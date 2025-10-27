@@ -1,6 +1,6 @@
 /**
  * consult/index.js
- * LINE相談用：GPT-5（Responses API対応・高速化版）
+ * LINE相談用：GPT-5（Responses API対応・安定版）
  */
 
 const { OpenAI } = require("openai");
@@ -15,28 +15,11 @@ const {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-/**
- * Markdown整形解除（旧互換）
- * GPT-5では不要だが、一応保険として残す
- */
-function stripMarkdown(text) {
-  if (!text) return "";
-  return text
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/(\*\*|__)(.*?)\1/g, "$2")
-    .replace(/(\*|_)(.*?)\1/g, "$2")
-    .replace(/^[\s]*([-*+])\s+/gm, "")
-    .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/^\s*>+\s?/gm, "")
-    .replace(/`([^`]*)`/g, "$1")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
 function isAllowed(user) {
-  return user?.trial_intro_done === true ||
-         (user?.subscribed === true && user?.plan_type === "standard");
+  return (
+    user?.trial_intro_done === true ||
+    (user?.subscribed === true && user?.plan_type === "standard")
+  );
 }
 
 /**
@@ -65,19 +48,22 @@ module.exports = async function consult(event, client) {
   } catch (err) {
     console.error("getUser失敗:", err);
     return safeReplyThenPushFallback({
-      client, event,
-      text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。"
+      client,
+      event,
+      text:
+        "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
     });
   }
 
   if (!isAllowed(user)) {
     const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
     return safeReplyThenPushFallback({
-      client, event,
+      client,
+      event,
       text:
         "恐れ入りますが、この機能はサブスク利用ユーザー様またはトライアル中のユーザー様限定となります🙏\n" +
         "ご利用希望は『サービス案内』→ サブスク登録をご確認ください。\n\n" +
-        `🔗 ${subscribeUrl}`
+        `🔗 ${subscribeUrl}`,
     });
   }
 
@@ -92,13 +78,17 @@ module.exports = async function consult(event, client) {
   } catch (err) {
     console.error("データ取得失敗:", err);
     return safeReplyThenPushFallback({
-      client, event,
-      text: "データの取得に失敗しました🙏\n少し時間をおいてから、もう一度お試しください。"
+      client,
+      event,
+      text:
+        "データの取得に失敗しました🙏\n少し時間をおいてから、もう一度お試しください。",
     });
   }
 
-  // 🔹ユーザー発話をログ保存（awaitしない：並列化）
-  saveConsultMessage(user.id, "user", userText).catch(e => console.warn("save user msg fail", e));
+  // 🔹ユーザー発話を保存（非同期）
+  saveConsultMessage(user.id, "user", userText).catch((e) =>
+    console.warn("save user msg fail", e)
+  );
 
   // 🔹プロンプト生成
   const messages = buildConsultMessages({
@@ -115,33 +105,37 @@ module.exports = async function consult(event, client) {
       input: [
         {
           role: "system",
-          // messages配列をテキスト化して1つにまとめる
-          content: messages.map(m => `${m.role}: ${m.content}`).join("\n")
-        }
+          content: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
+        },
       ],
       reasoning: { effort: "low" },
       text: { verbosity: "medium" },
-      max_output_tokens: 500,
+      max_output_tokens: 700,
     });
-    
-const text =
-  rsp.output_text ||
-  rsp.output?.[0]?.content?.[0]?.text ||
-  "（すみません、回答を生成できませんでした）";
-    // Markdown除去（念のため）
-    const cleanText = stripMarkdown(text);
 
-    // ✅ LINEへ即時送信（非同期）
-    safeReplyThenPushFallback({ client, event, text: cleanText });
+    // ✅ 出力抽出（全フォーマット対応）
+    const text =
+      rsp.output_text ||
+      rsp.output?.[0]?.content?.map((c) => c.text).join("\n") ||
+      rsp.output?.[0]?.content?.[0]?.text ||
+      "（すみません、回答を生成できませんでした）";
+
+    console.log("GPT出力:", text);
+
+    // ✅ LINEへ返信（非同期でも即送信されるように）
+    await safeReplyThenPushFallback({ client, event, text });
 
     // 🔹AI応答ログ保存（非同期）
-    saveConsultMessage(user.id, "assistant", cleanText).catch(e => console.warn("save ai msg fail", e));
-
+    saveConsultMessage(user.id, "assistant", text).catch((e) =>
+      console.warn("save ai msg fail", e)
+    );
   } catch (err) {
     console.error("OpenAI呼び出し失敗:", err);
     safeReplyThenPushFallback({
-      client, event,
-      text: "ただいまAIの応答が混み合っています🙏\n少し時間をおいて、もう一度お試しください。"
+      client,
+      event,
+      text:
+        "ただいまAIの応答が混み合っています🙏\n少し時間をおいて、もう一度お試しください。",
     });
   }
 };
