@@ -124,11 +124,10 @@ module.exports = async function consult(event, client) {
       max_output_tokens: 500,
     });
     
-    // GPT-5の標準出力
-    const text =
-      (rsp.output_text || rsp.output?.[0]?.content?.[0]?.text || "").trim() ||
-      "（すみません、回答を生成できませんでした）";
-
+const text =
+  rsp.output_text ||
+  rsp.output?.[0]?.content?.[0]?.text ||
+  "（すみません、回答を生成できませんでした）";
     // Markdown除去（念のため）
     const cleanText = stripMarkdown(text);
 
