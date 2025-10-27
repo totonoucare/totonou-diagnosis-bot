@@ -1,7 +1,10 @@
 name: Generate package-lock.json
 
 on:
-  workflow_dispatch: # 手動で実行できる
+  workflow_dispatch:
+
+permissions:
+  contents: write   # ←★ これを追加！
 
 jobs:
   install-dependencies:
