@@ -108,9 +108,9 @@ module.exports = async function consult(event, client) {
           content: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         },
       ],
-      reasoning: { effort: "minimal" },
+      reasoning: { effort: "low" },
       text: { verbosity: "medium" },
-      max_output_tokens: 450,
+      max_output_tokens: 1000,
     });
     
 
