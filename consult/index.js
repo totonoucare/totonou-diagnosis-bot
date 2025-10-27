@@ -108,17 +108,10 @@ module.exports = async function consult(event, client) {
           content: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         },
       ],
-      reasoning: { effort: "medium" },
+      reasoning: { effort: "minimal" },
       text: { verbosity: "medium" },
       max_output_tokens: 450,
     });
-    // ここから polling ループ
-let output = rsp;
-const start = Date.now();
-while (output.status !== "completed" && Date.now() - start < 60000) {
-  await new Promise((r) => setTimeout(r, 1000));
-  output = await openai.responses.retrieve(rsp.id);
-}
     
 
     // ✅ 出力抽出（全フォーマット対応）
