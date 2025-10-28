@@ -305,6 +305,126 @@ async function getLastNConsultMessages(userId, n = 3) {
   return (data || []).reverse();
 }
 
+// ===== 実施ログ（care_logs_daily）ユーティリティ =====
+
+// JST の "YYYY-MM-DD" を返す
+function jstDateString() {
+  const now = new Date();
+  const jst = new Date(now.getTime() + 9*60*60*1000);
+  return jst.toISOString().slice(0, 10); // 例: "2025-10-28"
+}
+
+/**
+ * 当日の care_logs_daily を +1（同日・同pillarは加算）
+ * @param {string} lineId - LINEのuserId
+ * @param {'habits'|'breathing'|'stretch'|'tsubo'|'kampo'} pillar
+ */
+async function addCareLogDailyByLineId(lineId, pillar) {
+  const cleanId = String(lineId || "").trim();
+
+  // users.id を取得
+  const { data: userRow, error: userError } = await supabase
+    .from(USERS_TABLE)
+    .select('id')
+    .eq('line_id', cleanId)
+    .maybeSingle();
+  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+
+  const day = jstDateString();
+
+  // 既存行の有無を確認 → あれば count+1、なければ insert
+  const { data: existing, error: selErr } = await supabase
+    .from('care_logs_daily')
+    .select('id, count')
+    .eq('user_id', userRow.id)
+    .eq('pillar', pillar)
+    .eq('day', day)
+    .maybeSingle();
+  if (selErr) throw selErr;
+
+  if (existing) {
+    const { error: updErr } = await supabase
+      .from('care_logs_daily')
+      .update({ count: (existing.count || 0) + 1 })
+      .eq('id', existing.id);
+    if (updErr) throw updErr;
+  } else {
+    const { error: insErr } = await supabase
+      .from('care_logs_daily')
+      .insert({ user_id: userRow.id, pillar, day, count: 1 });
+    if (insErr) throw insErr;
+  }
+}
+
+/**
+ * 直近の「ととのい度チェック日」以降の回数（pillar単体）
+ * - 最新 followups.created_at の翌日(=JST基準)以降として扱う
+ * - followup が無ければ 直近7日間 を窓にする
+ * @param {string} lineId
+ * @param {'habits'|'breathing'|'stretch'|'tsubo'|'kampo'} pillar
+ * @returns {number} 合計回数
+ */
+async function getCareCountSinceLastFollowupByLineId(lineId, pillar) {
+  const cleanId = String(lineId || "").trim();
+
+  // users.id
+  const { data: userRow, error: userError } = await supabase
+    .from(USERS_TABLE)
+    .select('id')
+    .eq('line_id', cleanId)
+    .maybeSingle();
+  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+
+  // 最新 followup の日時（UTC保管想定）→ JST に換算して "YYYY-MM-DD"
+  const { data: fu, error: fuErr } = await supabase
+    .from(FOLLOWUP_TABLE)
+    .select('created_at')
+    .eq('user_id', userRow.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (fuErr) throw fuErr;
+
+  let sinceDate;
+  if (fu?.created_at) {
+    const created = new Date(fu.created_at);
+    // JST境界で数えやすくするため +9h
+    sinceDate = new Date(created.getTime() + 9*60*60*1000);
+  } else {
+    // followupが無ければ 直近7日
+    sinceDate = new Date(Date.now() - 7*24*60*60*1000);
+  }
+  const sinceStr = sinceDate.toISOString().slice(0, 10);
+
+  const { data: rows, error: sumErr } = await supabase
+    .from('care_logs_daily')
+    .select('count')
+    .eq('user_id', userRow.id)
+    .eq('pillar', pillar)
+    .gte('day', sinceStr);
+  if (sumErr) throw sumErr;
+
+  return (rows || []).reduce((acc, r) => acc + (r.count || 0), 0);
+}
+
+/**
+ * 上と同じ条件で、5本柱すべての回数をまとめて返す
+ * @param {string} lineId
+ * @returns {{habits:number,breathing:number,stretch:number,tsubo:number,kampo:number}}
+ */
+async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
+  const pillars = ['habits','breathing','stretch','tsubo','kampo'];
+  const result = {};
+  for (const p of pillars) {
+    try {
+      result[p] = await getCareCountSinceLastFollowupByLineId(lineId, p);
+    } catch {
+      result[p] = 0;
+    }
+  }
+  return result;
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -324,4 +444,8 @@ module.exports = {
   // 新規
   saveConsultMessage,
   getLastNConsultMessages,
+  // 実施ログ（new）
+  addCareLogDailyByLineId,
+  getCareCountSinceLastFollowupByLineId,
+  getAllCareCountsSinceLastFollowupByLineId,
 };
