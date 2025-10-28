@@ -96,7 +96,7 @@ function buildScoreLegend() {
     "",
     "▼ 項目どうしの関係（AIはここを意識して因果を推定）",
     "・habits ↔ sleep / meal / stress：habitsの実践は生活リズム（睡眠・食事・ストレス）を整えやすく、逆に生活リズムの乱れはhabits実践を阻害しやすい。",
-    "・stretch / tsubo ↔ motion_level：stretch/tsuboは、motion_level（＝ユーザーに提案しているadviceの内のstretch(経絡ストレッチ)と同様の経絡ライン伸展動作時のつらさ）を直接下げる目的であり、その人の負担経絡(関連五臓六腑)を改善する想定。motion_levelの悪化は、stretch/tsubo未実施や負荷過多のサインになりやすい。",
+    "・stretch / tsubo ↔ motion_level：stretch/tsuboは、motion_level（＝ユーザーに提案しているadviceの内のstretch(経絡ストレッチ)と同様の経絡ライン伸展動作時のつらさ）を直接下げる目的であり、その人の負担経絡(関連五臓六腑)を改善→symptom_levelの改善にも効果を期待する想定。motion_levelの悪化は、stretch/tsubo未実施や負荷過多のサインになりやすい。",
     "・breathing は鳩尾〜臍に息を入れる腹式呼吸で腹圧に関わる深層呼吸筋や内臓の活性で体の芯のバランス調整（自立調整力アップ）し、sleep・stress・symptom_level の改善も後押しすることが多い。",
   ];
   return lines.join("\n");
