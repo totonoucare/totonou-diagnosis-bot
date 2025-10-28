@@ -16,6 +16,8 @@ const stripeCheckout = require("./routes/stripeCheckout");
 // ★ AI相談 本体（常時オンで呼び出す）
 const consult = require("./consult/index");
 
+const handleCarelog = require("./carelog/index");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -394,6 +396,10 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         }
         return;
       }
+
+      // ===== 実施記録ハンドラ（実施ボタン / ケア完了） =====
+const handledCare = await handleCarelog(event, client, lineId, userMessage);
+if (handledCare) return;
 
 // === どの条件にも該当しなかった場合はAI相談へ ===
 if (event.type === "message" && event.message.type === "text") {
