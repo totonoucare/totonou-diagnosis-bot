@@ -149,7 +149,7 @@ function reasonForPillar(pillarKey) {
       return "生活の土台づくり（睡眠・食事・活動習慣）をまとめて整えると、全体のバランスが噛み合いはじめます。";
     case "breathing":
       // breathing = stress改善＆自律調整の底上げ
-      return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、内臓に近い筋肉を活性化し自律神経に働きかけることでストレス反応を鎮め、全体の調整力を底上げします。";
+      return "鳩尾下の動きを意識した「巡りととのう呼吸法」は、内臓に近い筋肉を活性化し自律神経に働きかけるとともに、体の構造的な調整力を底上げします。";
     case "stretch":
       // stretch = その動作で張る経絡ラインを伸ばす → motion_levelを直接改善
       return "“今いちばん張りを感じる動作”で伸展される経絡ラインのひっかかりをストレッチで直接伸ばし経絡の通りをよくすることで、関連する内臓の負担軽減や体がラクに動ける状態キープにつながります。";
@@ -285,7 +285,7 @@ async function callGPTJson(systemPrompt, userPrompt) {
         { role: "user",   content: userPrompt  },
       ],
       // 速度と安定のバランス：長文化を避ける
-      reasoning: { effort: "minimal" },
+      reasoning: { effort: "low" },
       text: { verbosity: "medium" },
       // max_output_tokens は付けない（途中切れ防止）
     });
