@@ -23,38 +23,52 @@ function getTodayMeta() {
   return { date, weekdayJp };
 }
 
-/** スコアの見方（buildConsultMessages.jsから移植） */
+/** スコアの見方（因果ルールを明示：AIの推定を安定化）
+ * 数値は 1 が良好、数値が大きいほど「乱れ・つらさ」が強い。
+ * Q3の柱は「継続 / 継続中 / 時々 / 未着手」で、左ほど実践できている。
+ * motion_level は「adviceのストレッチと同じ動きをした時の“伸展時のつらさ”」を数値化したもの。
+ */
 function buildScoreLegend() {
   const lines = [
     "▼ ととのい度チェックとは？",
     "・『症状の強さ（symptom_level / motion_level）』と『生活リズム（sleep / meal / stress）』を数値で自己申告。",
-    "・同時に、セルフケアとして提案した、ととのうケアガイド（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
+    "・同時に、提案セルフケア（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
     "・つまり『症状の変化（数値）』×『セルフケア実施度（段階）』をペアで記録し、改善の手応えを見える化する仕組み。",
     "",
     "▼ スコアの見方",
     "・数値スコア（1〜5）は 1 が良好、数値が大きいほど“乱れ”や“つらさ”が強い。",
-    "・Q3〈habits / breathing / stretch / tsubo / kampo〉は段階評価（継続中 / 時々 / 未着手）。左ほど実施できている。",
+    "・Q3〈habits / breathing / stretch / tsubo / kampo〉は段階評価（継続 / 継続中 / 時々 / 未着手）。左ほど実施できている。",
     "",
-    "Q1: symptom_level（不調(整えたい悩み)のつらさ） … 1=軽い/支障なし ←→ 5=強い/生活に支障",
+    "Q1: symptom_level（主訴のつらさ） … 1=軽い/支障なし ←→ 5=強い/生活に支障",
     "Q2: sleep（睡眠の乱れ） … 1=整っている ←→ 5=かなり乱れている",
     "Q2: meal（食事の乱れ） … 1=整っている ←→ 5=かなり乱れている",
     "Q2: stress（ストレスの強さ） … 1=軽い ←→ 5=かなり強い",
-    "Q3: habits（体質改善習慣） … 継続中 / 時々 / 未着手",
-    "Q3: breathing（巡りととのう呼吸法） … 継続中 / 時々 / 未着手",
-    "Q3: stretch（経絡ストレッチ） … 継続中 / 時々 / 未着手",
-    "Q3: tsubo（指先・ツボほぐし） … 継続中 / 時々 / 未着手",
-    "Q3: kampo（おすすめ漢方薬） … 継続中 / 時々 / 未着手",
-    "Q4: motion_level（負担経絡の伸展動作のつらさ） … 1=軽い/支障なし ←→ 5=強い/支障大",
-    "　※ここでの『負担経絡の伸展動作』は、その人に提案している stretch の動きそのもの。",
+    "Q3: habits（体質改善習慣） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: breathing（巡りととのう呼吸法） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: stretch（経絡ストレッチ） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: tsubo（指先・ツボほぐし） … 継続 / 継続中 / 時々 / 未着手",
+    "Q3: kampo（おすすめ漢方薬） … 継続 / 継続中 / 時々 / 未着手",
+    "Q4: motion_level（“adviceのストレッチ”と同じ動きをした時のつらさ） … 1=軽い/支障なし ←→ 5=強い/支障大",
+    "　※「同じ動き」とは、contexts.advice.stretch に記載されたあなた専用ストレッチ（＝該当の経絡ラインを伸ばす動作）を再現したときの“伸展時のつらさ”を指します。",
     "",
-    "▼ 項目どうしの関係",
-    "・habits ↔ sleep / meal / stress：生活リズム（睡眠・食事・ストレス）は habits の実践度に強く影響し、逆に habits を整えるとこれらの乱れも改善しやすい。",
-    "・stretch / tsubo ↔ motion_level：stretch / tsubo は motion_level（動作テストの経絡ライン張りや負担）を直接下げる目的のセルフケア。motion_level の悪化は stretch / tsubo の未実施や負荷過多を示唆する。",
-    "・breathing ↔ stress / sleep：breathing（巡りととのう呼吸法）は自律神経と深層呼吸筋を整え、ストレス緩和や睡眠改善を助ける。"
+    "▼ 因果の見方（AIが推定に使う一次KPIと二次効果）",
+    "・habits ↔ sleep / meal / stress → symptom_level：",
+    "　一次KPI＝sleep/meal/stress。habitsの実践は生活リズムを整えやすく、逆に乱れはhabits実践を阻害しやすい。生活リズムが整うと二次効果として symptom_level が下がりやすい。",
+    "・stretch / tsubo ↔ motion_level → symptom_level：",
+    "　一次KPI＝motion_level（＝advice.stretch と同じ動きをしたときの伸展時のつらさ）。該当経絡へのストレッチ/ツボが効けば動作時痛が下がり、経絡・関連臓腑の負担が軽減して結果的に symptom_level も改善しやすい。motion_level の悪化は stretch/tsubo 未実施や負荷過多のサイン。",
+    "・breathing → sleep / stress → symptom_level：",
+    "　一次KPI＝sleep/stress。鳩尾〜臍（中脘あたり）に息を入れる腹式呼吸で腹圧・深層呼吸筋・内臓を賦活し、自律調整が働いて sleep / stress を整え、最終的に symptom_level の改善を後押しする。",
+    "・kampo（補助線）：",
+    "　他の柱が一定以上できていても symptom_level / motion_level が停滞する時の候補。常用はせず、最終手段として検討。",
+    "",
+    "▼ 解釈のヒント（優先度の決め方の例）",
+    "・motion_level が高い かつ stretch/tsubo が「時々・未着手」→ まず stretch/tsubo を優先。",
+    "・sleep/meal/stress が複数で高い かつ habits が「時々・未着手」→ habits を優先。",
+    "・sleep または stress が高い かつ breathing が「時々・未着手」→ breathing を優先。",
+    "・3〜4回のチェックで実施度は良好（継続/継続中）なのに症状が停滞 → kampo を候補に（用量・頻度や負荷の見直しも併記）。",
   ];
   return lines.join("\n");
 }
-
 
 function extractStatusFlag(fu = null) {
   if (!fu) return null;
