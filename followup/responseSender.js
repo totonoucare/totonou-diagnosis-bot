@@ -1,5 +1,5 @@
 // followup/responseSender.js
-// 定期チェック：前回差分＋「褒めて伸ばす」＋点数/星の確定計算（gpt-5）
+// ととのい度チェック：前回差分＋「褒めて伸ばす」＋点数/星の確定計算（gpt-5）
 // JSON構造（sections）を返す：{ lead, score_header, diff_line, keep_doing[], next_steps[], footer }
 // contents.advice は jsonb配列（[{header, body}, ...] または {habits,...}）想定
 // ※本ファイルは「JSON一本化（フォールバック無し）」版
