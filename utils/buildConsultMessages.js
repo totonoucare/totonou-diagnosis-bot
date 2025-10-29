@@ -114,7 +114,13 @@ function buildScoreLegend() {
 }
 // utils/buildConsultMessages.js（抜粋・置き換え）
 
-module.exports = function buildConsultMessages({ context, followups, userText, recentChats = [] }) {
+module.exports = function buildConsultMessages({
+  context,
+  followups,
+  userText,
+  recentChats = [],
+  careCounts = {}, // ← 追加！
+}) {
   const ctx = pickContext(context);
   const latest = followups?.latest ?? null;
   const prev   = followups?.prev   ?? null;
@@ -137,6 +143,11 @@ module.exports = function buildConsultMessages({ context, followups, userText, r
     "",
     "▼ 体質・所見（contexts 直参照）",
     toJSON(ctx),
+    "",
+    "▼ 直近のケア実施記録（care_logs_daily の集計結果）",
+    toJSON(careCounts),
+    "",
+    "（各項目は habits, breathing, stretch, tsubo, kampo の8日間実施回数。1日複数回押しても1回扱い）",
     "",
     "▼ ととのい度チェック（最新・全カラム）",
     toJSON(latest),
