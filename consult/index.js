@@ -112,6 +112,7 @@ module.exports = async function consult(event, client) {
     followups,
     userText,
     recentChats,
+    careCounts,
   });
 
   try {
