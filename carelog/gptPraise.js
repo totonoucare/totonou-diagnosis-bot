@@ -13,27 +13,49 @@ const CARE_LABEL = {
 function buildCareButtonsFlex() {
   const buttons = Object.entries(CARE_LABEL).map(([key, label]) => ({
     type: "button",
-    style: "secondary",
+    style: "primary", // ← secondary だと背景がグレー、primaryでカラー指定が効く
     height: "sm",
+    color: "#7B9E76", // ← 希望カラー
     action: { type: "message", label, text: `${label}ケア完了☑️` },
   }));
+
   return {
     type: "flex",
     altText: "実施記録",
     contents: {
       type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "🌿 実施したケアを記録",
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff",
+          },
+        ],
+        backgroundColor: "#7B9E76",
+        paddingAll: "12px",
+        cornerRadius: "12px",
+      },
       body: {
         type: "box",
         layout: "vertical",
         contents: [
-          { type: "text", text: "実施したケアを記録", weight: "bold", size: "lg" },
-          { type: "box", layout: "vertical", spacing: "sm", margin: "md", contents: buttons },
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            margin: "md",
+            contents: buttons,
+          },
         ],
       },
     },
   };
 }
-
 async function generatePraiseReply({ pillarKey, countsAll }) {
   const label = CARE_LABEL[pillarKey] || "ケア";
   const count = countsAll[pillarKey] || 0;
