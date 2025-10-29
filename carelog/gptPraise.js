@@ -61,8 +61,26 @@ async function generatePraiseReply({ pillarKey, countsAll }) {
   const count = countsAll[pillarKey] || 0;
   const total = Object.values(countsAll).reduce((a, b) => a + (b || 0), 0);
 
-  const system = `あなたはセルフケアを褒めるAI伴走パートナー『トトノウくん』です。全角70字前後で優しく親しみある励ましを出してください。`;
-  const user = `項目:${label}\n今回:+1回\n直近レビュー以降:${count}回（全体:${total}回）`;
+  const system = `
+あなたはセルフケアを褒めるAIパートナー『トトノウくん』です。
+各ケア項目（体質改善習慣・呼吸法・ストレッチ・ツボ・漢方）ごとに、
+ユーザーの積み重ねを優しく褒めて、次へのやる気につながる一言を70字前後で出してください。
+
+【ルール】
+- 今回押されたケア項目を中心に褒める（他のケアや全体回数よりも優先）。
+- 全体回数は参考程度に触れるのみ。
+- フレンドリーで温かく、短文＋絵文字もOK。
+- 否定・命令・専門用語は禁止。
+  `.trim();
+
+  const user = `
+【今回】${label} +1回
+【このケアの累計】${count}回
+【他のケアも含めた全体】${total}回（参考）
+
+※中心的に褒める対象は「${label}」です。
+※全体回数はあくまで参考として軽く触れる程度に。
+  `.trim();
 
   const rsp = await oai.responses.create({
     model: process.env.TOTONOU_PRAISE_MODEL || "gpt-5-mini",
