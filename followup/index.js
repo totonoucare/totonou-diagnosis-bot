@@ -59,41 +59,51 @@ function buildResultFlexBubbles(sections) {
   const card2 = sections?.card2 || {};
 
   // --- bubble1: 状態まとめ
-  const scoreLines = [];
-  if (card1.score_block?.total)
-    scoreLines.push(`🌿 ${card1.score_block.total.label}：${card1.score_block.total.stars}`);
-  if (card1.score_block?.action)
-    scoreLines.push(`💪 ${card1.score_block.action.label}：${card1.score_block.action.score_text}`);
-  if (card1.score_block?.reflection)
-    scoreLines.push(`💫 ${card1.score_block.reflection.label}：${card1.score_block.reflection.stars}`);
+const scoreLines = [];
 
-  const bubble1 = {
-    type: "bubble",
-    size: "mega",
-    header: {
-      type: "box",
-      layout: "vertical",
-      contents: [
-        { type: "text", text: "📋 今回のととのい度チェック", weight: "bold", size: "lg", color: "#ffffff" },
-      ],
-      backgroundColor: "#758A6D",
-      paddingAll: "12px",
-      cornerRadius: "12px",
-    },
-    body: {
-      type: "box",
-      layout: "vertical",
-      spacing: "md",
-      backgroundColor: "#F8F9F7",
-      paddingAll: "12px",
-      contents: [
-        { type: "text", text: card1.lead || "おつかれさま😊", wrap: true },
-        { type: "text", text: scoreLines.join("\n\n") || "", wrap: true },
-        { type: "separator", margin: "md" },
-        { type: "text", text: card1.guidance || "今の流れを保っていこう🌿", wrap: true },
-      ],
-    },
-  };
+if (card1.score_block?.total)
+  scoreLines.push(`🌿 ${card1.score_block.total.label}：${card1.score_block.total.stars}`);
+if (card1.score_block?.action)
+  scoreLines.push(`💪 ${card1.score_block.action.label}：${card1.score_block.action.score_text}`);
+if (card1.score_block?.reflection)
+  scoreLines.push(`💫 ${card1.score_block.reflection.label}：${card1.score_block.reflection.stars}`);
+
+// --- ゴールドカラー (#C6A047くらいが落ち着いた金色) で描画 ---
+const scoreContents = scoreLines.map((line) => ({
+  type: "text",
+  text: line,
+  wrap: true,
+  color: "#C6A047", // ← ゴールド！
+  weight: "bold",
+}));
+
+const bubble1 = {
+  type: "bubble",
+  size: "mega",
+  header: {
+    type: "box",
+    layout: "vertical",
+    contents: [
+      { type: "text", text: "📋 今回のととのい度チェック", weight: "bold", size: "lg", color: "#ffffff" },
+    ],
+    backgroundColor: "#758A6D",
+    paddingAll: "12px",
+    cornerRadius: "12px",
+  },
+  body: {
+    type: "box",
+    layout: "vertical",
+    spacing: "md",
+    backgroundColor: "#F8F9F7",
+    paddingAll: "12px",
+    contents: [
+      { type: "text", text: card1.lead || "おつかれさま😊", wrap: true },
+      ...scoreContents, // ← ゴールドでスコア表示
+      { type: "separator", margin: "md" },
+      { type: "text", text: card1.guidance || "今の流れを保っていこう🌿", wrap: true },
+    ],
+  },
+};
 
   // --- bubble2: ケアプラン
   const carePlanList = Array.isArray(card2.care_plan) ? card2.care_plan : [];
