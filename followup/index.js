@@ -47,9 +47,10 @@ const userSession = {};
 // ======== テンプレ置換 ========
 function replacePlaceholders(template, context = {}) {
   if (!template || typeof template !== "string") return "";
+
   return template
     .replace(/\{\{symptom\}\}/g, symptomLabels[context.symptom] || "不明な主訴")
-    .replace(/\{\{motion\}\}/g, motionLabels[context.motion] || "指定の動作");
+    .replace(/\{\{motion\}\}/g, context.motion || "指定の動作");
 }
 
 // ======== GPT出力→Flex変換 ========
