@@ -100,33 +100,42 @@ function buildResultFlexBubbles(sections) {
     { type: "text", text: card2.lead || "今週はこの順で整えていこう🌿", wrap: true },
   ];
 
-  carePlanList
-    .sort((a, b) => (a.priority || 999) - (b.priority || 999))
-    .forEach((p) => {
-      careContents.push({
-        type: "box",
-        layout: "vertical",
-        margin: "md",
-        contents: [
-          { type: "text", text: `【${p.priority || 1}位】${p.pillar}（${p.recommended_frequency || "目安"}）`, weight: "bold", wrap: true },
-          { type: "text", text: p.reason || "", wrap: true },
-...(typeof p.reference_link === "string" && /^https?:\/\//.test(p.reference_link)
-  ? [
-      {
-        type: "button",
-        style: "link",
-        height: "sm",
-        action: {
-          type: "uri",
-          label: "図解を見る",
-          uri: p.reference_link,
+carePlanList
+  .sort((a, b) => (a.priority || 999) - (b.priority || 999))
+  .forEach((p) => {
+    careContents.push({
+      type: "box",
+      layout: "vertical",
+      margin: "md",
+      contents: [
+        {
+          type: "text",
+          text: `【${p.priority || 1}位】${p.pillar}（${p.recommended_frequency || "目安"}）`,
+          weight: "bold",
+          wrap: true,
         },
-      },
-    ]
-  : []),
-        ],
-      });
+        {
+          type: "text",
+          text: p.reason || "",
+          wrap: true,
+        },
+        ...(typeof p.reference_link === "string" && /^https?:\/\//.test(p.reference_link)
+          ? [
+              {
+                type: "button",
+                style: "link",
+                height: "sm",
+                action: {
+                  type: "uri",
+                  label: "図解を見る",
+                  uri: p.reference_link,
+                },
+              },
+            ]
+          : []),
+      ],
     });
+  });
 
   careContents.push({ type: "separator", margin: "md" });
   careContents.push({
