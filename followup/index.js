@@ -294,4 +294,3 @@ async function handleFollowup(event, client, lineId) {
 module.exports = Object.assign(handleFollowup, {
   hasSession: (lineId) => !!userSession[lineId],
 });
-
