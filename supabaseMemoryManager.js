@@ -169,8 +169,7 @@ const payload = {
 
 // 必須キーのみチェック（q5 は対象外）
 const requiredKeys = [
-  'user_id','symptom_level','sleep','meal','stress',
-  'habits','breathing','stretch','tsubo','kampo','motion_level'
+  'user_id','symptom_level','sleep','meal','stress','motion_level'
 ];
 for (const key of requiredKeys) {
   if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
