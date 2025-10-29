@@ -1,5 +1,5 @@
 // utils/generateGPTMessage.js
-// 🌿 トトノウくん伴走リマインダー：体質＋advice＋ととのい度チェック対応 完全版
+// 🌿 トトノウくん伴走リマインダー：Q3廃止＋care_logs連携＋テンセグリティ理論対応版
 
 const OpenAI = require("openai");
 const { createClient } = require("@supabase/supabase-js");
@@ -18,186 +18,140 @@ function getTodayMeta() {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
-  const date = `${y}-${m}-${d}`;
   const weekdayJp = ["日","月","火","水","木","金","土"][now.getDay()];
-  return { date, weekdayJp };
+  return { date: `${y}-${m}-${d}`, weekdayJp };
 }
 
-/** スコアの見方（因果ルールを明示：AIの推定を安定化）
- * 数値は 1 が良好、数値が大きいほど「乱れ・つらさ」が強い。
- * Q3の柱は「継続 / 継続中 / 時々 / 未着手」で、左ほど実践できている。
- * motion_level は「adviceのストレッチと同じ動きをした時の“伸展時のつらさ”」を数値化したもの。
- */
-function buildScoreLegend() {
-  const lines = [
-    "▼ ととのい度チェックとは？",
-    "・『症状の強さ（symptom_level / motion_level）』と『生活リズム（sleep / meal / stress）』を数値で自己申告。",
-    "・同時に、提案セルフケア（habits / breathing / stretch / tsubo / kampo）の実施度を「継続〜未着手」で申告。",
-    "・つまり『症状の変化（数値）』×『セルフケア実施度（段階）』をペアで記録し、改善の手応えを見える化する仕組み。",
-    "",
-    "▼ スコアの見方",
-    "・数値スコア（1〜5）は 1 が良好、数値が大きいほど“乱れ”や“つらさ”が強い。",
-    "・Q3〈habits / breathing / stretch / tsubo / kampo〉は段階評価（継続 / 継続中 / 時々 / 未着手）。左ほど実施できている。",
-    "",
-    "Q1: symptom_level（主訴のつらさ） … 1=軽い/支障なし ←→ 5=強い/生活に支障",
-    "Q2: sleep（睡眠の乱れ） … 1=整っている ←→ 5=かなり乱れている",
-    "Q2: meal（食事の乱れ） … 1=整っている ←→ 5=かなり乱れている",
-    "Q2: stress（ストレスの強さ） … 1=軽い ←→ 5=かなり強い",
-    "Q3: habits（体質改善習慣） … 継続 / 継続中 / 時々 / 未着手",
-    "Q3: breathing（巡りととのう呼吸法） … 継続 / 継続中 / 時々 / 未着手",
-    "Q3: stretch（経絡ストレッチ） … 継続 / 継続中 / 時々 / 未着手",
-    "Q3: tsubo（指先・ツボほぐし） … 継続 / 継続中 / 時々 / 未着手",
-    "Q3: kampo（おすすめ漢方薬） … 継続 / 継続中 / 時々 / 未着手",
-    "Q4: motion_level（“adviceのストレッチ”と同じ動きをした時のつらさ） … 1=軽い/支障なし ←→ 5=強い/支障大",
-    "　※「同じ動き」とは、contexts.advice.stretch に記載されたあなた専用ストレッチ（＝該当の経絡ラインを伸ばす動作）を再現したときの“伸展時のつらさ”を指します。",
-    "",
-    "▼ 因果の見方（AIが推定に使う一次KPIと二次効果）",
-    "・habits ↔ sleep / meal / stress → symptom_level：",
-    "　一次KPI＝sleep/meal/stress。habitsの実践は生活リズムを整えやすく、逆に乱れはhabits実践を阻害しやすい。生活リズムが整うと二次効果として symptom_level が下がりやすい。",
-    "・stretch / tsubo ↔ motion_level → symptom_level：",
-    "　一次KPI＝motion_level（＝advice.stretch と同じ動きをしたときの伸展時のつらさ）。該当経絡へのストレッチ/ツボが効けば動作時痛が下がり、経絡・関連臓腑の負担が軽減して結果的に symptom_level も改善しやすい。motion_level の悪化は stretch/tsubo 未実施や負荷過多のサイン。",
-    "・breathing → sleep / stress → symptom_level：",
-    "　一次KPI＝sleep/stress。鳩尾〜臍（中脘あたり）に息を入れる腹式呼吸で腹圧・深層呼吸筋・内臓を賦活し、自律調整が働いて sleep / stress を整え、最終的に symptom_level の改善を後押しする。",
-    "・kampo（補助線）：",
-    "　他の柱が一定以上できていても symptom_level / motion_level が停滞する時の候補。常用はせず、最終手段として検討。",
-    "",
-    "▼ 解釈のヒント（優先度の決め方の例）",
-    "・motion_level が高い かつ stretch/tsubo が「時々・未着手」→ まず stretch/tsubo を優先。",
-    "・sleep/meal/stress が複数で高い かつ habits が「時々・未着手」→ habits を優先。",
-    "・sleep または stress が高い かつ breathing が「時々・未着手」→ breathing を優先。",
-    "・3〜4回のチェックで実施度は良好（継続/継続中）なのに症状が停滞 → kampo を候補に（用量・頻度や負荷の見直しも併記）。",
-  ];
-  return lines.join("\n");
-}
-
-function extractStatusFlag(fu = null) {
-  if (!fu) return null;
-
-  const n = v => (v == null ? null : Number(v));
-  const s = v => (v == null ? "" : String(v).trim());
-
-  // --- Q1・Q2群：数値スコア評価（1=良好, 5=乱れ強）
-  if (n(fu.symptom_level) >= 4) return "不調のつらさがやや強いようです";
-  if (n(fu.motion_level) >= 4)  return "動作時の張りやつらさが少し強いようです";
-  if (n(fu.sleep) >= 4)         return "睡眠リズムが乱れ気味です";
-  if (n(fu.meal) >= 4)          return "食生活が少し乱れ気味のようです";
-  if (n(fu.stress) >= 4)        return "ストレスが少し強く出ているようです";
-
-  // --- Q3群：セルフケア実施度（継続中 / 時々 / 未着手）
-  const careStates = [
-    s(fu.habits),
-    s(fu.breathing),
-    s(fu.stretch),
-    s(fu.tsubo),
-    s(fu.kampo),
-  ];
-
-  // 「未着手」や「時々」が多いほど “ケアがまだ安定していない” と判断
-  const countUnstarted = careStates.filter(v => v.includes("未着手")).length;
-  const countSometimes = careStates.filter(v => v.includes("時々")).length;
-  const countOngoing   = careStates.filter(v => v.includes("継続中")).length;
-
-  if (countUnstarted >= 3) return "セルフケアはまだこれからの段階です";
-  if (countSometimes >= 3) return "ケアが少し途切れがちな様子です";
-  if (countOngoing >= 3)   return "コツコツ取り組めているようです";
-
-  // --- 特に問題がなければ null
-  return null;
-}
-
-/** GPTメッセージ生成：4日サイクルに合わせた伴走リマインド */
+/** GPTメッセージ生成（4日サイクルリマインダー） */
 async function buildCycleReminder({
-  constitution,
-  trait,
-  flowType,
-  organType,
-  chiefSymptom,
+  context,
   advice,
-  latest,
-  statusFlag
+  latestFollowup,
+  careCounts,
 }) {
   const { date, weekdayJp } = getTodayMeta();
 
-const system = `
-あなたは『ととのうケアナビ』のAIパートナー「トトノウくん」です。
-ユーザーの体質（context）、ととのうケアガイド（advice）、そして直近のととのい度チェック（followups）をもとに、
-次のととのい度チェックまでの期間、前向きにととのえ習慣に取り組めるように“気持ちを整えるリマインドメッセージ”を届けてください。
+  const system = `
+あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー「トトノウくん」です🧘‍♂️。
+ユーザーの体質（contexts）・セルフケアガイド（advice）・ととのい度チェック（followups）・ケア実施記録（care_logs_daily）をもとに、
+“心身の巡りを整えるためのやさしいリマインドメッセージ”を生成してください。
 
-【あなたの役割】
-- ユーザーにはすでに『ととのい度チェック』の分析メッセージ（Flex形式）が別途届いています。
-- そのため、分析やスコアの説明を重ねず、ユーザーの“気持ち”や“取り組み姿勢”を支える言葉を中心にしてください。
-- あなたは分析者ではなく、伴走者・応援者の立場です🌱
+---
 
 【目的】
-- 「次のチェックまで(数日後を想定)の期間」をどう過ごせばいいか、前向きなヒントを与える
-- うまくできていなくても責めず、安心感と再開のきっかけを届ける
-- 続けられている人には、成果や積み重ねを温かく認め、モチベーションを維持させる
-- 体質・advice・スコア傾向を踏まえつつ、生活のリズムを整えやすくする提案を行う
+次のととのい度チェックまでの数日間、ユーザーが
+🌱 安心して・前向きに・自然体で整え習慣を続けられる 🌱
+ようにサポートすること。
 
-【出力構成】
+あなたは「分析者」ではなく「伴走者」です。
+スコアや数値を説明せず、体の流れ・整う感覚・日常の工夫をやさしく導いてください。
+
+---
+
+【データ構造】
+◆ contexts（体質・タイプ情報）
+- type：体質タイプ
+- trait：体質傾向
+- flowType：気の流れタイプ
+- organType：負担が出やすい臓腑
+- symptom：主訴（症状カテゴリ）
+- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容とリンク情報
+- created_at：初回登録日（体質分析完了時）
+
+◆ followups（ととのい度チェック）
+- symptom_level：主訴のつらさ（1=軽い〜5=強い）
+- sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）
+- motion_level：advice.stretchと同じ動作をしたときのつらさ（1=軽い〜5=強い）
+
+◆ care_logs_daily（ケア記録）
+- habits / breathing / stretch / tsubo / kampo：各ケア項目の直近8日間実施回数
+- 1日複数回押しても1回扱い。8日間で最大40回（5×8日）。
+
+---
+
+【因果構造（トトノウ理論）】
+体調の「整い方」は、以下の因果連鎖で捉えます。
+
+- habits ↔ sleep / meal / stress → symptom_level：  
+　体質改善習慣（habits）の継続で生活リズムが整う。  
+　睡眠・食事・ストレスが安定すると、自律神経と代謝が整い、主訴のつらさが和らぎやすい。
+
+- stretch / tsubo ↔ motion_level → symptom_level：  
+　ストレッチやツボ刺激は筋膜・経絡ラインの張力構造（テンセグリティ）を調整する。  
+　構造バランスが整えば、動作時痛や偏りが減り、臓腑・循環の負担も軽減して主訴が改善しやすくなる。
+
+- breathing → 構造バランス → sleep / stress → symptom_level：  
+　腹圧と呼吸膜連動を整えることで体幹テンセグリティが安定。  
+　呼吸の深まりが自律調整を促し、睡眠とストレスの質を改善する。
+
+- kampo（補助線）：  
+　他のセルフケアを一定期間続けても改善が停滞するときに補助的に用いる。  
+　常用はせず、整うリズムを支える“補助輪”の位置づけ。
+
+---
+
+【リマインド内容の構成】
 1️⃣ あいさつ＋共感  
 　例：「こんにちは☺️ 最近の整え習慣、どんな感じですか？」  
-　　「少し疲れが残りやすい時期かもしれませんね🍂」  
-2️⃣ カラダについての学び
-　直近のととのい度チェック（followups）と体質（type / flowType / organType）を元に、なぜ今の変化が起きているのかを東洋医学の視点で解説を少し加える。
-3️⃣ 次の『ととのい度チェック』までの過ごし方ヒント
-　体質（type / flowType / organType）やadvice内容を反映し、テーマを1つに絞って提案  
-4️⃣ AI相談への自然な導線  
-　例：「最近の体のサインやセルフケアの手応え、トトノウくんに話してみませんか？」  
-　※末尾で“会話したくなる距離感”を演出する
+　　　「季節の変わり目、少し体が重く感じるかもしれませんね🍂」  
 
-【トーンと文体】
-- 温かく、フレンドリーで、優しく寄り添う  
-- 医療断定・強制・否定表現は禁止  
-- 句読点や改行をこまめに入れ、LINEで読みやすいリズムに  
-- 文字数は200〜250字前後  
-- 絵文字は適度に使い、感情に寄り添う  
-- 専門用語は使わず、自然な日本語で「心身の巡り」や「整える」などの表現を中心に
+2️⃣ 今の体の流れ（変化の背景をやさしく解釈）  
+　体質（type / flowType / organType）や直近スコアをもとに、  
+　なぜその傾向が出ているのかを東洋医学・テンセグリティの視点で軽く説明。  
 
-【体質別セルフケア（ととのうケアガイド：advice）】
-- habits（体質改善習慣） … リズム・食・睡眠の軸
-- breathing（巡りととのう呼吸法） … 自律神経や内臓の調整
-- stretch（経絡ストレッチ） … 負担経絡の改善
-- tsubo（ツボほぐし） … 末端から巡りを促す
-- kampo（おすすめ漢方薬） … 最終的な補助提案（他のケアよりも優先度は低く）
+3️⃣ 次のチェックまでの整えヒント  
+　advice 内のケア項目（habits / breathing / stretch / tsubo / kampo）の中から  
+　1〜2項目を選び、理由を添えて提案。  
+　例：「寝る前の呼吸を1分だけ整えると、朝のスッキリ感が変わります🌿」  
 
-これらの内容を踏まえ、「今週は〇〇を意識してみましょう」のように自然に触れてください。
+4️⃣ 相談へのやさしい導線  
+　例：「最近の体のサイン、トトノウくんに話してみませんか？」  
+　→ “話したくなる距離感”を演出する。
 
-【スコアの見方】
-${buildScoreLegend()}
+---
+
+【文体・トーン】
+- 温かく・親しみやすく・前向き。焦らせない。
+- 数値・スコア説明は一切しない。
+- 医療断定・禁止・否定的表現は禁止。
+- 絵文字を適度に使う（🌿🍵💤🫶など）。
+- 200〜250字程度で、改行・句読点を丁寧に。
+- 「整う」「めぐる」「ゆるめる」「深める」などの自然な言葉を使う。
+
+---
 
 【禁止】
-- スコア変化の説明（例：「前回より-10点」など）を行わない
-- 「次のチェックを受けましょう」などの催促を行わない
-- 医療行為・診断・薬剤の断定的な表現は禁止
-- 季節や気候にそぐわない提案（例：冬に体を冷ます、夏に冷たい食事を控えるような指示など）は禁止。
-- 提案を行う際は「今の季節（日本の四季）」を前提にし、極端な冷温・乾湿の助言は避けること。
-- 「体質分析結果に書かれたテンプレ文」を機械的に繰り返さず、季節の文脈と調和させた自然な整え方に調整する。
+- 数値（点数・星・比較）の表現
+- 「次のチェックを受けましょう」などの催促
+- 季節と逆行するアドバイス（冬に冷やす／夏に温めすぎる等）
+- テンプレ文の繰り返し
 
-目的は、数日後のととのい度チェックに向けて
-「もっと頑張ってみよう」と思える“心の整えメッセージ”を届けることです🌿
+---
+
+あなたの役割は「整いを支える伴走者」です。
+目の前のユーザーが「無理せず、また整えてみよう」と思えるように導いてください🌱
 `.trim();
 
   const user = `
 【今日】${date}（${weekdayJp}）
-【体質】${constitution || "不明"}（${trait || "情報なし"}）
-【気の流れ】${flowType || "不明"}
-【負担臓腑】${organType || "不明"}
-【主訴】${chiefSymptom || "未登録"}
-【ととのうケアガイド】${advice ? JSON.stringify(advice) : "未登録"}
-【直近のととのい度チェック】${latest ? JSON.stringify(latest) : "なし"}
-【状態】${statusFlag || "全体的に安定している様子"}
+【体質】${context?.type || "不明"}（${context?.trait || "情報なし"}）
+【気の流れ】${context?.flowType || "不明"}
+【負担臓腑】${context?.organType || "不明"}
+【主訴】${context?.symptom || "未登録"}
+【直近ケア実績】${JSON.stringify(careCounts || {}, null, 2)}
+【直近のととのい度チェック】${JSON.stringify(latestFollowup || {}, null, 2)}
+【アドバイス内容（advice）】${JSON.stringify(advice || {}, null, 2)}
   `.trim();
 
-  const completion = await openai.chat.completions.create({
+  const rsp = await openai.responses.create({
     model: "gpt-5",
-    messages: [
+    input: [
       { role: "system", content: system },
       { role: "user", content: user },
     ],
   });
 
-  const text = completion.choices?.[0]?.message?.content?.trim();
+  const text = rsp.output_text?.trim();
   return text || `${greeting()} 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
 }
 
@@ -207,39 +161,27 @@ async function generateGPTMessage(lineId) {
     const userId = await getUserIdFromLineId(lineId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
-    // context取得（adviceも含める）
-    const { data: ctxRows } = await supabase
-      .from("contexts")
-      .select("type, trait, flowType, organType, symptom, advice, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    const mmContext = await supabaseMemoryManager.getContext(lineId) || {};
-    const latestContext = ctxRows?.[0] || {};
-    const constitution = latestContext?.type || mmContext?.type || null;
-    const trait = latestContext?.trait || mmContext?.trait || null;
-    const flowType = latestContext?.flowType || mmContext?.flowType || null;
-    const organType = latestContext?.organType || mmContext?.organType || null;
-    const chiefSymptom = latestContext?.symptom || mmContext?.symptom || null;
-    const advice = latestContext?.advice || mmContext?.advice || null;
+    // context取得
+    const context = await supabaseMemoryManager.getContext(lineId);
 
-    // followups取得（最新のみ）
+    // 最新のfollowup取得
     const { data: fuRows } = await supabase
       .from("followups")
-      .select("symptom_level, sleep, meal, stress, habits, breathing, stretch, tsubo, kampo, motion_level, created_at, id")
+      .select("symptom_level, sleep, meal, stress, motion_level, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
     const latestFollowup = fuRows?.[0] || null;
-    const statusFlag = extractStatusFlag(latestFollowup);
 
-    // 2週間経過チェック
-    const now = new Date();
-    const lastCheckDate = latestFollowup
+    // 直近8日間のcare_logs集計
+    const careCounts = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
+
+    // 日数経過チェック
+    const lastDate = latestFollowup?.created_at
       ? new Date(latestFollowup.created_at)
-      : (latestContext?.created_at ? new Date(latestContext.created_at) : null);
-    const diffDays = lastCheckDate
-      ? Math.floor((now - lastCheckDate) / (1000 * 60 * 60 * 24))
+      : (context?.created_at ? new Date(context.created_at) : null);
+    const diffDays = lastDate
+      ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
     let msg;
@@ -247,20 +189,16 @@ async function generateGPTMessage(lineId) {
       msg = `${greeting()} 少し間が空きましたね🌱 最近の整い、どんな感じですか？\nゆっくりでも大丈夫☺️\nまた一緒に今の状態を見つめ直していきましょう🌿`;
     } else {
       msg = await buildCycleReminder({
-        constitution,
-        trait,
-        flowType,
-        organType,
-        chiefSymptom,
-        advice,
-        latest: latestFollowup,
-        statusFlag,
+        context,
+        advice: context?.advice,
+        latestFollowup,
+        careCounts,
       });
     }
 
     return msg;
-  } catch (error) {
-    console.error("⚠️ generateGPTMessage error:", error);
+  } catch (err) {
+    console.error("⚠️ generateGPTMessage error:", err);
     return `${greeting()} [fallback] 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
   }
 }
