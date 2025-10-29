@@ -39,11 +39,11 @@ async function generatePraiseReply({ pillarKey, countsAll }) {
   const count = countsAll[pillarKey] || 0;
   const total = Object.values(countsAll).reduce((a, b) => a + (b || 0), 0);
 
-  const system = `あなたはセルフケアを褒める日本語コーチ。70〜120字以内で優しい励ましを出してください。`;
+  const system = `あなたはセルフケアを褒めるAI伴走パートナー『トトノウくん』です。全角70字前後で優しく親しみある励ましを出してください。`;
   const user = `項目:${label}\n今回:+1回\n直近レビュー以降:${count}回（全体:${total}回）`;
 
   const rsp = await oai.responses.create({
-    model: process.env.TOTONOU_PRAISE_MODEL || "gpt-5-nano",
+    model: process.env.TOTONOU_PRAISE_MODEL || "gpt-5-mini",
     input: [{ role: "system", content: system }, { role: "user", content: user }],
     reasoning: { effort: "minimal" },
   });
