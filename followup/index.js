@@ -110,16 +110,20 @@ function buildResultFlexBubbles(sections) {
         contents: [
           { type: "text", text: `【${p.priority || 1}位】${p.pillar}（${p.recommended_frequency || "目安"}）`, weight: "bold", wrap: true },
           { type: "text", text: p.reason || "", wrap: true },
-          ...(p.reference_link
-            ? [
-                {
-                  type: "button",
-                  style: "link",
-                  height: "sm",
-                  action: { type: "uri", label: "図解を見る", uri: p.reference_link },
-                },
-              ]
-            : []),
+...(typeof p.reference_link === "string" && /^https?:\/\//.test(p.reference_link)
+  ? [
+      {
+        type: "button",
+        style: "link",
+        height: "sm",
+        action: {
+          type: "uri",
+          label: "図解を見る",
+          uri: p.reference_link,
+        },
+      },
+    ]
+  : []),
         ],
       });
     });
