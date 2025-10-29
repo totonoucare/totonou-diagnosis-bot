@@ -36,8 +36,8 @@ const followupQuestionSet = [
     ]
   },
   {
-    id: "Q4",
-    header: "【Q4】動作テストの変化",
+    id: "Q3",
+    header: "【Q3】動作テストの変化",
     body: "初回分析時の「{{motion}}」のツラさ度合いについて、\n「1＝改善した」「5＝変わらずツライ」\nでお答えください。",
     isMulti: false,
     options: [
