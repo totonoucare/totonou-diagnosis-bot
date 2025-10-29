@@ -234,6 +234,20 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
 /* ---------------------------
    3) メイン：フォローアップのAIレスポンス
 --------------------------- */
+
+// --- symptomラベル辞書（英語→日本語変換用） ---
+const symptomLabels = {
+  stomach: "胃腸の調子",
+  sleep: "睡眠・集中力",
+  pain: "肩こり・腰痛・関節",
+  mental: "イライラや不安感",
+  cold: "体温バランス・むくみ",
+  skin: "頭髪や肌の健康",
+  pollen: "花粉症・鼻炎",
+  women: "女性特有のお悩み",
+  unknown: "なんとなく不調・不定愁訴",
+};
+
 /**
  * @param {string} userId - users.id (UUID)
  * @param {object} followupAnswers - 今回の回答（setFollowupAnswers直前に組んだやつ）
@@ -259,6 +273,10 @@ async function sendFollowupResponse(userId, followupAnswers) {
       };
     }
     const { advice } = context;
+
+    // 🔽 ここに追記 🔽
+    const symptomName = symptomLabels[context.symptom] || "不明な主訴";
+    const motionName = context.motion || "指定の動作";
 
     // 3. followup履歴（最新と前回）とこれまでの反映度ヒストリ
     const { latest, prev } =
@@ -464,6 +482,10 @@ ${JSON.stringify(advice, null, 2)}
 
 【careCounts（柱ごとの直近実施回数）】
 ${JSON.stringify(careCounts, null, 2)}
+
+【体質・症状情報】
+- 主訴: ${symptomName} (${context.symptom})
+- 動作テスト対象: ${motionName}
 
 【メモ】
 - 上記adviceの中に、呼吸法/体質改善習慣/ストレッチ/ツボ/漢方 の説明や参考リンクが含まれる。
