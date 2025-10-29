@@ -64,8 +64,9 @@ async function buildCycleReminder({
 - motion_level：advice.stretchと同じ動作をしたときのつらさ（1=軽い〜5=強い）
 
 ◆ care_logs_daily（ケア記録）
-- habits / breathing / stretch / tsubo / kampo：各ケア項目の直近8日間実施回数
-- 1日複数回押しても1回扱い。8日間で最大40回（5×8日）。
+- habits / breathing / stretch / tsubo / kampo：各ケア項目の直近8日間実施回数。
+- 実際の押下回数をそのまま合算（1日に複数回行った場合も回数分カウント）。
+- 値が大きいほど、そのケアをよく実施していることを意味する。
 
 ---
 
