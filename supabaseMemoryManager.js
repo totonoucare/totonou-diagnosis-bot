@@ -137,6 +137,7 @@ async function getContext(lineId) {
 
   return {
     ...context,
+    start_date: context?.created_at || null,  // ← ここを追加！
     guide_received: userRow.guide_received || false
   };
 }
