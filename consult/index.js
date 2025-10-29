@@ -75,6 +75,22 @@ module.exports = async function consult(event, client) {
       getLastTwoFollowupsByUserId(user.id),
       getLastNConsultMessages(user.id, 3),
     ]);
+    
+        // 🔹直近のcarelog（8日間分）を取得
+    const rawCareCounts = await require("../supabaseMemoryManager")
+      .getAllCareCountsSinceLastFollowupByLineId(lineId);
+
+    // 🔹1日複数回押しを1回扱いに正規化（followupと同じ仕様）
+    const normalizeCareCountsPerDay = (careCounts) => {
+      if (!careCounts || typeof careCounts !== "object") return {};
+      const normalized = {};
+      for (const [pillar, count] of Object.entries(careCounts)) {
+        normalized[pillar] = Math.min(Number(count) || 0, 8);
+      }
+      return normalized;
+    };
+    const careCounts = normalizeCareCountsPerDay(rawCareCounts);
+    
   } catch (err) {
     console.error("データ取得失敗:", err);
     return safeReplyThenPushFallback({
