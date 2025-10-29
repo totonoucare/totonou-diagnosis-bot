@@ -435,15 +435,4 @@ async function handleFollowup(event, client, lineId) {
 module.exports = Object.assign(handleFollowup, {
   hasSession: (lineId) => !!userSession[lineId],
 });
-``` ✅これが完成版です。
 
----
-
-### これで揃ったこと
-- Q3削除済み（ケア実施度は質問しない）
-- carelogは responseSender 側で使う前提
-- 2枚カード（card1/card2）を index.js 側で Flex Bubble 2つに変換
-- 「分析中です🙏」は reply、「最終結果」は push
-- `hasSession()` は今まで通り server.js から使える
-
-このまま差し替えてOKです💪
