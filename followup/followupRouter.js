@@ -4,16 +4,11 @@
 // GPT-5（responseSender）によるスコア算出・コメント生成を呼び出す
 // ================================
 
+// followup/followupRouter.js
 const generateFollowupResult = require("./resultGenerator");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
 const { sendFollowupResponse } = require("./responseSender");
 
-/**
- * フォローアップ回答を処理し、GPTコメント付き結果を返す
- * @param {string} lineId - LINEユーザーの一意なID
- * @param {Array|string|object} answers - ユーザーの回答（配列またはオブジェクト形式）
- * @returns {Promise<Object>} - GPTコメント付きの再診結果
- */
 async function handleFollowupAnswers(lineId, answers) {
   try {
     const cleanLineId = lineId.trim();
@@ -22,13 +17,13 @@ async function handleFollowupAnswers(lineId, answers) {
     const context = await supabaseMemoryManager.getContext(cleanLineId);
     if (!context) throw new Error(`❌ context取得失敗: lineId=${cleanLineId}`);
 
-    // 💾 carelog（実施記録）取得：最新チェックから直近7日分を集計
+    // 💾 carelog（実施記録）取得：最新フォローアップ以降の5本柱を集計
     let carelogSummary = {};
     try {
-      const carelogs = await supabaseMemoryManager.getCarelogCount(cleanLineId, 8); // 8日間
+      const carelogs = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(cleanLineId);
       carelogSummary = carelogs || {};
     } catch (e) {
-      console.warn("⚠️ carelog取得失敗（継続処理）:", e.message);
+      console.warn("⚠️ care_logs_daily 取得失敗（継続処理）:", e.message);
       carelogSummary = {};
     }
 
@@ -38,18 +33,9 @@ async function handleFollowupAnswers(lineId, answers) {
       for (const ans of answers) {
         const [key, value] = ans.split("=");
         if (key && value !== undefined) {
-          switch (key) {
-            case "symptom":
-            case "sleep":
-            case "meal":
-            case "stress":
-            case "motion_level":
-              parsedAnswers[key] = parseInt(value);
-              break;
-            default:
-              parsedAnswers[key] = value;
-              break;
-          }
+          parsedAnswers[key] = ["symptom", "sleep", "meal", "stress", "motion_level"].includes(key)
+            ? parseInt(value)
+            : value;
         }
       }
     } else if (typeof answers === "object" && answers !== null) {
@@ -58,23 +44,22 @@ async function handleFollowupAnswers(lineId, answers) {
       throw new Error("answers形式が不正です");
     }
 
-    // 🎯 GPT送信用のデータ生成（Q3削除済・carelog統合）
+    // 🎯 GPT送信用のデータ生成
     const result = generateFollowupResult(parsedAnswers, context, carelogSummary);
 
-    // 💾 Supabaseへ保存（lineId使用）
+    // 💾 Supabaseへ保存
     await supabaseMemoryManager.setFollowupAnswers(cleanLineId, parsedAnswers);
 
-    // 🧠 userIdを取得（GPT呼び出し用）
+    // 🧠 userIdを取得
     const subscribedUsers = await supabaseMemoryManager.getSubscribedUsers();
     const matchedUser = subscribedUsers.find((u) => u.line_id === cleanLineId);
     const userId = matchedUser?.id;
     if (!userId) throw new Error(`❌ userId取得失敗: lineId=${cleanLineId}`);
 
-    // ✅ GPT-5コメント生成（Flex構造含む）
+    // ✅ GPT-5コメント生成
     const { gptComment, statusMessage, sections } =
       await sendFollowupResponse(userId, result.rawData);
 
-    // ✅ 返却データをまとめてindex.jsへ返す
     return {
       ...result,
       carelogSummary,
