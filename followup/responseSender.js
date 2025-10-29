@@ -426,7 +426,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
       "total": {
         "label": "総合整い度",
         "stars": "★★★★★ の形 (例: ★★★☆☆)",
-        "explain": "行動スコアと体調反映度を合わせた総合評価（星1〜5）"
+        "explain": "行動スコアと体調反映度を合わせた総合評価"
       },
       "action": {
         "label": "セルフケア実施度",
