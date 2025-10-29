@@ -142,7 +142,7 @@ async function getContext(lineId) {
   };
 }
 
-// ✅ フォローアップ回答保存
+// ✅ フォローアップ回答保存（新仕様対応版）
 async function setFollowupAnswers(lineId, answers) {
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
@@ -152,34 +152,26 @@ async function setFollowupAnswers(lineId, answers) {
     .maybeSingle();
   if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
 
-const payload = {
-  user_id: userRow.id,
-  symptom_level: parseInt(answers.symptom),
-  sleep: parseInt(answers.sleep),
-  meal: parseInt(answers.meal),
-  stress: parseInt(answers.stress),
-  habits: answers.habits,
-  breathing: answers.breathing,
-  stretch: answers.stretch,
-  tsubo: answers.tsubo,
-  kampo: answers.kampo,
-  motion_level: parseInt(answers.motion_level),
-  // q5_answer:  ← 削除
-};
+  const payload = {
+    user_id: userRow.id,
+    symptom_level: parseInt(answers.symptom),
+    sleep: parseInt(answers.sleep),
+    meal: parseInt(answers.meal),
+    stress: parseInt(answers.stress),
+    motion_level: parseInt(answers.motion_level),
+    created_at: getJSTISOStringNow(), // 安全のため追記（タイムゾーン統一）
+  };
 
-// 必須キーのみチェック（q5 は対象外）
-const requiredKeys = [
-  'user_id','symptom_level','sleep','meal','stress','motion_level'
-];
-for (const key of requiredKeys) {
-  if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
-    throw new Error(`❌ 必須項目が未定義: ${key}`);
+  const requiredKeys = [
+    'user_id', 'symptom_level', 'sleep', 'meal', 'stress', 'motion_level'
+  ];
+  for (const key of requiredKeys) {
+    if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+      throw new Error(`❌ 必須項目が未定義: ${key}`);
+    }
   }
-}
 
-  const { error } = await supabase
-    .from(FOLLOWUP_TABLE)
-    .insert(payload);
+  const { error } = await supabase.from(FOLLOWUP_TABLE).insert(payload);
   if (error) throw error;
 }
 
