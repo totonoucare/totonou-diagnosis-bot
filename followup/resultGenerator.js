@@ -30,6 +30,9 @@ function generateFollowupResult(answers, context = {}, carelogSummary = {}) {
       tsubo: carelogSummary.tsubo || 0,
       kampo: carelogSummary.kampo || 0,
     },
+
+    // 🔹 利用開始日（context.created_atをそのまま渡す）
+    start_date: context.created_at || null,
   };
 
   // ✅ context.advice が JSONB配列 or オブジェクトどちらでも対応
@@ -63,16 +66,10 @@ function generateFollowupResult(answers, context = {}, carelogSummary = {}) {
       kampo: advice.kampo || "未登録",
     },
 
-    // 実施回数（直近8日間）
-    carelog: {
-      habits: rawData.carelog.habits,
-      breathing: rawData.carelog.breathing,
-      stretch: rawData.carelog.stretch,
-      tsubo: rawData.carelog.tsubo,
-      kampo: rawData.carelog.kampo,
-    },
+    // 実施回数（直近8日間 or 最新チェック以降）
+    carelog: { ...rawData.carelog },
 
-    // Q1〜Q3（旧Q4）
+    // Q1〜Q3
     Q1: { symptom: rawData.symptom_level },
     Q2: {
       sleep: rawData.sleep,
@@ -80,6 +77,9 @@ function generateFollowupResult(answers, context = {}, carelogSummary = {}) {
       stress: rawData.stress,
     },
     Q3: { motion_level: rawData.motion_level },
+
+    // 🔹 利用開始日を追記（GPTが学習・補正に使用）
+    start_date: rawData.start_date,
   };
 
   return { rawData, promptParts };
