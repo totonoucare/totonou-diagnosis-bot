@@ -153,6 +153,21 @@ function calcTotalScore(actionScoreFinal, reflectionScore) {
 }
 
 /**
+ * careCounts を「1日1回扱い」に丸める補正
+ * - 各pillarごとに「最大8日分（8回）」を上限とする
+ * - 例：呼吸法 12回 → 8回、ツボ 3回 → 3回
+ * - 複数回押してもスコアは習慣頻度（日数）重視にする
+ */
+function normalizeCareCountsPerDay(careCounts) {
+  if (!careCounts || typeof careCounts !== "object") return {};
+  const normalized = {};
+  for (const [pillar, count] of Object.entries(careCounts)) {
+    normalized[pillar] = Math.min(Number(count) || 0, 8);
+  }
+  return normalized;
+}
+
+/**
  * 体調反映度の停滞判定に使うヘルパ
  * returns { isStuck2Times: boolean, severity: "mild"|"heavy"|null }
  */
@@ -312,10 +327,13 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
     // 4. care_logs（行動ログ集計）
     //    直近「前回チェック以降〜今」の8日間換算で
-    const careCounts =
-      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
-        lineId
-      );
+     const rawCareCounts =
+       await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+         lineId
+       );
+
+     // 🪴 日内の重複押しを1日1回扱いに丸める
+     const careCounts = normalizeCareCountsPerDay(rawCareCounts);
 
     // 8日評価。ただしまだサービス開始から4日とかなら4日扱いでいい
     // context.created_at が体質分析時＝サービス開始の目安
