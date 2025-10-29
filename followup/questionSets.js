@@ -36,39 +36,6 @@ const followupQuestionSet = [
     ]
   },
   {
-    id: "Q3",
-    header: "【Q3】セルフケアの実施状況",
-    body: "「ととのうガイド」のセルフケアは、どれくらい取り組めていますか？\n順にボタンを選択してください",
-    isMulti: true,
-    options: [
-      {
-        id: "habits",
-        label: "体質改善の生活習慣",
-        items: ["継続中", "時々", "未着手"]
-      },
-      {
-        id: "breathing",
-        label: "呼吸法",
-        items: ["継続中", "時々", "未着手"]
-      },
-      {
-        id: "stretch",
-        label: "ストレッチ",
-        items: ["継続中", "時々", "未着手"]
-      },
-      {
-        id: "tsubo",
-        label: "ツボケア",
-        items: ["継続中", "時々", "未着手"]
-      },
-      {
-        id: "kampo",
-        label: "漢方薬",
-        items: ["継続中", "時々", "未着手"]
-      }
-    ]
-  },
-  {
     id: "Q4",
     header: "【Q4】動作テストの変化",
     body: "初回分析時の「{{motion}}」のツラさ度合いについて、\n「1＝改善した」「5＝変わらずツライ」\nでお答えください。",
