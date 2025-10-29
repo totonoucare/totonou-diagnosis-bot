@@ -239,55 +239,52 @@ async function handleFollowup(event, client, lineId) {
     if (session.step > questionSets.length) {
       const answers = session.answers;
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
-      await client.replyMessage(replyToken, [
-        { type: "text", text: "✅ チェック完了！\n今週のケアプランをまとめてるよ🧠🌿" },
-      ]);
+      await client.replyMessage(replyToken, {
+        type: "text",
+        text: "✅ チェック完了！\n今週のケアプランをまとめてるよ🧠🌿",
+      });
 
       handleFollowupAnswers(lineId, answers)
         .then(async (result) => {
           if (result?.sections) {
             const bubbles = buildResultFlexBubbles(result.sections);
-            await client.pushMessage(lineId, [
-              {
-                type: "flex",
-                altText: "ととのい度チェック結果",
-                contents: { type: "carousel", contents: bubbles },
-              },
-            ]);
+            await client.pushMessage(lineId, {
+              type: "flex",
+              altText: "ととのい度チェック結果",
+              contents: { type: "carousel", contents: bubbles },
+            });
           } else {
-            await client.pushMessage(lineId, [
-              {
-                type: "text",
-                text:
-                  "📋 今回のととのい度チェック\n\n" +
-                  (result?.gptComment || "解析コメントを生成できませんでした🙏"),
-              },
-            ]);
+            await client.pushMessage(lineId, {
+              type: "text",
+              text:
+                "📋 今回のととのい度チェック\n\n" +
+                (result?.gptComment || "解析コメントを生成できませんでした🙏"),
+            });
           }
           delete userSession[lineId];
         })
         .catch(async (err) => {
           console.error("❌ GPTコメント生成失敗:", err);
-          await client.pushMessage(lineId, [
-            {
-              type: "text",
-              text: "今週のケアプラン作成でエラーが出ました🙇\nしばらく時間をおいて再試行してください。",
-            },
-          ]);
+          await client.pushMessage(lineId, {
+            type: "text",
+            text: "今週のケアプラン作成でエラーが出ました🙇\nしばらく時間をおいて再試行してください。",
+          });
           delete userSession[lineId];
-        ]);
+        });
       return;
     }
 
-    // 次の質問
+    // === 次の質問 ===
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
-    return client.replyMessage(replyToken, [buildFlexMessage(nextQuestion, context)]);
+    const nextFlex = buildFlexMessage(nextQuestion, context);
+    return client.replyMessage(replyToken, nextFlex);
   } catch (err) {
     console.error("❌ followup/index.js エラー:", err);
-    return client.replyMessage(replyToken, [
-      { type: "text", text: "エラーが発生しました。時間をおいて再試行してください🙏" },
-    ]);
+    return client.replyMessage(replyToken, {
+      type: "text",
+      text: "エラーが発生しました。時間をおいて再試行してください🙏",
+    });
   }
 }
 
