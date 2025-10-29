@@ -746,13 +746,7 @@ function buildTotonouConsultExamplesFlex() {
             type: "button",
             style: "primary",
             color: "#7B9E76",
-            action: { type: "message", label: "😣 自分の不調と体質の関係", text: "私の主訴と体質はどう関係あるの？" }
-          },
-          {
-            type: "button",
-            style: "primary",
-            color: "#7B9E76",
-            action: { type: "message", label: "📝 今週のケアプラン作成", text: "今週のケアプランを立ててほしい！" }
+            action: { type: "message", label: "😣 自分の不調と体質の関係", text: "私の不調(主訴)と体質はどう関係あるの？" }
           },
           {
             type: "button",
