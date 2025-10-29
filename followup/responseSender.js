@@ -200,8 +200,7 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      reasoning: { effort: "medium" },
-      text: { verbosity: "medium" },
+
     });
 
     // 安全にJSON抽出
@@ -344,7 +343,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
     //    - adviceとcareCountsも丸ごと渡す
     const systemPrompt = `
 あなたは「トトノウくん」🧘‍♂️。
-東洋医学ベースのセルフケア相棒AIです。
+東洋医学ベースのAIセルフケアパートナーです。
 ユーザーを「褒めて伸ばす」トーンで、**必ず有効なJSONだけ**を返してください。
 前置き・後書き・説明テキストをJSONの外に出してはいけません。
 
