@@ -345,7 +345,7 @@ async function sendFollowupResponse(userId, followupAnswers) {
 // ととのい度チェック間隔を基準にした実日数算出
 // ・通常: 前回followup→今回までの日数
 // ・初回: context.created_at→今回までの日数
-// ・評価上限は8日にクリップ
+// ・どちらも無ければ1日扱い（仮）
 // ---------------------------------------------
 const now = Date.now();
 
@@ -367,13 +367,12 @@ if (context?.created_at) {
   );
 }
 
-// 実際のスコア計算に使う日数
-const baseDays =
+// 実際のスコア計算に使う日数（＝分母）
+// → 8日クリップは削除。実日数ベースで密度を評価。
+const effectiveDays =
   daysSincePrevFollowup ??
   daysSinceContextStart ??
-  8; // どちらも無ければ仮で8日扱い
-
-const effectiveDays = Math.min(8, Math.max(1, baseDays));
+  1;
 
     const { actionScoreRaw, totalActions } = calcActionScore(
       careCounts,
