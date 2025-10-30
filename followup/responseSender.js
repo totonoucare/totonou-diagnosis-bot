@@ -94,8 +94,9 @@ function calcReflectionScore(prevN, curN) {
 
 /**
  * 行動スコア（0〜100）
- * - 各pillarごとの「実施日数密度」を加重平均して算出
- * - kampo（漢方）は補助的扱い（重み0.25）
+ * - careCounts は「その期間にそのpillarをやったかどうか」を 0/1 で受け取る想定
+ * - effectiveDays（日数）で割ることで「何日ぶんやれたか」の密度にする
+ * - 生活系4本柱は重み1.0、漢方だけ0.25で計算する
  */
 function calcActionScore(careCounts, effectiveDays) {
   // 各pillarの重み設定
@@ -446,7 +447,7 @@ const { totalScore, totalStarsNum, totalStarsText } = calcTotalScore(
       "action": {
         "label": "セルフケア実施度",
         "score_text": "NN点",
-        "explain": "直近8日間どれくらいケア行動を積み重ねられたか"
+        "explain": "今回のチェックまでの期間でどれくらいセルフケアできたか"
       },
       "reflection": {
         "label": "体調反映度",
