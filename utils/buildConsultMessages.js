@@ -71,6 +71,22 @@ function toJSON(obj) {
   catch { return JSON.stringify({ _error: "unserializable" }); }
 }
 
+// ✅ ここを新しく追記
+/**
+ * careCounts（日次記録）を1日1回扱いに丸める
+ * - 1回以上なら「1」として扱う
+ * - 8を上限とする
+ * - 未定義は0扱い
+ */
+function normalizeCareCountsPerDay(rawCounts = {}) {
+  const normalized = {};
+  for (const [pillar, count] of Object.entries(rawCounts)) {
+    normalized[pillar] = Math.min(count > 0 ? 1 : 0, 8);
+  }
+  return normalized;
+}
+
+
 /**
  * ▼ GPT向けスコア・ケアログ構造説明
  * （Q3の「実施度」質問は廃止。care_logs_daily により日次記録を自動カウント）
@@ -129,6 +145,9 @@ module.exports = function buildConsultMessages({
   const latest = followups?.latest ?? null;
   const prev = followups?.prev ?? null;
 
+  // ✅ 丸め処理をここで適用！
+  const normalizedCareCounts = normalizeCareCountsPerDay(careCounts);
+
   const chatHistory = (recentChats || [])
     .slice(-3)
     .map((c) => {
@@ -162,7 +181,7 @@ module.exports = function buildConsultMessages({
     "【回答方針】",
     "1) contexts（体質・所見）・followups（体調スコア）・care_logs（実践データ）・直近会話を総合的に考慮し、今の状態に沿った具体的で現実的なアドバイスを提示する。",
     "2) 相談内容がcontexts.advice（セルフケア提案）と直接関係しない場合も、東洋医学・構造学の観点から適切な方向性を提案してよい。",
-    "3) 表現はLINE向けに短く、300字程度を目安に。段落を分け、絵文字を適度に使ってやさしく伝える。専門用語はやさしく言い換える。",
+    "3) 表現はLINE向けに短く、250字程度を目安に。段落を分け、絵文字を適度に使ってやさしく伝える。専門用語はやさしく言い換える。",
     "4) adviceにURL（図解リンク）が含まれる場合は https://〜 の形で紹介（LINEが自動リンク化）。",
     "5) 医学的診断・処方はしない。重症・急性兆候がある場合は受診案内を優先。",
   ]
