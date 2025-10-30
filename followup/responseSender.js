@@ -515,10 +515,10 @@ const effectiveDays =
     const userPrompt = `
 【スコア情報】
 - 総合整い度(星のみ): ${totalStarsText} (${totalScore}点ベース)
-- セルフケア実施度スコア(行動): ${boostedActionScore}点
+- セルフケア実施度スコア(行動): ${actionScoreRaw}点
 - 体調反映度スコア: ${reflectionScore}点
 - 体調反映度の星: ${reflectionStarsText}
-- 直近のセルフケア合計回数（8日あたり実績）: ${totalActions} 回
+- セルフケア実施合計（日数換算・密度評価）: ${totalActions} 回
 - daysSinceStart(サービス開始からの日数): ${daysSinceStart}日
 - effectiveDays(今回の評価対象日数): ${effectiveDays}日
 
