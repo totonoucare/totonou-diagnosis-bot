@@ -364,20 +364,11 @@ if (prev?.created_at) {
   );
 }
 
-let daysSinceContextStart = null;
-if (context?.created_at) {
-  const ctxDate = new Date(context.created_at).getTime();
-  daysSinceContextStart = Math.max(
-    1,
-    Math.floor((now - ctxDate) / (1000 * 60 * 60 * 24))
-  );
-}
-
 // 実際のスコア計算に使う日数（＝分母）
-// → 8日クリップは削除。実日数ベースで密度を評価。
+// → 前回チェックがあればそっちを優先、なければサービス開始日から
 const effectiveDays =
   daysSincePrevFollowup ??
-  daysSinceContextStart ??
+  daysSinceStart ??
   1;
 
     const { actionScoreRaw, totalActions } = calcActionScore(
@@ -388,11 +379,11 @@ const effectiveDays =
 // 🪞最低保証：行動スコアが30点未満の場合は30点に補正
 const actionScoreFinal = Math.max(actionScoreRaw, 30);
 
-    // 5. 総合整い度
-    const { totalScore, totalStarsNum, totalStarsText } = calcTotalScore(
-      actionScoreRaw,
-      reflectionScore
-    );
+// 5. 総合整い度
+const { totalScore, totalStarsNum, totalStarsText } = calcTotalScore(
+  actionScoreFinal,
+  reflectionScore
+);
 
     // ※ 前回比（行動スコア・体調反映度・総合）をUIに入れたい場合、
     //   ここでは取れない「前々回」が必要だから、いったんnullで渡し、
@@ -527,7 +518,7 @@ const actionScoreFinal = Math.max(actionScoreRaw, 30);
     const userPrompt = `
 【スコア情報】
 - 総合整い度(星のみ): ${totalStarsText} (${totalScore}点ベース)
-- セルフケア実施度スコア(行動): ${actionScoreRaw}点
+- セルフケア実施度スコア(行動): ${actionScoreFinal}点
 - 体調反映度スコア: ${reflectionScore}点
 - 体調反映度の星: ${reflectionStarsText}
 - セルフケア実施合計（日数換算・密度評価）: ${totalActions} 回
