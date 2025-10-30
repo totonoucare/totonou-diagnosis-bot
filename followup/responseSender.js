@@ -122,7 +122,7 @@ function calcActionScore(careCounts, effectiveDays) {
   const ratio = maxWeight > 0 ? weightedTotal / maxWeight : 0;
   const rawScore = Math.round(Math.min(1, ratio) * 100);
 
-  // 総実施回数（参考情報として返す）
+  // 総実施数（日数ベースの合計、= 実施したpillar日数の合計値。例: 3日×3pillar=9）
   const totalActions = Object.values(careCounts).reduce((a, b) => a + b, 0);
 
   return { actionScoreRaw: rawScore, totalActions };
@@ -419,7 +419,7 @@ const effectiveDays =
 - 「ケアログ（care_logs）」では、セルフケアの実施記録を保存しています。
 - 体質改善習慣（habits）、呼吸法（breathing）、ストレッチ（stretch）、ツボ刺激（tsubo）、漢方（kampo）をそれぞれ1日1回までカウント。
 - 評価対象期間は、前回の「ととのい度チェック」から今回までの日数（初回は体質分析からの経過日数）です。
-- 「行動スコア」＝ その期間中にどれだけセルフケアを実施したかの“密度”（実施日数 ÷ 経過日数 × 100）。
+- "行動スコア"＝ その期間中にどれだけ各セルフケア柱を実践できたかの“密度”（pillarごとの実施割合を加重平均し、漢方は補助的に0.25倍で評価）。
 - 「体調反映度」＝ 前回→今回の体調スコア改善度。
 - 「総合整い度」＝ 行動(40%) + 反映度(60%)で統合。星1〜5に変換。
 
