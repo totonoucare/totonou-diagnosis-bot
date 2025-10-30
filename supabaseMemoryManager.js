@@ -4,6 +4,7 @@ const CONTEXT_TABLE = 'contexts';
 const USERS_TABLE = 'users';
 const FOLLOWUP_TABLE = 'followups';
 const CONSULT_TABLE = 'consult_histories'; // ← 追加
+const CARELOG_TABLE = 'care_logs_daily'; // ←✨これを追加！
 
 // JST現在時刻（ISO文字列）を取得
 function getJSTISOStringNow() {
@@ -326,7 +327,7 @@ async function addCareLogDailyByLineId(lineId, pillar) {
 
   // 既存行の有無を確認 → あれば count+1、なければ insert
   const { data: existing, error: selErr } = await supabase
-    .from('care_logs_daily')
+    .from(CARELOG_TABLE)
     .select('id, count')
     .eq('user_id', userRow.id)
     .eq('pillar', pillar)
@@ -336,13 +337,13 @@ async function addCareLogDailyByLineId(lineId, pillar) {
 
   if (existing) {
     const { error: updErr } = await supabase
-      .from('care_logs_daily')
+      .from(CARELOG_TABLE)
       .update({ count: (existing.count || 0) + 1 })
       .eq('id', existing.id);
     if (updErr) throw updErr;
   } else {
     const { error: insErr } = await supabase
-      .from('care_logs_daily')
+      .from(CARELOG_TABLE)
       .insert({ user_id: userRow.id, pillar, day, count: 1 });
     if (insErr) throw insErr;
   }
