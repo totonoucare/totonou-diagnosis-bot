@@ -58,15 +58,13 @@ function buildResultFlexBubbles(sections) {
   const card1 = sections?.card1 || {};
   const card2 = sections?.card2 || {};
 
-  // --- bubble1: 状態まとめ
+// --- bubble1: 状態まとめ
 const scoreLines = [];
 
-if (card1.score_block?.total)
-  scoreLines.push(`🌿 ${card1.score_block.total.label}：${card1.score_block.total.stars}`);
 if (card1.score_block?.action)
   scoreLines.push(`💪 ${card1.score_block.action.label}：${card1.score_block.action.score_text}`);
-if (card1.score_block?.reflection)
-  scoreLines.push(`💫 ${card1.score_block.reflection.label}：${card1.score_block.reflection.stars}`);
+if (card1.score_block?.effect)
+  scoreLines.push(`💫 ${card1.score_block.effect.label}：${card1.score_block.effect.stars}`);
 
 // --- ゴールドカラー (#C6A047くらいが落ち着いた金色) で描画 ---
 const scoreContents = scoreLines.map((line) => ({
