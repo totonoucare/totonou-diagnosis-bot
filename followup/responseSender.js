@@ -152,18 +152,24 @@ function calcTotalScore(actionScoreFinal, reflectionScore) {
   };
 }
 
+
 /**
- * careCounts を「1日1回扱い」に丸める補正
- * - 各pillarごとに「最大8日分（8回）」を上限とする
- * - 例：呼吸法 12回 → 8回、ツボ 3回 → 3回
- * - 複数回押してもスコアは習慣頻度（日数）重視にする
+ * careCounts を「AIスコア評価用」に丸める補正（密度算出向け）
+ * - Supabase上では実際の押下回数（count）を保持。
+ * - AIには「そのpillarを実施した日数」として扱わせる。
+ * - 上限8日などのクリップは行わない。
+ *   （分母となる effectiveDays が別で決まるため、密度計算で自動的に正規化される）
  */
 function normalizeCareCountsPerDay(careCounts) {
   if (!careCounts || typeof careCounts !== "object") return {};
+
   const normalized = {};
   for (const [pillar, count] of Object.entries(careCounts)) {
-    normalized[pillar] = Math.min(Number(count) || 0, 8);
+    // 1日でも実施していれば1日分としてカウント（重複押しはまとめる）
+    const n = Number(count) || 0;
+    normalized[pillar] = n > 0 ? 1 : 0;
   }
+
   return normalized;
 }
 
@@ -335,22 +341,39 @@ async function sendFollowupResponse(userId, followupAnswers) {
      // 🪴 日内の重複押しを1日1回扱いに丸める
      const careCounts = normalizeCareCountsPerDay(rawCareCounts);
 
-    // 8日評価。ただしまだサービス開始から4日とかなら4日扱いでいい
-    // context.created_at が体質分析時＝サービス開始の目安
-    const serviceStart = context.created_at
-      ? new Date(context.created_at)
-      : null;
-    const daysSinceStart = serviceStart
-      ? Math.max(
-          1,
-          Math.floor(
-            (Date.now() - serviceStart.getTime()) /
-              (1000 * 60 * 60 * 24)
-          )
-        )
-      : 14; // fallback: 2週間利用済み扱い
+// ---------------------------------------------
+// ととのい度チェック間隔を基準にした実日数算出
+// ・通常: 前回followup→今回までの日数
+// ・初回: context.created_at→今回までの日数
+// ・評価上限は8日にクリップ
+// ---------------------------------------------
+const now = Date.now();
 
-    const effectiveDays = Math.min(8, Math.max(1, daysSinceStart));
+let daysSincePrevFollowup = null;
+if (prev?.created_at) {
+  const prevDate = new Date(prev.created_at).getTime();
+  daysSincePrevFollowup = Math.max(
+    1,
+    Math.floor((now - prevDate) / (1000 * 60 * 60 * 24))
+  );
+}
+
+let daysSinceContextStart = null;
+if (context?.created_at) {
+  const ctxDate = new Date(context.created_at).getTime();
+  daysSinceContextStart = Math.max(
+    1,
+    Math.floor((now - ctxDate) / (1000 * 60 * 60 * 24))
+  );
+}
+
+// 実際のスコア計算に使う日数
+const baseDays =
+  daysSincePrevFollowup ??
+  daysSinceContextStart ??
+  8; // どちらも無ければ仮で8日扱い
+
+const effectiveDays = Math.min(8, Math.max(1, baseDays));
 
     const { actionScoreRaw, totalActions } = calcActionScore(
       careCounts,
