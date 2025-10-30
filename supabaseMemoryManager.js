@@ -401,20 +401,60 @@ async function getCareCountSinceLastFollowupByLineId(lineId, pillar) {
 }
 
 /**
- * 上と同じ条件で、5本柱すべての回数をまとめて返す
- * @param {string} lineId
- * @returns {{habits:number,breathing:number,stretch:number,tsubo:number,kampo:number}}
+ * 各ケア項目の「実施日数（1日1回扱い）」を集計して返す
+ * - Supabaseには全回数を保存し続ける（加算型）
+ * - ここで distinct day 数に丸める（8日間上限）
  */
 async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
-  const pillars = ['habits','breathing','stretch','tsubo','kampo'];
+  const pillars = ['habits', 'breathing', 'stretch', 'tsubo', 'kampo'];
   const result = {};
+
+  // users.id を取得
+  const { data: userRow, error: userErr } = await supabase
+    .from(USERS_TABLE)
+    .select('id')
+    .eq('line_id', lineId)
+    .maybeSingle();
+  if (userErr || !userRow) throw userErr || new Error('ユーザーが見つかりません');
+
+  // 最新 followup の日時を取得
+  const { data: fu, error: fuErr } = await supabase
+    .from(FOLLOWUP_TABLE)
+    .select('created_at')
+    .eq('user_id', userRow.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (fuErr) throw fuErr;
+
+  let sinceDate;
+  if (fu?.created_at) {
+    const created = new Date(fu.created_at);
+    sinceDate = new Date(created.getTime() + 9 * 60 * 60 * 1000);
+  } else {
+    // followup が無ければ直近8日間を対象
+    sinceDate = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+  }
+  const sinceStr = sinceDate.toISOString().slice(0, 10);
+
+  // distinct day を pillar ごとに数える
   for (const p of pillars) {
     try {
-      result[p] = await getCareCountSinceLastFollowupByLineId(lineId, p);
+      const { data: rows, error: dayErr } = await supabase
+        .from(CARELOG_TABLE)
+        .select('day')
+        .eq('user_id', userRow.id)
+        .eq('pillar', p)
+        .gte('day', sinceStr);
+      if (dayErr) throw dayErr;
+
+      const distinctDays = new Set(rows.map((r) => r.day));
+      result[p] = Math.min(distinctDays.size, 8); // 最大8日扱い
     } catch {
       result[p] = 0;
     }
   }
+
   return result;
 }
 
