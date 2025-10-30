@@ -5,13 +5,14 @@
 
 const { OpenAI } = require("openai");
 const buildConsultMessages = require("../utils/buildConsultMessages");
+const supabaseMemoryManager = require("../supabaseMemoryManager");
 const {
   getUser,
   getContext,
   getLastTwoFollowupsByUserId,
   getLastNConsultMessages,
   saveConsultMessage,
-} = require("../supabaseMemoryManager");
+} = supabaseMemoryManager;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -22,9 +23,7 @@ function isAllowed(user) {
   );
 }
 
-/**
- * LINE返信：reply失敗時はpushで再送
- */
+/** LINE返信：reply失敗時はpushで再送 */
 async function safeReplyThenPushFallback({ client, event, text }) {
   try {
     await client.replyMessage(event.replyToken, { type: "text", text });
@@ -35,6 +34,16 @@ async function safeReplyThenPushFallback({ client, event, text }) {
       console.error("reply失敗→pushも失敗:", e2);
     }
   }
+}
+
+/** careCounts を1日1回扱いに正規化（followupと共通仕様） */
+function normalizeCareCountsPerDay(careCounts) {
+  if (!careCounts || typeof careCounts !== "object") return {};
+  const normalized = {};
+  for (const [pillar, count] of Object.entries(careCounts)) {
+    normalized[pillar] = Math.min(Number(count) || 0, 8);
+  }
+  return normalized;
 }
 
 module.exports = async function consult(event, client) {
@@ -50,8 +59,7 @@ module.exports = async function consult(event, client) {
     return safeReplyThenPushFallback({
       client,
       event,
-      text:
-        "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
+      text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
     });
   }
 
@@ -68,36 +76,27 @@ module.exports = async function consult(event, client) {
   }
 
   // 🔹必要データ取得
-  let context, followups, recentChats;
+  let context, followups, recentChats, careCounts = {};
   try {
     [context, followups, recentChats] = await Promise.all([
       getContext(lineId),
       getLastTwoFollowupsByUserId(user.id),
       getLastNConsultMessages(user.id, 3),
     ]);
-    
-        // 🔹直近のcarelog（8日間分）を取得
-    const rawCareCounts = await require("../supabaseMemoryManager")
-      .getAllCareCountsSinceLastFollowupByLineId(lineId);
+
+    // 🔹直近のcarelog（8日間分）を取得
+    const rawCareCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
 
     // 🔹1日複数回押しを1回扱いに正規化（followupと同じ仕様）
-    const normalizeCareCountsPerDay = (careCounts) => {
-      if (!careCounts || typeof careCounts !== "object") return {};
-      const normalized = {};
-      for (const [pillar, count] of Object.entries(careCounts)) {
-        normalized[pillar] = Math.min(Number(count) || 0, 8);
-      }
-      return normalized;
-    };
-    const careCounts = normalizeCareCountsPerDay(rawCareCounts);
-    
+    careCounts = normalizeCareCountsPerDay(rawCareCounts);
+
   } catch (err) {
     console.error("データ取得失敗:", err);
     return safeReplyThenPushFallback({
       client,
       event,
-      text:
-        "データの取得に失敗しました🙏\n少し時間をおいてから、もう一度お試しください。",
+      text: "データの取得に失敗しました🙏\n少し時間をおいてから、もう一度お試しください。",
     });
   }
 
@@ -106,7 +105,7 @@ module.exports = async function consult(event, client) {
     console.warn("save user msg fail", e)
   );
 
-  // 🔹プロンプト生成
+  // 🔹プロンプト生成（careCounts追加済み）
   const messages = buildConsultMessages({
     context,
     followups,
@@ -116,7 +115,7 @@ module.exports = async function consult(event, client) {
   });
 
   try {
-    // ✅ GPT-5 Responses API（chat.completionsではなく responses.create）
+    // ✅ GPT-5 Responses API
     const rsp = await openai.responses.create({
       model: "gpt-5",
       input: [
@@ -128,9 +127,8 @@ module.exports = async function consult(event, client) {
       reasoning: { effort: "minimal" },
       text: { verbosity: "medium" },
     });
-    
 
-    // ✅ 出力抽出（全フォーマット対応）
+    // ✅ 出力抽出
     const text =
       rsp.output_text ||
       rsp.output?.[0]?.content?.map((c) => c.text).join("\n") ||
@@ -139,20 +137,20 @@ module.exports = async function consult(event, client) {
 
     console.log("GPT出力:", text);
 
-    // ✅ LINEへ返信（非同期でも即送信されるように）
+    // ✅ LINEへ返信
     await safeReplyThenPushFallback({ client, event, text });
 
-    // 🔹AI応答ログ保存（非同期）
+    // 🔹AI応答ログ保存
     saveConsultMessage(user.id, "assistant", text).catch((e) =>
       console.warn("save ai msg fail", e)
     );
+
   } catch (err) {
     console.error("OpenAI呼び出し失敗:", err);
     safeReplyThenPushFallback({
       client,
       event,
-      text:
-        "ただいまAIの応答が混み合っています🙏\n少し時間をおいて、もう一度お試しください。",
+      text: "ただいまAIの応答が混み合っています🙏\n少し時間をおいて、もう一度お試しください。",
     });
   }
 };
