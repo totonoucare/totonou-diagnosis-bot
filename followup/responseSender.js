@@ -93,43 +93,39 @@ function calcReflectionScore(prevN, curN) {
 }
 
 /**
- * 行動スコア（0〜100, 点数として使う）
- * - 直近8日間のケア実績（5本柱）合計 / 理論上の最大実施数
- * - days=8, 1日 最大5pillars=5回 として 8*5=40回を100点
+ * 行動スコア（0〜100）
+ * - 各pillarごとの「実施日数密度」を加重平均して算出
+ * - kampo（漢方）は補助的扱い（重み0.25）
  */
 function calcActionScore(careCounts, effectiveDays) {
-  const total = Object.values(careCounts).reduce(
-    (a, b) => a + b,
-    0
-  );
-  const maxPossible = effectiveDays * 5;
-  const ratio = maxPossible > 0 ? total / maxPossible : 0;
+  // 各pillarの重み設定
+  const weights = {
+    habits: 1.0,     // 体質改善習慣
+    breathing: 1.0,  // 呼吸法
+    stretch: 1.0,    // ストレッチ
+    tsubo: 1.0,      // ツボ刺激
+    kampo: 0.25,     // 補助的ケア（最終手段）
+  };
+
+  // 各pillarの加重スコア合計
+  const weightedTotal = Object.entries(weights)
+    .map(([pillar, w]) => {
+      const count = careCounts[pillar] || 0;
+      return (count / effectiveDays) * w;
+    })
+    .reduce((a, b) => a + b, 0);
+
+  // 理論上の最大値 = 重みの合計
+  const maxWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+
+  // 密度スコア化（0〜100）
+  const ratio = maxWeight > 0 ? weightedTotal / maxWeight : 0;
   const rawScore = Math.round(Math.min(1, ratio) * 100);
-  return { actionScoreRaw: rawScore, totalActions: total };
-}
 
-/**
- * 利用開始直後の人への補正
- * - サービス開始から14日未満は、行動スコアを日数/14でスケール
- *   (4日目なら ~0.28倍しかやれないのが普通 → 逆に持ち上げたいので 1/0.28 ≒ 3.5倍
- *   になってしまうと過補正。なので補正は逆に "まだ低くても気にしない"
- *   =下駄を履かせる rather than 圧縮する)
- *
- * ここでは下駄方式: minBoost = 0.6
- * - 日数<14 の場合、行動スコア = max(行動スコア, floor(60 * (日数/14)))
- *   → 最初の数日は 0 点じゃなくて少なくとも20〜40点帯からスタート
- */
-function applyEarlyUserBoost(actionScoreRaw, daysSinceStart) {
-  if (daysSinceStart == null || isNaN(daysSinceStart)) {
-    return actionScoreRaw;
-  }
-  if (daysSinceStart >= 14) {
-    return actionScoreRaw;
-  }
+  // 総実施回数（参考情報として返す）
+  const totalActions = Object.values(careCounts).reduce((a, b) => a + b, 0);
 
-  // ベースライン 60点を日数でスケール
-  const baseline = Math.floor((60 * daysSinceStart) / 14); // 0〜60
-  return Math.max(actionScoreRaw, baseline);
+  return { actionScoreRaw: rawScore, totalActions };
 }
 
 /**
@@ -379,15 +375,10 @@ const effectiveDays =
       effectiveDays
     );
 
-    // 初期ユーザー向けの下駄
-    const boostedActionScore = applyEarlyUserBoost(
-      actionScoreRaw,
-      daysSinceStart
-    );
 
     // 5. 総合整い度
     const { totalScore, totalStarsNum, totalStarsText } = calcTotalScore(
-      boostedActionScore,
+      actionScoreRaw,
       reflectionScore
     );
 
