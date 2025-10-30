@@ -345,6 +345,16 @@ async function sendFollowupResponse(userId, followupAnswers) {
 // ---------------------------------------------
 const now = Date.now();
 
+// 利用開始からの日数（体質分析スタートから）
+let daysSinceStart = null;
+if (context?.created_at) {
+  const ctxDate = new Date(context.created_at).getTime();
+  daysSinceStart = Math.max(
+    1,
+    Math.floor((now - ctxDate) / (1000 * 60 * 60 * 24))
+  );
+}
+
 let daysSincePrevFollowup = null;
 if (prev?.created_at) {
   const prevDate = new Date(prev.created_at).getTime();
