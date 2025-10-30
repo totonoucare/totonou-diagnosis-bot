@@ -385,6 +385,8 @@ const effectiveDays =
       effectiveDays
     );
 
+// 🪞最低保証：行動スコアが30点未満の場合は30点に補正
+const actionScoreFinal = Math.max(actionScoreRaw, 30);
 
     // 5. 総合整い度
     const { totalScore, totalStarsNum, totalStarsText } = calcTotalScore(
