@@ -203,12 +203,6 @@ module.exports = function buildConsultMessages({
     // 🔽🔽 さらに表現ルールをここに追記 🔽🔽
     "## 🔸 表現ルール（重要）",
     "- ユーザーへの出力では、**内部データのカラム名（例: motion, sleep, stress, symptom_level など）を直接表記せず、ユーザーが自然に理解できる日本語表現に変換すること。**",
-    "- 例：",
-    "  - motion → 「動作テスト」や「体の動き」",
-    "  - sleep → 「睡眠リズム」または「睡眠の質」",
-    "  - meal → 「食事バランス」または「食生活」",
-    "  - stress → 「ストレス状態」または「気分の波」",
-    "  - symptom_level → 「不調のつらさ」または「体調の波」",
     "",
     // 🔽 ここから既存のスコアレジェンドなど続く
     buildScoreLegend(),
