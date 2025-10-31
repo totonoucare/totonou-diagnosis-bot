@@ -1,5 +1,5 @@
 // carelog/index.js
-const { addCareLogDailyByLineId, getAllCareCountsSinceLastFollowupByLineId } = require("../supabaseMemoryManager");
+const { addCareLogDailyByLineId, getAllCareCountsRawByLineId } = require("../supabaseMemoryManager");
 const { generatePraiseReply, buildCareButtonsFlex } = require("./gptPraise");
 
 /** 実施記録の受信イベントを処理する */
