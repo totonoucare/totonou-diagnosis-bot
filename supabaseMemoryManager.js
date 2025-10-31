@@ -169,8 +169,8 @@ async function setFollowupAnswers(lineId, answers) {
     const now = Date.now();
     const last = new Date(recentFollowup.created_at).getTime();
     const diffMin = (now - last) / (1000 * 60);
-    if (diffMin < 5) {
-      console.log("⚠️ 重複防止：5分以内のfollowup送信をスキップ");
+    if (diffMin < 1) {
+      console.log("⚠️ 重複防止：1分以内のfollowup送信をスキップ");
       return recentFollowup;
     }
   }
