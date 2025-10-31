@@ -215,10 +215,16 @@ async function sendFollowupResponse(userId, followupAnswers) {
     const curN = normalizeFollowup(followupAnswers || latest || {});
     const prevN = prev ? normalizeFollowup(prev) : null;
 
-    // 4. care_logs取得＆正規化
-    const rawCareCounts =
-      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
-    const careCounts = normalizeCareCountsPerDay(rawCareCounts);
+// 4. care_logs取得（短期＋長期の両方）＆正規化
+const shortTermCareCounts =
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId); // ← 従来どおり（前回followup〜現在）
+const longTermCareCounts =
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true }); // ← 新規追加（context基準〜現在）
+
+// 1日1回扱いに丸め（短期のみに適用：週単位で評価したいから）
+const careCounts = normalizeCareCountsPerDay(shortTermCareCounts);
+
+   
 
     // 5. 経過日数を算出
     const now = Date.now();
@@ -391,8 +397,11 @@ const userPrompt = `
 【adviceデータ】
 ${JSON.stringify(advice, null, 2)}
 
-【careCounts（pillarごとの実施状況）】
+【短期ケア実施状況（前回チェック以降）】
 ${JSON.stringify(careCounts, null, 2)}
+
+【長期ケア実施状況（体質分析以降の累計）】
+${JSON.stringify(longTermCareCounts, null, 2)}
 
 ---
 
