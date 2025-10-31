@@ -76,7 +76,7 @@ module.exports = async function consult(event, client) {
   }
 
   // 🔹必要データ取得
-  let context, followups, recentChats, careCounts = {};
+  let context, followups, recentChats, careCounts = {}, extraCareCounts = {};
   try {
     [context, followups, recentChats] = await Promise.all([
       getContext(lineId),
@@ -84,17 +84,19 @@ module.exports = async function consult(event, client) {
       getLastNConsultMessages(user.id, 3),
     ]);
 
-// 🔹carelogを短期（followup以降）＋長期（context以降）の両方取得
-const shortTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
-const longTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true });
+    // 🔹短期：前回followup以降の実施日数（すでに supabase 側で1日1回に丸め済み）
+    const shortTermCareCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
 
-// 🔹短期のみ1日1回扱いに丸めて利用（週次変化の基準）
-careCounts = normalizeCareCountsPerDay(shortTermCareCounts);
+    // 🔹長期：context作成日以降の実施日数（こっちも supabase 側で1日1回に丸め済み）
+    const longTermCareCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true });
 
-// 🔹長期もプロンプトに渡せるよう追加
-const extraCareCounts = { shortTermCareCounts, longTermCareCounts };
+    // 🔹画面・回答のメイン基準は短期
+    careCounts = shortTermCareCounts;
+
+    // 🔹GPTに「短期＋長期」両方を渡せるように
+    extraCareCounts = { shortTermCareCounts, longTermCareCounts };
 
   } catch (err) {
     console.error("データ取得失敗:", err);
