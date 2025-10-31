@@ -48,25 +48,24 @@ async function buildCycleReminder({
 
 ---
 
-【データ構造】
 ◆ contexts（体質・タイプ情報）
-- type：体質タイプ
-- trait：体質傾向
-- flowType：気の流れタイプ
-- organType：負担が出やすい臓腑
-- symptom：主訴（症状カテゴリ）
-- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容とリンク情報
-- created_at：初回登録日（体質分析完了時）
+- type：体質タイプ名（陰虚タイプなど）
+- trait：体質傾向（乾燥で熱がこもりやすい等）
+- flowType：流通病理（気滞・水滞・瘀血）
+- organType：負担が出やすい臓腑（肝・心・脾・肺・腎）
+- motion：最も伸展負担がかかる経絡ラインの伸展動作で、これがorganType判定の指標。
+- symptom：主訴（胃腸・肩こり・メンタル・冷えなど）
+- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク
+- created_at：初回登録日（体質分析を終えた日）
 
 ◆ followups（ととのい度チェック）
-- symptom_level：主訴のつらさ（1=軽い〜5=強い）
+- symptom_level：不調(主訴)のつらさ（1=軽い〜5=強い）
 - sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）
-- motion_level：advice.stretchと同じ動作をしたときのつらさ（1=軽い〜5=強い）
+- motion_level：最も伸展負担がかかる経絡ラインの伸展動作(motion)を再テストした際のつらさ（1=軽い〜5=強い）
 
 ◆ care_logs_daily（ケア記録）
-- habits / breathing / stretch / tsubo / kampo：各ケア項目の直近8日間実施回数。
-- 実際の押下回数をそのまま合算（1日に複数回行った場合も回数分カウント）。
-- 値が大きいほど、そのケアをよく実施していることを意味する。
+- habits / breathing / stretch / tsubo / kampo：各ケア項目の「実施日数」。
+- 1日に複数回行っても1日1回としてカウント。値が高いほど、そのケアを行った日が多い。
 
 ---
 
