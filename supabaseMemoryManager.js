@@ -469,6 +469,55 @@ async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
   return result;
 }
 
+/**
+ * 各ケア項目の「実施回数（丸めなし）」を合計して返す
+ * - care_logs_daily の count をそのまま合計
+ * - 全期間 or 指定期間でも使えるよう設計
+ */
+async function getAllCareCountsRawByLineId(lineId, { sinceDays = null } = {}) {
+  const pillars = ['habits', 'breathing', 'stretch', 'tsubo', 'kampo'];
+  const result = {};
+
+  // users.id を取得
+  const { data: userRow, error: userErr } = await supabase
+    .from(USERS_TABLE)
+    .select('id')
+    .eq('line_id', lineId)
+    .maybeSingle();
+  if (userErr || !userRow) throw userErr || new Error('ユーザーが見つかりません');
+
+  // optional: 直近N日だけ集計したい場合
+  let sinceStr = null;
+  if (sinceDays) {
+    const sinceDate = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+    sinceStr = sinceDate.toISOString().slice(0, 10);
+  }
+
+  // pillarごとに生データを合計
+  for (const p of pillars) {
+    try {
+      let query = supabase
+        .from(CARELOG_TABLE)
+        .select('count')
+        .eq('user_id', userRow.id)
+        .eq('pillar', p);
+
+      if (sinceStr) query = query.gte('day', sinceStr);
+
+      const { data: rows, error: sumErr } = await query;
+      if (sumErr) throw sumErr;
+
+      // 丸めず単純合計
+      result[p] = (rows || []).reduce((acc, r) => acc + (r.count || 0), 0);
+    } catch (err) {
+      console.error(`❌ getAllCareCountsRawByLineId: pillar=${p}`, err);
+      result[p] = 0;
+    }
+  }
+
+  return result;
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -492,4 +541,5 @@ module.exports = {
   addCareLogDailyByLineId,
   getCareCountSinceLastFollowupByLineId,
   getAllCareCountsSinceLastFollowupByLineId,
+  getAllCareCountsRawByLineId,
 };
