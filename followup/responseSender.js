@@ -269,18 +269,19 @@ const systemPrompt = `
 - trait：体質傾向（冷えやすい、熱がこもりやすい等）
 - flowType：気の流れの特徴（上実下虚、停滞、循環良好など）
 - organType：負担が出やすい臓腑（肝・脾・腎など）
+- motion：最も伸展負担がかかる経絡ラインの伸展動作で、organType判定の指標。
 - symptom：主訴（胃腸・肩こり・メンタル・冷えなど）
 - advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容とリンク
 - created_at：初回登録日（体質分析を終えた日）
 
 ### followups（ととのい度チェック）
-- symptom_level：主訴のつらさ（1=軽い〜5=強い）
+- symptom_level：不調(主訴)のつらさ（1=軽い〜5=強い）
 - sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）
-- motion_level：体質分析時に最も辛かった経絡動作を再テストした際のつらさ（1=軽い〜5=強い）
+- motion_level：motionを再テストした際のつらさ（1=軽い〜5=強い）
 
 ### care_logs_daily（ケア記録）
-- habits / breathing / stretch / tsubo / kampo：各ケア項目の実施回数。
-- 1日に複数回行えばその分カウント。数値が高いほど、そのケアをよく実施している。
+- habits / breathing / stretch / tsubo / kampo：各ケア項目の「実施日数」。
+- 1日に複数回行っても1日1回としてカウント。値が高いほど、そのケアを行った日が多い。
 
 ---
 
@@ -311,7 +312,7 @@ const systemPrompt = `
 　（※呼吸と姿勢の調和に留め、神経改善を断定しない）
 
 3. motion_level ↔ stretch / tsubo → symptom_level：
-　体質分析時に最も負担があった経絡の伸展動作(motion)をもとに、ストレッチやツボ刺激でその経絡ラインのテンション(筋膜ライン)を緩め、関連臓腑のバランスも整える。
+　体質分析時に最も負担があった経絡の伸展動作(motion)をもとに、ストレッチやツボ刺激でその経絡ラインの筋膜テンションを緩め、関連臓腑のバランスも整える。
   motion_level の改善はこの経絡ケアの成果指標となる。
 
 4. kampo（漢方）：
