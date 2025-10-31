@@ -59,50 +59,96 @@ function buildResultFlexBubbles(sections) {
   const card2 = sections?.card2 || {};
 
   // --- スコア部分（上部に配置するメインブロック） ---
-  const scoreAction = card1.score_block?.action;
-  const scoreEffect = card1.score_block?.effect;
+  const scoreAction = card1.score_block?.action || {};
+  const scoreEffect = card1.score_block?.effect || {};
 
   const scoreBlock = {
     type: "box",
     layout: "vertical",
     alignItems: "center",
+    spacing: "sm",
     contents: [
       // 💪 ケア実施努力点
       {
         type: "text",
-        text: scoreAction
-          ? `💪 ${scoreAction.label}：${scoreAction.score_text}`
-          : "💪 ケア実施努力点：--",
-        size: "lg",             // ← 1段目
+        text: `💪 ${scoreAction.label || "ケア実施努力点"}：${scoreAction.score_text || "--"}`,
+        size: "xl",
         weight: "bold",
         color: "#C6A047",
         align: "center",
-        wrap: false,            // ← 改行防止
+        wrap: false,
       },
-      // 💫 ケア効果反映度（ラベルのみ）
+      ...(scoreAction.diff_text
+        ? [
+            {
+              type: "text",
+              text: scoreAction.diff_text,
+              size: "sm",
+              color: "#888888",
+              align: "center",
+              margin: "xs",
+              wrap: false,
+            },
+          ]
+        : []),
+
+      // スペースをやや広く
+      { type: "separator", margin: "lg" },
+
+      // 💫 ケア効果反映度（ラベル）
       {
         type: "text",
-        text: scoreEffect
-          ? `💫 ${scoreEffect.label}：`
-          : "💫 ケア効果反映度：",
-        size: "lg",             // ← 2段目ラベル
+        text: `💫 ${scoreEffect.label || "ケア効果の反映度"}：`,
+        size: "xl",
         weight: "bold",
         color: "#C6A047",
         align: "center",
         wrap: false,
         margin: "sm",
       },
-      // ★★★☆☆（星を大きめに）
+
+      // 効果スコア（% + 星）
       {
-        type: "text",
-        text: scoreEffect?.stars || "☆☆☆☆☆",
-        size: "xxl",            // ← 星の段は大きめ
-        weight: "bold",
-        color: "#C6A047",
-        align: "center",
-        wrap: false,
-        margin: "xs",
+        type: "box",
+        layout: "baseline",
+        justifyContent: "center",
+        spacing: "sm",
+        contents: [
+          ...(scoreEffect.percent_text
+            ? [
+                {
+                  type: "text",
+                  text: scoreEffect.percent_text,
+                  size: "xl",
+                  weight: "bold",
+                  color: "#C6A047",
+                  align: "center",
+                },
+              ]
+            : []),
+          {
+            type: "text",
+            text: scoreEffect.stars || "☆☆☆☆☆",
+            size: "xxl",
+            weight: "bold",
+            color: "#C6A047",
+            align: "center",
+          },
+        ],
       },
+      ...(scoreEffect.diff_text
+        ? [
+            {
+              type: "text",
+              text: scoreEffect.diff_text,
+              size: "sm",
+              color: "#888888",
+              align: "center",
+              margin: "xs",
+              wrap: false,
+            },
+          ]
+        : []),
     ],
   };
 
@@ -123,36 +169,38 @@ function buildResultFlexBubbles(sections) {
         },
       ],
       backgroundColor: "#7B9E76",
-      paddingAll: "12px",
+      paddingAll: "14px",
       cornerRadius: "12px",
     },
     body: {
       type: "box",
       layout: "vertical",
       backgroundColor: "#F8F9F7",
-      paddingAll: "12px",
+      paddingAll: "16px",
+      spacing: "lg",
       contents: [
         scoreBlock,
-        { type: "separator", margin: "lg" }, // ← スコア後の区切りを広めに
+        { type: "separator", margin: "xxl" }, // ← スコア後を広めに
         {
           type: "text",
           text: card1.lead || "おつかれさまでした😊",
           wrap: true,
           size: "md",
           color: "#333333",
+          align: "start",
         },
-        { type: "separator", margin: "lg" }, // ← リードとガイダンスの間も広め
+        { type: "separator", margin: "xl" },
         {
           type: "text",
           text: card1.guidance || "今の流れを保っていこう🌿",
           wrap: true,
           size: "md",
           color: "#333333",
+          align: "start",
         },
       ],
     },
   };
-
 
 
   // --- bubble2: ケアプラン
