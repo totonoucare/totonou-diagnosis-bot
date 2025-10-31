@@ -265,13 +265,13 @@ const systemPrompt = `
 ## 🔹 データ構造（AIが理解しておくべき情報）
 
 ### contexts（体質・タイプ情報）
-- type：体質タイプ（気虚・血虚・瘀血など）
-- trait：体質傾向（冷えやすい、熱がこもりやすい等）
-- flowType：気の流れの特徴（上実下虚、停滞、循環良好など）
-- organType：負担が出やすい臓腑（肝・脾・腎など）
-- motion：最も伸展負担がかかる経絡ラインの伸展動作で、organType判定の指標。
+- type：体質タイプ名（陰虚タイプなど）
+- trait：体質傾向（乾燥で熱がこもりやすい等）
+- flowType：流通病理（気滞・水滞・瘀血）
+- organType：負担が出やすい臓腑（肝・心・脾・肺・腎）
+- motion：最も伸展負担がかかる経絡ラインの伸展動作で、これがorganType判定の指標。
 - symptom：主訴（胃腸・肩こり・メンタル・冷えなど）
-- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容とリンク
+- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク
 - created_at：初回登録日（体質分析を終えた日）
 
 ### followups（ととのい度チェック）
@@ -351,7 +351,7 @@ const systemPrompt = `
         "priority": 1,
         "recommended_frequency": "毎日" | "週2〜3回" | "必要な時",
         "reason": "なぜ今これが優先か（体調・構造・メンタル面を踏まえて）",
-        "reference_link": "contexts.advice 内の対応リンクまたは識別テキスト"
+        "reference_link": "contexts.advice 内の対応図解リンク"
       }
     ],
     "footer": "最後の励ましメッセージ。例：『焦らず、今日の1回が未来の整いをつくるよ🫶』"
