@@ -84,7 +84,7 @@ const bubble1 = {
     contents: [
       { type: "text", text: "📋 今回のととのい度チェック", weight: "bold", size: "lg", color: "#ffffff" },
     ],
-    backgroundColor: "#758A6D",
+    backgroundColor: "#7B9E76",
     paddingAll: "12px",
     cornerRadius: "12px",
   },
@@ -164,7 +164,7 @@ carePlanList
       contents: [
         { type: "text", text: "🪴 今週のケアプラン", weight: "bold", size: "lg", color: "#ffffff" },
       ],
-      backgroundColor: "#B78949",
+      backgroundColor: "#C6A047",
       paddingAll: "12px",
       cornerRadius: "12px",
     },
