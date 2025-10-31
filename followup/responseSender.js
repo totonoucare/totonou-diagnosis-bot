@@ -339,12 +339,12 @@ const systemPrompt = `
     "lead": "冒頭メッセージ。努力と反映をねぎらう。",
     "score_block": {
       "action": {
-        "label": "セルフケア実施努力点",
-        "score_text": "NN点",
+        "label": "今週のケア努力点",
+        "score_text": "NN 点",
         "explain": "どれだけ行動できたか"
       },
       "effect": {
-        "label": "ケア効果反映度",
+        "label": "ケア効果の反映度合い",
         "stars": "★★★☆☆",
         "explain": "努力がどれだけ体調に反映されたか"
       }
@@ -380,7 +380,7 @@ const systemPrompt = `
 
 const userPrompt = `
 【スコア情報】
-- セルフケア実施努力点: ${actionScoreFinal}点
+- ケア実施努力点: ${actionScoreFinal}点
 - ケア効果反映度: ${careEffectScore}点
 - ケア効果反映度の星: ${careEffectStarsText}
 - 実施合計（期間中の日数換算）: ${totalActions}回
