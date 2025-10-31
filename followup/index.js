@@ -58,50 +58,102 @@ function buildResultFlexBubbles(sections) {
   const card1 = sections?.card1 || {};
   const card2 = sections?.card2 || {};
 
-// --- bubble1: 状態まとめ
-const scoreLines = [];
+  // --- スコア部分（上部に配置するメインブロック） ---
+  const scoreAction = card1.score_block?.action;
+  const scoreEffect = card1.score_block?.effect;
 
-if (card1.score_block?.action)
-  scoreLines.push(`💪 ${card1.score_block.action.label}：${card1.score_block.action.score_text}`);
-if (card1.score_block?.effect)
-  scoreLines.push(`💫 ${card1.score_block.effect.label}：${card1.score_block.effect.stars}`);
-
-// --- ゴールドカラー (#C6A047くらいが落ち着いた金色) で描画 ---
-const scoreContents = scoreLines.map((line) => ({
-  type: "text",
-  text: line,
-  wrap: true,
-  color: "#C6A047", // ← ゴールド！
-  weight: "bold",
-}));
-
-const bubble1 = {
-  type: "bubble",
-  size: "mega",
-  header: {
+  const scoreBlock = {
     type: "box",
     layout: "vertical",
+    alignItems: "center",
     contents: [
-      { type: "text", text: "📋 今回のととのい度チェック", weight: "bold", size: "lg", color: "#ffffff" },
+      // 💪 ケア実施努力点
+      {
+        type: "text",
+        text: scoreAction
+          ? `💪 ${scoreAction.label}：${scoreAction.score_text}`
+          : "💪 ケア実施努力点：--",
+        size: "lg",             // ← 1段目
+        weight: "bold",
+        color: "#C6A047",
+        align: "center",
+        wrap: false,            // ← 改行防止
+      },
+      // 💫 ケア効果反映度（ラベルのみ）
+      {
+        type: "text",
+        text: scoreEffect
+          ? `💫 ${scoreEffect.label}：`
+          : "💫 ケア効果反映度：",
+        size: "lg",             // ← 2段目ラベル
+        weight: "bold",
+        color: "#C6A047",
+        align: "center",
+        wrap: false,
+        margin: "sm",
+      },
+      // ★★★☆☆（星を大きめに）
+      {
+        type: "text",
+        text: scoreEffect?.stars || "☆☆☆☆☆",
+        size: "xxl",            // ← 星の段は大きめ
+        weight: "bold",
+        color: "#C6A047",
+        align: "center",
+        wrap: false,
+        margin: "xs",
+      },
     ],
-    backgroundColor: "#7B9E76",
-    paddingAll: "12px",
-    cornerRadius: "12px",
-  },
-  body: {
-    type: "box",
-    layout: "vertical",
-    spacing: "md",
-    backgroundColor: "#F8F9F7",
-    paddingAll: "12px",
-    contents: [
-      { type: "text", text: card1.lead || "おつかれさま😊", wrap: true },
-      ...scoreContents, // ← ゴールドでスコア表示
-      { type: "separator", margin: "md" },
-      { type: "text", text: card1.guidance || "今の流れを保っていこう🌿", wrap: true },
-    ],
-  },
-};
+  };
+
+  // --- bubble1: 状態まとめ ---
+  const bubble1 = {
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        {
+          type: "text",
+          text: "📋 今回のととのい度チェック",
+          weight: "bold",
+          size: "lg",
+          color: "#ffffff",
+        },
+      ],
+      backgroundColor: "#7B9E76",
+      paddingAll: "12px",
+      cornerRadius: "12px",
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: "#F8F9F7",
+      paddingAll: "12px",
+      contents: [
+        scoreBlock,
+        { type: "separator", margin: "lg" }, // ← スコア後の区切りを広めに
+        {
+          type: "text",
+          text: card1.lead || "おつかれさまでした😊",
+          wrap: true,
+          size: "md",
+          color: "#333333",
+        },
+        { type: "separator", margin: "lg" }, // ← リードとガイダンスの間も広め
+        {
+          type: "text",
+          text: card1.guidance || "今の流れを保っていこう🌿",
+          wrap: true,
+          size: "sm",
+          color: "#333333",
+        },
+      ],
+    },
+  };
+
+
 
   // --- bubble2: ケアプラン
   const carePlanList = Array.isArray(card2.care_plan) ? card2.care_plan : [];
