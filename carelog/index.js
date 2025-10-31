@@ -1,6 +1,6 @@
 // carelog/index.jsconst {
   addCareLogDailyByLineId,
-  getAllCareCountsRawByLineId, // ← 変更！
+  getAllCareCountsRawByLineId // ← 変更！
 } = require("../supabaseMemoryManager");
 const { generatePraiseReply, buildCareButtonsFlex } = require("./gptPraise");
 
