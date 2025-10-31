@@ -402,15 +402,22 @@ async function getCareCountSinceLastFollowupByLineId(lineId, pillar) {
 
 /**
  * 各ケア項目の「実施日数（1日1回扱い）」を集計して返す
+ * -----------------------------------------------------------
  * - Supabaseには全回数を保存し続ける（加算型）
- * - ここで distinct day 数に丸める
- * - 対象期間は「前回のfollowup日」〜「現在」
+ * - ここで distinct day 数に丸めて返す
+ * - デフォルトでは「前回のfollowup日」〜「現在」
+ * - includeContext=true の場合、「体質分析(context)作成日」以降の長期集計も含める
+ *
+ * @param {string} lineId - LINEのuserId
+ * @param {object} [options]
+ * @param {boolean} [options.includeContext=false] - context基準の長期集計を含めるか
+ * @returns {Promise<object>} 各pillarの日数 { habits, breathing, stretch, tsubo, kampo }
  */
-async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
+async function getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext = false } = {}) {
   const pillars = ['habits', 'breathing', 'stretch', 'tsubo', 'kampo'];
   const result = {};
 
-  // users.id を取得
+  // --- user.id を取得
   const { data: userRow, error: userErr } = await supabase
     .from(USERS_TABLE)
     .select('id')
@@ -418,7 +425,7 @@ async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
     .maybeSingle();
   if (userErr || !userRow) throw userErr || new Error('ユーザーが見つかりません');
 
-  // 最新 followup の日時を取得
+  // --- 最新 followup の日時を取得
   const { data: fu, error: fuErr } = await supabase
     .from(FOLLOWUP_TABLE)
     .select('created_at')
@@ -428,26 +435,40 @@ async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
     .maybeSingle();
   if (fuErr) throw fuErr;
 
-  // フォローアップがない場合は context 作成日以降
+  // --- context（体質分析）初回日も常に取得
+  const { data: ctx, error: ctxErr } = await supabase
+    .from(CONTEXT_TABLE)
+    .select('created_at')
+    .eq('user_id', userRow.id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (ctxErr) throw ctxErr;
+
+  // ===== 基準日設定 =====
   let sinceDate;
-  if (fu?.created_at) {
-    const created = new Date(fu.created_at);
-    sinceDate = new Date(created.getTime() + 9 * 60 * 60 * 1000);
+  if (includeContext) {
+    // 🔹 context.created_atを優先（なければfallback）
+    sinceDate = ctx?.created_at
+      ? new Date(ctx.created_at)
+      : fu?.created_at
+      ? new Date(fu.created_at)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // fallback: 30日前
   } else {
-    // followup がなければ context 初回日（なければ7日前）
-    const { data: ctx } = await supabase
-      .from(CONTEXT_TABLE)
-      .select('created_at')
-      .eq('user_id', userRow.id)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    sinceDate = ctx?.created_at ? new Date(ctx.created_at) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    // 🔹 通常は followup基準（なければ context → fallback 7日前）
+    if (fu?.created_at) {
+      const created = new Date(fu.created_at);
+      sinceDate = new Date(created.getTime() + 9 * 60 * 60 * 1000); // JST補正
+    } else if (ctx?.created_at) {
+      sinceDate = new Date(ctx.created_at);
+    } else {
+      sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    }
   }
 
   const sinceStr = sinceDate.toISOString().slice(0, 10);
 
-  // distinct day を pillar ごとに数える（上限なし）
+  // ===== 各pillarのdistinct dayを集計 =====
   for (const p of pillars) {
     try {
       const { data: rows, error: dayErr } = await supabase
@@ -456,15 +477,23 @@ async function getAllCareCountsSinceLastFollowupByLineId(lineId) {
         .eq('user_id', userRow.id)
         .eq('pillar', p)
         .gte('day', sinceStr);
+
       if (dayErr) throw dayErr;
 
       const distinctDays = new Set(rows.map((r) => r.day));
-      result[p] = distinctDays.size; // ← ここを修正！
+      result[p] = distinctDays.size; // ← 丸め済みの日数（上限なし）
     } catch (err) {
       console.error(`❌ getAllCareCountsSinceLastFollowupByLineId: pillar=${p}`, err);
       result[p] = 0;
     }
   }
+
+  // --- ログ出力（デバッグ確認用）
+  console.log(
+    `[getAllCareCountsSinceLastFollowupByLineId] includeContext=${includeContext}`,
+    "sinceStr=", sinceStr,
+    "result=", result
+  );
 
   return result;
 }
