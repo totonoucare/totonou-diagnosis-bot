@@ -143,15 +143,37 @@ async function getContext(lineId) {
   };
 }
 
-// ✅ フォローアップ回答保存（新仕様対応版）
+// ✅ フォローアップ回答保存（5分以内の重複送信を防止）
 async function setFollowupAnswers(lineId, answers) {
   const cleanId = lineId.trim();
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
-    .select('id')
-    .eq('line_id', cleanId)
+    .select("id")
+    .eq("line_id", cleanId)
     .maybeSingle();
-  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+  if (userError || !userRow)
+    throw userError || new Error("ユーザーが見つかりません");
+
+  // 直近の followup を確認
+  const { data: recentFollowup, error: recentError } = await supabase
+    .from(FOLLOWUP_TABLE)
+    .select("id, created_at")
+    .eq("user_id", userRow.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (recentError) throw recentError;
+
+  // 5分以内ならスキップ
+  if (recentFollowup?.created_at) {
+    const now = Date.now();
+    const last = new Date(recentFollowup.created_at).getTime();
+    const diffMin = (now - last) / (1000 * 60);
+    if (diffMin < 5) {
+      console.log("⚠️ 重複防止：5分以内のfollowup送信をスキップ");
+      return recentFollowup;
+    }
+  }
 
   const payload = {
     user_id: userRow.id,
@@ -160,20 +182,31 @@ async function setFollowupAnswers(lineId, answers) {
     meal: parseInt(answers.meal),
     stress: parseInt(answers.stress),
     motion_level: parseInt(answers.motion_level),
-    created_at: getJSTISOStringNow(), // 安全のため追記（タイムゾーン統一）
+    created_at: getJSTISOStringNow(), // タイムゾーン統一
   };
 
   const requiredKeys = [
-    'user_id', 'symptom_level', 'sleep', 'meal', 'stress', 'motion_level'
+    "user_id",
+    "symptom_level",
+    "sleep",
+    "meal",
+    "stress",
+    "motion_level",
   ];
   for (const key of requiredKeys) {
-    if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+    if (
+      payload[key] === undefined ||
+      payload[key] === null ||
+      payload[key] === ""
+    ) {
       throw new Error(`❌ 必須項目が未定義: ${key}`);
     }
   }
 
   const { error } = await supabase.from(FOLLOWUP_TABLE).insert(payload);
   if (error) throw error;
+
+  return payload;
 }
 
 // ✅ 最新のfollowup取得
