@@ -78,7 +78,8 @@ async function generatePraiseReply({ pillarKey, countsAll }) {
 【他のケアも含めた回数】${total}回（参考）
 
 ※中心的に褒める対象は「${label}」です。
-※他のケアも含めた回数はあくまで参考に、触れる必要があれば触れる
+※「${count}」は、10回目や50回目、100回目など、節目の回数のときにだけ出してあげること。
+※「${total}」は、${count}/${total}＝1/2になるようなときにだけ、このケア以外の他のケアにももう少し注力するよう優しく指摘すること。
   `.trim();
 
   const rsp = await oai.responses.create({
