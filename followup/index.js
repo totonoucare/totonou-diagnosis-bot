@@ -72,7 +72,7 @@ function buildResultFlexBubbles(sections) {
       {
         type: "text",
         text: `💪 ${scoreAction.label || "ケア実施努力点"}：${scoreAction.score_text || "--"}`,
-        size: "xl",
+        size: "lg",
         weight: "bold",
         color: "#C6A047",
         align: "center",
@@ -99,7 +99,7 @@ function buildResultFlexBubbles(sections) {
       {
         type: "text",
         text: `💫 ${scoreEffect.label || "ケア効果の反映度"}：`,
-        size: "xl",
+        size: "lg",
         weight: "bold",
         color: "#C6A047",
         align: "center",
@@ -129,7 +129,7 @@ function buildResultFlexBubbles(sections) {
           {
             type: "text",
             text: scoreEffect.stars || "☆☆☆☆☆",
-            size: "xxl",
+            size: "xl",
             weight: "bold",
             color: "#C6A047",
             align: "center",
