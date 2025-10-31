@@ -323,6 +323,14 @@ const systemPrompt = `
 
 ---
 
+## 🔸 motion_level の扱いルール
+
+- motion / motion_level は「構造的な整い指標」であり、不調（symptom）とは別物。
+- motion_level は stretch / tsubo によって主に改善されるが、
+  呼吸法（breathing）や体質改善習慣（habits）が直接影響するとは限らない。
+
+---
+
 ## 🔸 出力仕様
 出力は必ず次の形式で返してください：
 
