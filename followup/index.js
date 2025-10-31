@@ -146,7 +146,7 @@ function buildResultFlexBubbles(sections) {
           type: "text",
           text: card1.guidance || "今の流れを保っていこう🌿",
           wrap: true,
-          size: "sm",
+          size: "md",
           color: "#333333",
         },
       ],
