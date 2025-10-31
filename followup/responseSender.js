@@ -230,25 +230,66 @@ const careCounts = shortTermCareCounts;
       ? Math.max(1, Math.floor((now - contextDate) / (1000 * 60 * 60 * 24)))
       : effectiveDays;
 
-    // 6. 行動スコア
-    const { actionScoreRaw, totalActions } = calcActionScore(careCounts, effectiveDays);
-    const actionScoreFinal = Math.max(actionScoreRaw, 30);
+// 6. 行動スコア（今回）
+const { actionScoreRaw, totalActions } = calcActionScore(careCounts, effectiveDays);
+const actionScoreFinal = Math.max(actionScoreRaw, 30);
 
-    // 7. ケア効果反映度
-    const { careEffectScore, careEffectStarsText } = calcCareEffectScore(
-      prevN,
-      curN,
-      actionScoreRaw
-    );
+// 🆕 前回スコアの再構成 -----------------------------
+let actionScorePrev = null;
+let actionScoreDiff = null;
+let careEffectPrev = null;
+let careEffectDiff = null;
 
-    // 8. 停滞判定
-    const reflectionHistory = [];
-    if (prevN) {
-      const prevScoreBlock = calcCareEffectScore(null, prevN, 0).careEffectScore;
-      reflectionHistory.push(prevScoreBlock);
-    }
-    reflectionHistory.push(careEffectScore);
-    const stagnationInfo = judgeStagnation(reflectionHistory);
+if (prev) {
+  // 🔸 1つ前の followup 以前（＝2つ前〜前回）を再集計
+  // supabaseMemoryManager.js に以下のような改修が必要：
+  // getAllCareCountsSinceLastFollowupByLineId(lineId, { untilFollowupId: prev.id })
+  const { prev: prev2 } = await supabaseMemoryManager.getLastTwoFollowupsByUserId(
+    userId,
+    { before: prev.id }
+  );
+
+  const prevPeriodCareCounts =
+    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
+      untilFollowupId: prev.id,
+    });
+
+  if (prevPeriodCareCounts) {
+    const { actionScoreRaw: prevActionRaw } = calcActionScore(prevPeriodCareCounts, effectiveDays);
+    actionScorePrev = Math.max(prevActionRaw, 30);
+    actionScoreDiff = actionScoreFinal - actionScorePrev;
+  }
+
+  // 🔸 前回効果スコアも再計算（2つ前と前回を比較）
+  const prevN2 = prev2 ? normalizeFollowup(prev2) : null;
+  const { careEffectScore: prevEffectScore } = calcCareEffectScore(prevN2, prevN, actionScorePrev || 0);
+  careEffectPrev = prevEffectScore;
+}
+// ----------------------------------------------------
+
+
+// 7. ケア効果反映度（今回）
+const { careEffectScore, careEffectStarsText } = calcCareEffectScore(prevN, curN, actionScoreRaw);
+
+// 🔸 差分算出（％換算）
+if (careEffectPrev !== null) {
+  careEffectDiff = Math.round(careEffectScore - careEffectPrev);
+}
+
+// 🔸 努力点の差も整数に整形
+if (actionScoreDiff !== null) {
+  actionScoreDiff = Math.round(actionScoreDiff);
+}
+
+
+// 8. 停滞判定（既存そのまま）
+const reflectionHistory = [];
+if (prevN) {
+  const prevScoreBlock = calcCareEffectScore(null, prevN, 0).careEffectScore;
+  reflectionHistory.push(prevScoreBlock);
+}
+reflectionHistory.push(careEffectScore);
+const stagnationInfo = judgeStagnation(reflectionHistory);
 
 /* ---------------------------
    9) GPTへのプロンプト準備
@@ -341,11 +382,14 @@ const systemPrompt = `
       "action": {
         "label": "今週のケア努力点",
         "score_text": "NN 点",
+        "diff_text": "（前回比 +5点）", 
         "explain": "どれだけ行動できたか"
       },
       "effect": {
         "label": "ケア効果の反映度合い",
+        "percent_text": "72%",       
         "stars": "★★★☆☆",
+        "diff_text": "（前回比 +8%）",  
         "explain": "努力がどれだけ体調に反映されたか"
       }
     },
@@ -365,7 +409,6 @@ const systemPrompt = `
     "footer": "最後の励ましメッセージ。例：『焦らず、今日の1回が未来の整いをつくるよ🫶』"
   }
 }
-
 ---
 
 ## 🔸 表現ルール（重要）
@@ -380,10 +423,14 @@ const systemPrompt = `
 
 const userPrompt = `
 【スコア情報】
-- ケア実施努力点: ${actionScoreFinal}点
-- ケア効果反映度: ${careEffectScore}点
+- 今回のケア実施努力点: ${actionScoreFinal}点${
+  actionScoreDiff !== null ? `（前回比 ${actionScoreDiff > 0 ? "+" : ""}${actionScoreDiff}点）` : ""
+}
+- ケア効果反映度: ${careEffectScore}%${
+  careEffectDiff !== null ? `（前回比 ${careEffectDiff > 0 ? "+" : ""}${careEffectDiff}%）` : ""
+}
 - ケア効果反映度の星: ${careEffectStarsText}
-- 実施合計（期間中の日数換算）: ${totalActions}回
+- 実施合計（日数換算）: ${totalActions}回
 - 評価対象日数: ${effectiveDays}日
 - サービス利用開始からの日数: ${daysSinceStart}日
 
