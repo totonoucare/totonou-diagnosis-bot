@@ -106,19 +106,6 @@ function calcCareEffectScore(prevN, curN, actionScoreRaw = 0) {
 }
 
 /**
- * 日内重複を1日1回扱いに丸める
- */
-function normalizeCareCountsPerDay(careCounts) {
-  if (!careCounts || typeof careCounts !== "object") return {};
-  const normalized = {};
-  for (const [pillar, count] of Object.entries(careCounts)) {
-    const n = Number(count) || 0;
-    normalized[pillar] = n > 0 ? 1 : 0;
-  }
-  return normalized;
-}
-
-/**
  * 停滞判定：改善が2回連続で鈍化
  */
 function judgeStagnation(reflectionHistory) {
