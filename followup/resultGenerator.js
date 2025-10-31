@@ -5,37 +5,32 @@
  *
  * @param {Object} answers - 今回のととのい度チェック回答
  * @param {Object} context - Supabaseに保存された体質ケア分析結果＆アドバイス
- * @param {Object} carelogSummary - 直近のcarelog実施回数（{ habits, breathing, stretch, tsubo, kampo }）
+ * @param {Object} carelogSummary - 直近のcarelog実施日数（{ habits, breathing, stretch, tsubo, kampo }）
  * @returns {{ rawData: Object, promptParts: Object }}
  */
 function generateFollowupResult(answers, context = {}, carelogSummary = {}) {
-  // ✅ Q1〜Q3（現行3問）を正規化してrawDataにまとめる
+  // ✅ Q1〜Q3（体調スコア）を正規化して rawData にまとめる
   const rawData = {
-    // Q1: 主訴（症状レベル）
     symptom_level: parseInt(answers.symptom) || null,
-
-    // Q2: 生活リズム
     sleep: parseInt(answers.sleep) || null,
     meal: parseInt(answers.meal) || null,
     stress: parseInt(answers.stress) || null,
-
-    // Q3: 動作テスト
     motion_level: parseInt(answers.motion_level) || null,
 
-    // carelog実績（期間中の実施回数）
+    // 🔹 実施日数を確実に整数化（undefined対策に ?? でフォールバック）
     carelog: {
-      habits: carelogSummary.habits || 0,
-      breathing: carelogSummary.breathing || 0,
-      stretch: carelogSummary.stretch || 0,
-      tsubo: carelogSummary.tsubo || 0,
-      kampo: carelogSummary.kampo || 0,
+      habits: carelogSummary.habits ?? 0,
+      breathing: carelogSummary.breathing ?? 0,
+      stretch: carelogSummary.stretch ?? 0,
+      tsubo: carelogSummary.tsubo ?? 0,
+      kampo: carelogSummary.kampo ?? 0,
     },
 
-    // 🔹 利用開始日（context.created_atをそのまま渡す）
+    // 🔹 利用開始日
     start_date: context.created_at || null,
   };
 
-  // ✅ context.advice が JSONB配列 or オブジェクトどちらでも対応
+  // ✅ context.advice が配列またはオブジェクト両対応
   const advice = (() => {
     if (!context.advice) return {};
     if (Array.isArray(context.advice)) {
@@ -53,11 +48,15 @@ function generateFollowupResult(answers, context = {}, carelogSummary = {}) {
     return context.advice;
   })();
 
-  // ✅ GPTプロンプト用の整形（advice + carelog両方含む）
+  // ✅ GPTに渡すためのプロンプト構成（motionを直接使用）
   const promptParts = {
-    // 体質・ケア分析情報
+    type: context.type || "未登録",
+    trait: context.trait || "未登録",
+    flowType: context.flowType || "未登録",
+    organType: context.organType || "未登録",
     symptom: context.symptom || "未登録",
-    motion: context.motion || "未登録",
+    motion: context.motion || "未登録", // ← 修正: motionInfo削除、直接参照
+
     advice: {
       habits: advice.habits || "未登録",
       breathing: advice.breathing || "未登録",
@@ -66,19 +65,10 @@ function generateFollowupResult(answers, context = {}, carelogSummary = {}) {
       kampo: advice.kampo || "未登録",
     },
 
-    // 実施回数（直近8日間 or 最新チェック以降）
     carelog: { ...rawData.carelog },
-
-    // Q1〜Q3
     Q1: { symptom: rawData.symptom_level },
-    Q2: {
-      sleep: rawData.sleep,
-      meal: rawData.meal,
-      stress: rawData.stress,
-    },
+    Q2: { sleep: rawData.sleep, meal: rawData.meal, stress: rawData.stress },
     Q3: { motion_level: rawData.motion_level },
-
-    // 🔹 利用開始日を追記（GPTが学習・補正に使用）
     start_date: rawData.start_date,
   };
 
