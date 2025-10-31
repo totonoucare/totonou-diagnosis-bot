@@ -132,14 +132,21 @@ module.exports = function buildConsultMessages({
   userText,
   recentChats = [],
   careCounts = {},
-  extraCareCounts = {}, 
+  extraCareCounts = null, // ← 追加
 }) {
   const ctx = pickContext(context);
   const latest = followups?.latest ?? null;
   const prev = followups?.prev ?? null;
 
-  // ✅ 丸め処理をここで適用！
+  // ✅ ここは「短期をもう一度1 or 0にしたいとき」だけ使うが、
+  // supabase側ですでに「日数」で来てるので今は素通しでもいい。
+  // ただし壊さないために既存の関数は残しておく。
   const normalizedCareCounts = normalizeCareCountsPerDay(careCounts);
+
+  // 長期（context基準）が来ていたらここでJSON化しておく
+  const longTermCareJson = extraCareCounts?.longTermCareCounts
+    ? JSON.stringify(extraCareCounts.longTermCareCounts, null, 2)
+    : null;
 
   const chatHistory = (recentChats || [])
     .slice(-3)
@@ -158,15 +165,14 @@ module.exports = function buildConsultMessages({
     "▼ 体質・所見（contexts）",
     toJSON(ctx),
     "",
-    "▼ 直近のケア実施記録（care_logs_daily 集計結果）",
+    "▼ 直近のケア実施記録（followup以降・日数ベース）",
     toJSON(normalizedCareCounts),
     "",
-    "（各ケア項目は1日1回扱い。前回の『ととのい度チェック』から今回までの期間で集計しています）",
+    longTermCareJson
+      ? "▼ サービス開始(体質分析)以降の累計ケア実施日数\n" + longTermCareJson
+      : null,
     "",
-    "▼ 長期ケア実施傾向（体質分析からの累計日数ベース）",
-    toJSON(extraCareCounts.longTermCareCounts || {}),
-    "",
-    "（体質分析の初回日(context.created_at)から現在までの累計。セルフケア習慣の定着度として参考にしてください）",
+    "（各ケア項目は1日1回扱い。短期は前回〜今回、長期は体質分析日〜現在で集計しています）",
     "",
     "▼ ととのい度チェック（最新）",
     toJSON(latest),
