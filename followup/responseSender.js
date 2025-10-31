@@ -215,14 +215,15 @@ async function sendFollowupResponse(userId, followupAnswers) {
     const curN = normalizeFollowup(followupAnswers || latest || {});
     const prevN = prev ? normalizeFollowup(prev) : null;
 
-// 4. care_logs取得（短期＋長期の両方）＆正規化
+// 4. care_logs取得（短期＋長期の両方）
+// supabaseMemoryManager.js 側で distinct 日数に丸め済みなので、ここではそのまま利用。
 const shortTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId); // ← 従来どおり（前回followup〜現在）
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId); // 前回followup〜現在（日数）
 const longTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true }); // ← 新規追加（context基準〜現在）
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true }); // context作成日〜現在（日数）
 
-// 1日1回扱いに丸め（短期のみに適用：週単位で評価したいから）
-const careCounts = normalizeCareCountsPerDay(shortTermCareCounts);
+// normalizeCareCountsPerDay は不要（supabase 側で丸め済み）
+const careCounts = shortTermCareCounts;
 
    
 
