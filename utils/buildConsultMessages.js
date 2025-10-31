@@ -132,6 +132,7 @@ module.exports = function buildConsultMessages({
   userText,
   recentChats = [],
   careCounts = {},
+  extraCareCounts = {}, 
 }) {
   const ctx = pickContext(context);
   const latest = followups?.latest ?? null;
@@ -161,6 +162,11 @@ module.exports = function buildConsultMessages({
     toJSON(normalizedCareCounts),
     "",
     "（各ケア項目は1日1回扱い。前回の『ととのい度チェック』から今回までの期間で集計しています）",
+    "",
+    "▼ 長期ケア実施傾向（体質分析からの累計日数ベース）",
+    toJSON(extraCareCounts.longTermCareCounts || {}),
+    "",
+    "（体質分析の初回日(context.created_at)から現在までの累計。セルフケア習慣の定着度として参考にしてください）",
     "",
     "▼ ととのい度チェック（最新）",
     toJSON(latest),
