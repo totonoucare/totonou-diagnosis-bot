@@ -406,93 +406,111 @@ async function getCareCountSinceLastFollowupByLineId(lineId, pillar) {
  * - Supabaseには全回数を保存し続ける（加算型）
  * - ここで distinct day 数に丸めて返す
  * - デフォルトでは「前回のfollowup日」〜「現在」
- * - includeContext=true の場合、「体質分析(context)作成日」以降の長期集計も含める
+ * - includeContext=true の場合、「体質分析(context)作成日」以降の長期集計を含める
+ * - sinceFollowupId / untilFollowupId で期間を明示指定できる
  *
  * @param {string} lineId - LINEのuserId
  * @param {object} [options]
  * @param {boolean} [options.includeContext=false] - context基準の長期集計を含めるか
+ * @param {string} [options.sinceFollowupId] - このfollowup以降を開始点に
+ * @param {string} [options.untilFollowupId] - このfollowupより前を終了点に
  * @returns {Promise<object>} 各pillarの日数 { habits, breathing, stretch, tsubo, kampo }
  */
-async function getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext = false } = {}) {
-  const pillars = ['habits', 'breathing', 'stretch', 'tsubo', 'kampo'];
+async function getAllCareCountsSinceLastFollowupByLineId(
+  lineId,
+  { includeContext = false, sinceFollowupId = null, untilFollowupId = null } = {}
+) {
+  const pillars = ["habits", "breathing", "stretch", "tsubo", "kampo"];
   const result = {};
 
   // --- user.id を取得
   const { data: userRow, error: userErr } = await supabase
     .from(USERS_TABLE)
-    .select('id')
-    .eq('line_id', lineId)
+    .select("id")
+    .eq("line_id", lineId)
     .maybeSingle();
-  if (userErr || !userRow) throw userErr || new Error('ユーザーが見つかりません');
+  if (userErr || !userRow) throw userErr || new Error("ユーザーが見つかりません");
 
-  // --- 最新 followup の日時を取得
-  const { data: fu, error: fuErr } = await supabase
-    .from(FOLLOWUP_TABLE)
-    .select('created_at')
-    .eq('user_id', userRow.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (fuErr) throw fuErr;
+  const userId = userRow.id;
 
-  // --- context（体質分析）初回日も常に取得
+  // --- context作成日を取得
   const { data: ctx, error: ctxErr } = await supabase
     .from(CONTEXT_TABLE)
-    .select('created_at')
-    .eq('user_id', userRow.id)
-    .order('created_at', { ascending: true })
+    .select("created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (ctxErr) throw ctxErr;
 
-  // ===== 基準日設定 =====
-  let sinceDate;
-  if (includeContext) {
-    // 🔹 context.created_atを優先（なければfallback）
-    sinceDate = ctx?.created_at
-      ? new Date(ctx.created_at)
-      : fu?.created_at
-      ? new Date(fu.created_at)
-      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // fallback: 30日前
-  } else {
-    // 🔹 通常は followup基準（なければ context → fallback 7日前）
-    if (fu?.created_at) {
-      const created = new Date(fu.created_at);
-      sinceDate = new Date(created.getTime() + 9 * 60 * 60 * 1000); // JST補正
-    } else if (ctx?.created_at) {
-      sinceDate = new Date(ctx.created_at);
-    } else {
-      sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    }
+  // --- followup作成日をID指定で取得（範囲指定に利用）
+  async function getFollowupDateById(id) {
+    if (!id) return null;
+    const { data, error } = await supabase
+      .from(FOLLOWUP_TABLE)
+      .select("created_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.created_at ? new Date(data.created_at) : null;
+  }
+
+  let sinceDate = null;
+  let untilDate = null;
+
+  // 🔸 指定ID優先
+  if (sinceFollowupId) sinceDate = await getFollowupDateById(sinceFollowupId);
+  if (untilFollowupId) untilDate = await getFollowupDateById(untilFollowupId);
+
+  // 🔸 includeContext 指定時は context.created_at を起点に
+  if (includeContext && !sinceDate && ctx?.created_at) {
+    sinceDate = new Date(ctx.created_at);
+  }
+
+  // 🔸 fallback: 最新 followup or context or 7日前
+  if (!sinceDate) {
+    const { data: fu, error: fuErr } = await supabase
+      .from(FOLLOWUP_TABLE)
+      .select("created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (fuErr) throw fuErr;
+    if (fu?.created_at) sinceDate = new Date(fu.created_at);
+    else if (ctx?.created_at) sinceDate = new Date(ctx.created_at);
+    else sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   }
 
   const sinceStr = sinceDate.toISOString().slice(0, 10);
+  const untilStr = untilDate ? untilDate.toISOString().slice(0, 10) : null;
 
   // ===== 各pillarのdistinct dayを集計 =====
   for (const p of pillars) {
     try {
-      const { data: rows, error: dayErr } = await supabase
+      let query = supabase
         .from(CARELOG_TABLE)
-        .select('day')
-        .eq('user_id', userRow.id)
-        .eq('pillar', p)
-        .gte('day', sinceStr);
+        .select("day")
+        .eq("user_id", userId)
+        .eq("pillar", p)
+        .gte("day", sinceStr);
 
+      if (untilStr) query = query.lt("day", untilStr); // ← untilFollowupId 指定時に上限を設定
+
+      const { data: rows, error: dayErr } = await query;
       if (dayErr) throw dayErr;
 
       const distinctDays = new Set(rows.map((r) => r.day));
-      result[p] = distinctDays.size; // ← 丸め済みの日数（上限なし）
+      result[p] = distinctDays.size;
     } catch (err) {
       console.error(`❌ getAllCareCountsSinceLastFollowupByLineId: pillar=${p}`, err);
       result[p] = 0;
     }
   }
 
-  // --- ログ出力（デバッグ確認用）
   console.log(
-    `[getAllCareCountsSinceLastFollowupByLineId] includeContext=${includeContext}`,
-    "sinceStr=", sinceStr,
-    "result=", result
+    `[getAllCareCountsSinceLastFollowupByLineId] includeContext=${includeContext}, since=${sinceStr}, until=${untilStr}`,
+    result
   );
 
   return result;
