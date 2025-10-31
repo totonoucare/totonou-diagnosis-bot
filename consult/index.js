@@ -84,12 +84,17 @@ module.exports = async function consult(event, client) {
       getLastNConsultMessages(user.id, 3),
     ]);
 
-    // 🔹直近のcarelog（8日間分）を取得
-    const rawCareCounts =
-      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
+// 🔹carelogを短期（followup以降）＋長期（context以降）の両方取得
+const shortTermCareCounts =
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
+const longTermCareCounts =
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true });
 
-    // 🔹1日複数回押しを1回扱いに正規化（followupと同じ仕様）
-    careCounts = normalizeCareCountsPerDay(rawCareCounts);
+// 🔹短期のみ1日1回扱いに丸めて利用（週次変化の基準）
+careCounts = normalizeCareCountsPerDay(shortTermCareCounts);
+
+// 🔹長期もプロンプトに渡せるよう追加
+const extraCareCounts = { shortTermCareCounts, longTermCareCounts };
 
   } catch (err) {
     console.error("データ取得失敗:", err);
@@ -106,13 +111,14 @@ module.exports = async function consult(event, client) {
   );
 
   // 🔹プロンプト生成（careCounts追加済み）
-  const messages = buildConsultMessages({
-    context,
-    followups,
-    userText,
-    recentChats,
-    careCounts,
-  });
+const messages = buildConsultMessages({
+  context,
+  followups,
+  userText,
+  recentChats,
+  careCounts,
+  extraCareCounts, // ← 長期データ追加！
+});
 
   try {
     // ✅ GPT-5 Responses API
