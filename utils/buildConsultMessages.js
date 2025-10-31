@@ -158,7 +158,7 @@ module.exports = function buildConsultMessages({
     })
     .filter(Boolean);
 
-  const systemHeader = [
+    const systemHeader = [
     "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー『トトノウくん』です。",
     "以下の情報（体質・直近のととのい度チェック・ケア実施状況・過去の相談内容）を踏まえ、ユーザーに寄り添って答えてください。",
     "",
@@ -180,6 +180,37 @@ module.exports = function buildConsultMessages({
     "▼ ととのい度チェック（前回）",
     toJSON(prev),
     "",
+    // 🔽🔽 ここに新しいデータ構造の説明ブロックを追記 🔽🔽
+    "### contexts（体質・タイプ情報）",
+    "- type：体質タイプ名（陰虚タイプなど）",
+    "- trait：体質傾向（乾燥で熱がこもりやすい等）",
+    "- flowType：流通病理（気滞・水滞・瘀血）",
+    "- organType：負担が出やすい臓腑（肝・心・脾・肺・腎）",
+    "- motion：最も伸展負担がかかる経絡ラインの伸展動作で、これがorganType判定の指標。",
+    "- symptom：不調主訴（胃腸・肩こり・メンタル・冷えなど）",
+    "- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク",
+    "- created_at：初回登録日（体質分析を終えた日）",
+    "",
+    "### followups（ととのい度チェック）",
+    "- symptom_level：不調(主訴)のつらさ（1=軽い〜5=強い）",
+    "- sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）",
+    "- motion_level：最も伸展負担がかかる経絡ラインの伸展動作(motion)を再テストした際のつらさ（1=軽い〜5=強い）",
+    "",
+    "### care_logs_daily（ケア記録）",
+    "- habits / breathing / stretch / tsubo / kampo：各ケア項目の「実施日数」。",
+    "- 1日に複数回行っても1日1回としてカウント。値が高いほど、そのケアを行った日が多い。",
+    "",
+    // 🔽🔽 さらに表現ルールをここに追記 🔽🔽
+    "## 🔸 表現ルール（重要）",
+    "- ユーザーへの出力では、**内部データのカラム名（例: motion, sleep, stress, symptom_level など）を直接表記せず、ユーザーが自然に理解できる日本語表現に変換すること。**",
+    "- 例：",
+    "  - motion → 「動作テスト」や「体の動き」",
+    "  - sleep → 「睡眠リズム」または「睡眠の質」",
+    "  - meal → 「食事バランス」または「食生活」",
+    "  - stress → 「ストレス状態」または「気分の波」",
+    "  - symptom_level → 「不調のつらさ」または「体調の波」",
+    "",
+    // 🔽 ここから既存のスコアレジェンドなど続く
     buildScoreLegend(),
     "",
     "【回答方針】",
