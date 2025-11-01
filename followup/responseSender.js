@@ -204,14 +204,41 @@ async function sendFollowupResponse(userId, followupAnswers) {
 
 // 4. care_logs取得（短期＋長期の両方）
 // supabaseMemoryManager.js 側で distinct 日数に丸め済みなので、ここではそのまま利用。
-const shortTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
-    sinceFollowupId: prev?.id || null
-  }); // ← 修正: 前回followup以降〜今回まで
-const longTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true }); // context作成日〜現在（日数）
+let shortTermCareCounts = {};
+let longTermCareCounts = {};
 
-// normalizeCareCountsPerDay は不要（supabase 側で丸め済み）
+try {
+  // 🩵 短期：前回 followup → 今回 followup の区間（当日も含む）
+  if (prev?.id && latest?.id) {
+    shortTermCareCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
+        sinceFollowupId: prev.id,
+        untilFollowupId: latest.id, // 当日分も含む
+      });
+  } else if (prev?.id && !latest?.id) {
+    // 最新がまだ保存直後などで取得できない場合
+    shortTermCareCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
+        sinceFollowupId: prev.id,
+      });
+  } else {
+    // 初回フォローアップ（prevなし）
+    shortTermCareCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
+  }
+
+  // 🩵 長期：context作成日以降の累計（日数ベース）
+  longTermCareCounts =
+    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
+      includeContext: true,
+    });
+} catch (err) {
+  console.error("❌ care log 集計失敗:", err);
+  shortTermCareCounts = { habits: 0, breathing: 0, stretch: 0, tsubo: 0, kampo: 0 };
+  longTermCareCounts = shortTermCareCounts;
+}
+
+// supabase 側ですでに「distinct日数」で丸め済み
 const careCounts = shortTermCareCounts;
 
    
