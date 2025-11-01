@@ -246,6 +246,7 @@ const effectiveDays = Math.max(1, diffDays);
     const daysSinceStart = contextDate
       ? Math.max(1, Math.floor((now - contextDate) / (1000 * 60 * 60 * 24)))
       : effectiveDays;
+     
 
 // 6. 行動スコア（今回）
 const { actionScoreRaw, totalActions } = calcActionScore(careCounts, effectiveDays);
