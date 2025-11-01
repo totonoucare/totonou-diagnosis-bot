@@ -205,7 +205,9 @@ async function sendFollowupResponse(userId, followupAnswers) {
 // 4. care_logs取得（短期＋長期の両方）
 // supabaseMemoryManager.js 側で distinct 日数に丸め済みなので、ここではそのまま利用。
 const shortTermCareCounts =
-  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId); // 前回followup〜現在（日数）
+  await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
+    sinceFollowupId: prev?.id || null
+  }); // ← 修正: 前回followup以降〜今回まで
 const longTermCareCounts =
   await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true }); // context作成日〜現在（日数）
 
