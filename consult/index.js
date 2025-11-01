@@ -37,11 +37,12 @@ async function safeReplyThenPushFallback({ client, event, text }) {
 }
 
 /** careCounts を1日1回扱いに正規化（followupと共通仕様） */
+// ✅ supabaseMemoryManager 側ですでに distinct day 集計済みなので再正規化不要
 function normalizeCareCountsPerDay(careCounts) {
   if (!careCounts || typeof careCounts !== "object") return {};
   const normalized = {};
   for (const [pillar, count] of Object.entries(careCounts)) {
-    normalized[pillar] = Math.min(Number(count) || 0, 8);
+    normalized[pillar] = Number(count) || 0; // 実際の回数（日数）をそのまま保持
   }
   return normalized;
 }
