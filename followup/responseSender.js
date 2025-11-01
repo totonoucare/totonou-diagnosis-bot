@@ -208,24 +208,9 @@ let shortTermCareCounts = {};
 let longTermCareCounts = {};
 
 try {
-  // 🩵 短期：前回 followup → 今回 followup の区間（当日も含む）
-  if (prev?.id && latest?.id) {
-    shortTermCareCounts =
-      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
-        sinceFollowupId: prev.id,
-        untilFollowupId: latest.id, // 当日分も含む
-      });
-  } else if (prev?.id && !latest?.id) {
-    // 最新がまだ保存直後などで取得できない場合
-    shortTermCareCounts =
-      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
-        sinceFollowupId: prev.id,
-      });
-  } else {
-    // 初回フォローアップ（prevなし）
-    shortTermCareCounts =
-      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
-  }
+  // 🩵 短期：supabaseMemoryManager 内で「前回→最新」区間を自動判定
+  shortTermCareCounts =
+    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
 
   // 🩵 長期：context作成日以降の累計（日数ベース）
   longTermCareCounts =
