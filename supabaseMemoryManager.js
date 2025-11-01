@@ -497,7 +497,12 @@ async function getAllCareCountsSinceLastFollowupByLineId(
 
     if (sinceFollowupId) sinceDate = await getFollowupDateById(sinceFollowupId);
     if (untilFollowupId) untilDate = await getFollowupDateById(untilFollowupId);
+
+    // 🩵 nullガード: どちらも取得できなければ7日前〜今日で代替
+    if (!sinceDate) sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (!untilDate) untilDate = new Date();
   } else if (includeContext && ctx?.created_at) {
+
     // 🩵 context基準で集計
     sinceDate = new Date(ctx.created_at);
   } else {
@@ -511,6 +516,10 @@ async function getAllCareCountsSinceLastFollowupByLineId(
     untilDate = latestFollowup ? new Date(latestFollowup.created_at) : null;
   }
 
+  // 🩵 念のための最終フォールバック（二重安全策）
+  if (!sinceDate) sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  if (!untilDate) untilDate = new Date();
+  
   const sinceStr = sinceDate.toISOString().slice(0, 10);
   const untilStr = untilDate ? untilDate.toISOString().slice(0, 10) : null;
 
