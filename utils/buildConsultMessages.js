@@ -165,7 +165,7 @@ module.exports = function buildConsultMessages({
     "▼ 体質・所見（contexts）",
     toJSON(ctx),
     "",
-    "▼ 直近のケア実施記録（followup以降・日数ベース）",
+    "▼ 直近のケア実施記録（すでに『前回のチェック翌日〜今回のチェック当日』で集計済みです。ここから1日引いたり、0に補正したりしないこと）",
     toJSON(normalizedCareCounts),
     "",
     longTermCareJson
