@@ -228,16 +228,24 @@ const careCounts = shortTermCareCounts;
 
    
 
-    // 5. 経過日数を算出
-    const now = Date.now();
-    const prevDate = prev?.created_at ? new Date(prev.created_at).getTime() : null;
-    const contextDate = context?.created_at ? new Date(context.created_at).getTime() : null;
-    const effectiveDays =
-      prevDate
-        ? Math.max(1, Math.floor((now - prevDate) / (1000 * 60 * 60 * 24)))
-        : contextDate
-        ? Math.max(1, Math.floor((now - contextDate) / (1000 * 60 * 60 * 24)))
-        : 1;
+// 5. 経過日数を算出（切り上げで正確に）
+const now = Date.now();
+const prevDate = prev?.created_at ? new Date(prev.created_at).getTime() : null;
+const contextDate = context?.created_at ? new Date(context.created_at).getTime() : null;
+
+// 日数差を「切り上げ」で算出（端数を含める）
+const diffDays = prevDate
+  ? Math.ceil((now - prevDate) / (1000 * 60 * 60 * 24))
+  : contextDate
+  ? Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24))
+  : 1;
+
+const effectiveDays = Math.max(1, diffDays);
+
+// ✅ daysSinceStartを定義（userPromptで使用）
+const daysSinceStart = contextDate
+  ? Math.max(1, Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24)))
+  : effectiveDays;
 
     // ✅ daysSinceStartを定義（userPromptで使用）
     const daysSinceStart = contextDate
