@@ -436,18 +436,9 @@ async function getCareCountSinceLastFollowupByLineId(lineId, pillar) {
 /**
  * 各ケア項目の「実施日数（1日1回扱い）」を集計して返す
  * -----------------------------------------------------------
- * - Supabaseには全回数を保存し続ける（加算型）
- * - ここで distinct day 数に丸めて返す
- * - デフォルトでは「前回のfollowup日」〜「現在」
+ * - デフォルトでは「前回のfollowup日」〜「最新のfollowup日」
  * - includeContext=true の場合、「体質分析(context)作成日」以降の長期集計を含める
  * - sinceFollowupId / untilFollowupId で期間を明示指定できる
- *
- * @param {string} lineId - LINEのuserId
- * @param {object} [options]
- * @param {boolean} [options.includeContext=false] - context基準の長期集計を含めるか
- * @param {string} [options.sinceFollowupId] - このfollowup以降を開始点に
- * @param {string} [options.untilFollowupId] - このfollowupより前を終了点に
- * @returns {Promise<object>} 各pillarの日数 { habits, breathing, stretch, tsubo, kampo }
  */
 async function getAllCareCountsSinceLastFollowupByLineId(
   lineId,
@@ -463,7 +454,6 @@ async function getAllCareCountsSinceLastFollowupByLineId(
     .eq("line_id", lineId)
     .maybeSingle();
   if (userErr || !userRow) throw userErr || new Error("ユーザーが見つかりません");
-
   const userId = userRow.id;
 
   // --- context作成日を取得
@@ -476,43 +466,49 @@ async function getAllCareCountsSinceLastFollowupByLineId(
     .maybeSingle();
   if (ctxErr) throw ctxErr;
 
-  // --- followup作成日をID指定で取得（範囲指定に利用）
-  async function getFollowupDateById(id) {
-    if (!id) return null;
-    const { data, error } = await supabase
-      .from(FOLLOWUP_TABLE)
-      .select("created_at")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) throw error;
-    return data?.created_at ? new Date(data.created_at) : null;
-  }
+  // --- 🩵 前回と最新のfollowupを取得
+  const { data: followups, error: fuErr } = await supabase
+    .from(FOLLOWUP_TABLE)
+    .select("id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(2); // 最新と前回
+  if (fuErr) throw fuErr;
 
+  const latestFollowup = followups?.[0] || null;
+  const prevFollowup = followups?.[1] || null;
+
+  // --- 🩵 範囲を決定
   let sinceDate = null;
   let untilDate = null;
 
-  // 🔸 指定ID優先
-  if (sinceFollowupId) sinceDate = await getFollowupDateById(sinceFollowupId);
-  if (untilFollowupId) untilDate = await getFollowupDateById(untilFollowupId);
+  if (sinceFollowupId || untilFollowupId) {
+    // 明示的にID指定された場合
+    async function getFollowupDateById(id) {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from(FOLLOWUP_TABLE)
+        .select("created_at")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.created_at ? new Date(data.created_at) : null;
+    }
 
-  // 🔸 includeContext 指定時は context.created_at を起点に
-  if (includeContext && !sinceDate && ctx?.created_at) {
+    if (sinceFollowupId) sinceDate = await getFollowupDateById(sinceFollowupId);
+    if (untilFollowupId) untilDate = await getFollowupDateById(untilFollowupId);
+  } else if (includeContext && ctx?.created_at) {
+    // 🩵 context基準で集計
     sinceDate = new Date(ctx.created_at);
-  }
+  } else {
+    // 🩵 デフォルト：前回→最新 の区間
+    sinceDate = prevFollowup
+      ? new Date(prevFollowup.created_at)
+      : ctx?.created_at
+      ? new Date(ctx.created_at)
+      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  // 🔸 fallback: 最新 followup or context or 7日前
-  if (!sinceDate) {
-    const { data: fu, error: fuErr } = await supabase
-      .from(FOLLOWUP_TABLE)
-      .select("created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (fuErr) throw fuErr;
-    if (fu?.created_at) sinceDate = new Date(fu.created_at);
-    else if (ctx?.created_at) sinceDate = new Date(ctx.created_at);
-    else sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    untilDate = latestFollowup ? new Date(latestFollowup.created_at) : null;
   }
 
   const sinceStr = sinceDate.toISOString().slice(0, 10);
@@ -528,7 +524,7 @@ async function getAllCareCountsSinceLastFollowupByLineId(
         .eq("pillar", p)
         .gte("day", sinceStr);
 
-      if (untilStr) query = query.lt("day", untilStr); // ← untilFollowupId 指定時に上限を設定
+      if (untilStr) query = query.lt("day", untilStr); // 🩵 untilあり時は直前まで
 
       const { data: rows, error: dayErr } = await query;
       if (dayErr) throw dayErr;
