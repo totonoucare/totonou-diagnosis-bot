@@ -524,7 +524,7 @@ async function getAllCareCountsSinceLastFollowupByLineId(
         .eq("pillar", p)
         .gte("day", sinceStr);
 
-      if (untilStr) query = query.lt("day", untilStr); // 🩵 untilあり時は直前まで
+      if (untilStr) query = query.lte("day", untilStr); // 🩵 修正：最新followup日(当日)も含む
 
       const { data: rows, error: dayErr } = await query;
       if (dayErr) throw dayErr;
