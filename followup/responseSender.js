@@ -242,11 +242,6 @@ const diffDays = prevDate
 
 const effectiveDays = Math.max(1, diffDays);
 
-// ✅ daysSinceStartを定義（userPromptで使用）
-const daysSinceStart = contextDate
-  ? Math.max(1, Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24)))
-  : effectiveDays;
-
     // ✅ daysSinceStartを定義（userPromptで使用）
     const daysSinceStart = contextDate
       ? Math.max(1, Math.floor((now - contextDate) / (1000 * 60 * 60 * 24)))
