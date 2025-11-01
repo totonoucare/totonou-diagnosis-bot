@@ -80,7 +80,7 @@ function toJSON(obj) {
 function normalizeCareCountsPerDay(rawCounts = {}) {
   const normalized = {};
   for (const [pillar, count] of Object.entries(rawCounts)) {
-    normalized[pillar] = count > 0 ? 1 : 0;
+    normalized[pillar] = Number(count) || 0; // ← 🩵 修正: 0 or 実際の日数を保持
   }
   return normalized;
 }
