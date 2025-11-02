@@ -64,11 +64,13 @@ function calcActionScore(careCounts, effectiveDays) {
 }
 
 /**
- * ケア効果反映度（行動×体調変化）
- * - 行動が多いほど改善の信頼度を高める
- * - 改善がなくても努力で加点（UX安定）
+ * ケア効果反映度（行動×体調変化・中間チューニング版）
+ * - 改善があるとしっかり加点される
+ * - 行動もそれなりに重視
+ * - 軽い改善でも70〜80%程度に収まる自然なスケール
  */
 function calcCareEffectScore(prevN, curN, actionScoreRaw = 0) {
+  // 🟢 初回
   if (!prevN || !curN) {
     const careEffectScore = 50;
     const starsNum = Math.max(1, Math.min(5, Math.ceil(careEffectScore / 20)));
@@ -80,6 +82,7 @@ function calcCareEffectScore(prevN, curN, actionScoreRaw = 0) {
     };
   }
 
+  // 🟢 差分算出
   const diffs = [
     prevN.symptom_level - curN.symptom_level,
     prevN.sleep - curN.sleep,
@@ -90,18 +93,30 @@ function calcCareEffectScore(prevN, curN, actionScoreRaw = 0) {
   const avgDiff = diffs.reduce((a, b) => a + b, 0) / diffs.length;
 
   const actionFactor = Math.min(1, Math.max(0, actionScoreRaw / 100));
-  const reflectionEfficiency = avgDiff * actionFactor;
+  const improvement = Math.max(0, avgDiff);
+  const deterioration = Math.max(0, -avgDiff);
 
-  const effortBoost = Math.round(actionFactor * 15);
-  const raw = 60 + reflectionEfficiency * 30 + effortBoost;
-  const bounded = Math.max(0, Math.min(100, Math.round(raw)));
+  // ベース点
+  let base = 58;
+  if (improvement >= 0.5) base = 62;
+  if (improvement >= 3) base = 67;
 
-  const starsNum = Math.max(1, Math.min(5, Math.ceil(bounded / 20)));
+  // 中間チューニング
+  const reflectionPart = improvement * actionFactor * 12;
+  const effortBonus = actionFactor * 8;
+  const penalty = deterioration * (1 - actionFactor) * 6;
+
+  let raw = base + reflectionPart + effortBonus - penalty;
+
+  raw = Math.max(0, Math.min(100, Math.round(raw)));
+
+  const starsNum = Math.max(1, Math.min(5, Math.ceil(raw / 20)));
+
   return {
-    careEffectScore: bounded,
+    careEffectScore: raw,
     careEffectStarsNum: starsNum,
     careEffectStarsText: "★".repeat(starsNum) + "☆".repeat(5 - starsNum),
-    careEffectDelta: avgDiff,
+    careEffectDelta: Number(avgDiff.toFixed(2)),
   };
 }
 
