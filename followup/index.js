@@ -363,7 +363,7 @@ async function handleFollowup(event, client, lineId) {
       await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
       await client.replyMessage(replyToken, {
         type: "text",
-        text: "✅ チェック完了！\n今週のケアプランをまとめてるよ🧠🌿",
+        text: "✅ チェック完了！\nトトノウくんが今週の結果と今日からのケア指針をまとめています。\n１分ほどお待ちください🧠🌿",
       });
 
       handleFollowupAnswers(lineId, answers)
