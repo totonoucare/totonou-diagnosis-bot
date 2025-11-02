@@ -152,7 +152,7 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
         { role: "user", content: userPrompt },
       ],
       reasoning: { effort: "minimal" },
-
+      text: { verbosity: "medium" },
     });
 
     let raw = rsp.output_text?.trim() || "";
