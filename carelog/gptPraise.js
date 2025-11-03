@@ -7,7 +7,7 @@ const CARE_LABEL = {
   breathing: "巡りととのう呼吸法",
   stretch: "経絡ストレッチ",
   tsubo: "指先・ツボケア",
-  kampo: "漢方薬服用(実施は任意)",
+  kampo: "漢方薬(任意)",
 };
 
 function buildCareButtonsFlex() {
