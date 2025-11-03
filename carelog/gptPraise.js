@@ -4,9 +4,10 @@
 // - 各フェーズ5パターン（うち3つにケア名）
 // - 節目対応：10, 30, 100, 300, 500, 700, 1000回
 // - 称号を自動生成し、Supabase(users.care_titles)に保存
+// - 同じ称号のときは再通知しない
 // =======================================
 
-const { updateCareTitleByLineId } = require("../supabaseMemoryManager");
+const { updateCareTitleByLineId, supabase } = require("../supabaseMemoryManager");
 
 // 🌿 ケア表示名（ボタン表示用：長い）
 const CARE_LABEL_DISPLAY = {
@@ -54,7 +55,7 @@ function getRankTitle(label, count) {
   if (count >= 500) return `${label}マスター`;
   if (count >= 300) return `${label}の匠`;
   if (count >= 100) return `${label}名人`;
-  if (count >= 30) return `${label}整い手`;
+  if (count >= 30) return `${label}上手`;
   if (count >= 10) return `${label}リズムメイカー`;
   return `${label}はじめ`;
 }
@@ -109,14 +110,14 @@ function buildCareButtonsFlex() {
   };
 }
 
-// 🌿 褒めメッセージ生成（称号保存付き）
+// 🌿 褒めメッセージ生成（称号保存付き／変更時のみ表示）
 async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
   const label = CARE_LABEL[pillarKey] || "ケア";
   const tone = CARE_TONE[pillarKey] || "🌿";
   const count = countsAll[pillarKey] || 0;
   const total = Object.values(countsAll).reduce((a, b) => a + (b || 0), 0);
   const stage = STAGES.find((s) => count >= s.min && count <= s.max)?.name || "初期";
-  const rank = getRankTitle(label, count); // 称号生成
+  const rank = getRankTitle(label, count);
 
   let message = "";
 
@@ -146,7 +147,7 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
         break;
     }
   } else {
-    // 🌿 通常ステージ別コメント
+    // 🌿 通常コメント
     switch (stage) {
       case "初期":
         message = random([
@@ -202,10 +203,25 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
     message += "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
   }
 
-  // 🏅 称号保存＆表示
-  message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
+  // 🏅 称号の変更検知＆保存
   try {
-    await updateCareTitleByLineId(lineId, pillarKey, rank);
+    const { data: userRow, error: userErr } = await supabase
+      .from("users")
+      .select("care_titles")
+      .eq("line_id", lineId)
+      .maybeSingle();
+
+    if (userErr) throw userErr;
+
+    const prevTitles = userRow?.care_titles || {};
+    const prevRank = prevTitles[pillarKey];
+
+    if (prevRank !== rank) {
+      await updateCareTitleByLineId(lineId, pillarKey, rank);
+      message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
+    } else {
+      console.log(`[generatePraiseReply] Rank unchanged: ${rank}`);
+    }
   } catch (err) {
     console.error("❌ updateCareTitleByLineId error:", err);
   }
