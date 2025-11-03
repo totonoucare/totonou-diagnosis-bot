@@ -4,10 +4,10 @@ const oai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const CARE_LABEL = {
   habits: "体質改善習慣",
-  breathing: "呼吸法",
-  stretch: "ストレッチ",
-  tsubo: "ツボ",
-  kampo: "漢方",
+  breathing: "巡りととのう呼吸法",
+  stretch: "経絡ストレッチ",
+  tsubo: "指先・ツボケア",
+  kampo: "漢方薬(実施は任意)",
 };
 
 function buildCareButtonsFlex() {
@@ -15,7 +15,7 @@ function buildCareButtonsFlex() {
     type: "button",
     style: "primary",
     height: "sm",
-    color: "#7B9E76",
+    color: "#C6A047",
     action: { type: "message", label, text: `${label}ケア完了☑️` },
   }));
 
@@ -36,7 +36,7 @@ function buildCareButtonsFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#7B9E76",
+        backgroundColor: "#C6A047",
         paddingAll: "12px",
         cornerRadius: "12px",
       },
