@@ -14,10 +14,10 @@ module.exports = async function handleCarelog(event, client, lineId, userMessage
   // 実施完了メッセージ（例: ストレッチケア完了☑️）
   const CARE_BY_TEXT = {
     "体質改善習慣ケア完了☑️": "habits",
-    "呼吸法ケア完了☑️": "breathing",
-    "ストレッチケア完了☑️": "stretch",
-    "ツボケア完了☑️": "tsubo",
-    "漢方ケア完了☑️": "kampo",
+    "巡りととのう呼吸法ケア完了☑️": "breathing",
+    "経絡ストレッチケア完了☑️": "stretch",
+    "指先・ツボケア完了☑️": "tsubo",
+    "漢方薬ケア完了☑️": "kampo",
   };
   const pillarKey = CARE_BY_TEXT[userMessage];
   if (pillarKey) {
