@@ -13,7 +13,7 @@ module.exports = async function handleCarelog(event, client, lineId, userMessage
 
   // 実施完了メッセージ（例: ストレッチケア完了☑️）
   const CARE_BY_TEXT = {
-    "体質改善習慣ケア完了☑️": "habits",
+    "体質改善習慣完了☑️": "habits",
     "巡りととのう呼吸法完了☑️": "breathing",
     "経絡ストレッチ完了☑️": "stretch",
     "指先・ツボケア完了☑️": "tsubo",
