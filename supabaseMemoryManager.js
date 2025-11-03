@@ -631,6 +631,20 @@ async function updateCareTitleByLineId(lineId, pillar, title) {
   console.log(`[updateCareTitleByLineId] ${pillar}: ${title}`);
 }
 
+/**
+ * 現在のユーザー称号を取得
+ */
+async function getCareTitlesByLineId(lineId) {
+  const { data, error } = await supabase
+    .from(USERS_TABLE)
+    .select("care_titles")
+    .eq("line_id", lineId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.care_titles || {};
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -656,4 +670,5 @@ module.exports = {
   getAllCareCountsSinceLastFollowupByLineId,
   getAllCareCountsRawByLineId,
   updateCareTitleByLineId,
+  getCareTitlesByLineId,
 };
