@@ -8,7 +8,16 @@
 
 const { updateCareTitleByLineId } = require("../supabaseMemoryManager");
 
-// 🌿 ケア表示名
+// 🌿 ケア表示名（ボタン表示用：長い）
+const CARE_LABEL_DISPLAY = {
+  habits: "体質改善習慣",
+  breathing: "巡りととのう呼吸法",
+  stretch: "経絡ストレッチ",
+  tsubo: "指先・ツボケア",
+  kampo: "漢方薬（任意）",
+};
+
+// 💬 内部処理・称号用（短い）
 const CARE_LABEL = {
   habits: "体質改善習慣",
   breathing: "呼吸法",
@@ -29,7 +38,7 @@ const CARE_TONE = {
 // 🎯 節目回数リスト
 const MILESTONES = [10, 30, 100, 300, 500, 700, 1000];
 
-// 🌱 ステージ定義（回数でフェーズ分類）
+// 🌱 ステージ定義
 const STAGES = [
   { name: "初期", min: 0, max: 29 },
   { name: "定着期", min: 30, max: 99 },
@@ -50,14 +59,22 @@ function getRankTitle(label, count) {
   return `${label}はじめ`;
 }
 
-// 🎨 FlexボタンUI（そのまま）
+// 🎨 FlexボタンUI（表示名と送信テキストを分離）
 function buildCareButtonsFlex() {
-  const buttons = Object.entries(CARE_LABEL).map(([key, label]) => ({
+  const BUTTON_CONFIG = {
+    habits: { label: "体質改善習慣", text: "体質改善習慣完了☑️" },
+    breathing: { label: "巡りととのう呼吸法", text: "呼吸法完了☑️" },
+    stretch: { label: "経絡ストレッチ", text: "ストレッチ完了☑️" },
+    tsubo: { label: "指先・ツボケア", text: "ツボケア完了☑️" },
+    kampo: { label: "漢方薬（任意）", text: "漢方ケア完了☑️" },
+  };
+
+  const buttons = Object.entries(BUTTON_CONFIG).map(([key, cfg]) => ({
     type: "button",
     style: "primary",
     height: "sm",
     color: "#7B9E76",
-    action: { type: "message", label, text: `${label}完了☑️` },
+    action: { type: "message", label: cfg.label, text: cfg.text },
   }));
 
   return {
@@ -69,7 +86,13 @@ function buildCareButtonsFlex() {
         type: "box",
         layout: "vertical",
         contents: [
-          { type: "text", text: "🌿 実施したケアを記録", weight: "bold", size: "lg", color: "#ffffff" },
+          {
+            type: "text",
+            text: "🌿 実施したケアを記録",
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff",
+          },
         ],
         backgroundColor: "#7B9E76",
         paddingAll: "12px",
@@ -92,13 +115,12 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
   const tone = CARE_TONE[pillarKey] || "🌿";
   const count = countsAll[pillarKey] || 0;
   const total = Object.values(countsAll).reduce((a, b) => a + (b || 0), 0);
-
   const stage = STAGES.find((s) => count >= s.min && count <= s.max)?.name || "初期";
-  const rank = getRankTitle(label, count); // ← 称号生成
+  const rank = getRankTitle(label, count); // 称号生成
 
   let message = "";
 
-  // 🎯 節目優先コメント
+  // 🎯 節目コメント
   if (MILESTONES.includes(count)) {
     switch (count) {
       case 10:
@@ -135,7 +157,6 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
           `${tone} 丁寧に続けてる感じ、とてもいいリズムだね🕊️`,
         ]);
         break;
-
       case "定着期":
         message = random([
           `${tone} ${label}が自然に日常に溶け込んできたね🌿`,
@@ -145,7 +166,6 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
           `${tone} 体の声にちゃんと耳を傾けられてるね🌸`,
         ]);
         break;
-
       case "継続期":
         message = random([
           `${tone} ${label}の積み重ねが深い整いを生んでるね🌿`,
@@ -155,7 +175,6 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
           `${tone} 体が整うリズムを自分で作れてるね🍵`,
         ]);
         break;
-
       case "熟達期":
         message = random([
           `${tone} 穏やかな継続が整いの深さを作ってるね🌿`,
@@ -165,7 +184,6 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
           `${tone} 静けさの中に芯の強さを感じる🍃`,
         ]);
         break;
-
       case "達人期":
         message = random([
           `${tone} ${label}がもう呼吸みたいな存在だね🌿`,
@@ -178,13 +196,13 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
     }
   }
 
-  // ⚖️ バランス補足（偏りチェック）
+  // ⚖️ バランス補足
   const ratio = total ? count / total : 0;
   if (ratio > 0.45 && ratio < 0.55 && total > 4) {
     message += "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
   }
 
-  // 🏅 称号を付加して保存
+  // 🏅 称号保存＆表示
   message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
   try {
     await updateCareTitleByLineId(lineId, pillarKey, rank);
@@ -195,7 +213,7 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
   return message;
 }
 
-/** 🎲 ランダム選択ユーティリティ */
+/** 🎲 ランダム選択 */
 function random(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
