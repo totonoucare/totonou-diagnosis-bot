@@ -208,7 +208,7 @@ function buildDiagnosisConfirmFlex() {
           },
           {
             type: "text",
-            text: "※2回目以降の方は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
+            text: "再分析の場合は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
             wrap: true,
             size: "xs",
             color: "#888888",
@@ -271,7 +271,7 @@ function buildFollowupConfirmFlex() {
           },
           {
             type: "text",
-            text: "※ご提案したケアの内容を忘れた方は、まず『ととのうケアガイド』ボタンで確認してからチェックを受けてくださいね！",
+            text: "ご提案したケア内容を覚えていない場合は、まず『ととのうケアガイド』ボタンで確認してからチェックを受けてくださいね！",
             wrap: true,
             size: "xs",
             color: "#888888",
@@ -575,7 +575,7 @@ function buildReminderFlex() {
         contents: [
           {
             type: 'text',
-            text: 'こんにちは！お体の調子はですか？\n今週の『ととのい度チェック』がまだでしたら、現状のととのいスコアと見直しアドバイスをチェックしてみましょう！🌿',
+            text: 'こんにちは！お体の調子はいかがですか？\n今週の『ととのい度チェック』がまだでしたら、現状のととのいスコアと今週の優先ケアプランをチェックしてみましょう！🌿',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -659,7 +659,7 @@ function buildChatConsultOptionsFlex() {
 function buildTrialStartFlex() {
   return {
     type: 'flex',
-    altText: '🎁 無料トライアル開始ボタン',
+    altText: '🎁 無料体験開始ボタン',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -669,7 +669,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '🎁 16日間の無料トライアルを始める',
+            text: '🎁 16日間の無料体験を始める',
             weight: 'bold',
             size: 'md',
             color: '#ffffff',
@@ -685,7 +685,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: 'text',
-            text: '16日間の無料トライアルをご用意しました！\nご提案した『ととのうケアガイド』の内容を習慣化できるように、\n📈 AIパートナーによる週1回の『ととのい度チェック』／ ⏰ 状態に合わせた『応援レターリマインド』／ 🧠 24時間なんでも聞けるチャットAI『トトノウくん』が、あなたのセルフケアをしっかりサポートします。\n\nメニューから「トトノウくんに相談」ボタンを押して、さっそくトトノウくんと話してみましょう！(応答には少し時間がかかることがあります）',
+            text: '🎁 まずは16日間の無料体験をご利用いただけます！\nご提案した『ととのうケアガイド』の内容を習慣化できるように、AIパートナー『トトノウくん』があなたのケア習慣を手厚くサポート！\n\n✅ 今やったケアをすぐ記録できる『実施記録』機能\n\n📈 毎週の『ととのい度チェック』で、ケア頻度と体調変化を分析し、優先ケアプランを作成\n ⏰ 状態に合わせた『応援レターリマインド』\n 🧠 24時間いつでもトークで質問可能',
             wrap: true,
             color: '#333333',
             size: 'md',
@@ -696,7 +696,7 @@ function buildTrialStartFlex() {
           },
             {
               type: 'text',
-              text: 'トライアル終了後の自動課金や強制加入は一切ありませんので安心してご利用ください 🌱',
+              text: '✳️ トライアル終了後の自動課金や強制加入は一切ありませんので安心してご利用ください 🌱',
               size: 'sm',
               color: '#888888',
               wrap: true,
