@@ -82,7 +82,6 @@ async function generatePraiseReply({ pillarKey, countsAll }) {
 【今回】${label} +1回
 【このケアの累計】${count}回
 
-※中心的に褒める対象は「${label}」です。
 ※「${count}」は、10回目・50回目・100回目など節目のときだけメッセージ内で触れてください。
   `.trim();
 
