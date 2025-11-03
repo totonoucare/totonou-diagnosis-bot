@@ -73,9 +73,8 @@ async function generatePraiseReply({ pillarKey, countsAll }) {
 
 【ルール】
 - 今回押されたケア項目を中心に褒める。
-- フレンドリーで温かく、短文＋絵文字もOK。
-- 否定・命令・専門用語は禁止。
-- ${label}以外の他ケアの回数は知らない前提で話すこと。
+- パートナーらしく温かく、短文＋絵文字もOK。
+- 否定・命令は禁止。
   `.trim();
 
   // 👇 totalは一切渡さない
