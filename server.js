@@ -93,7 +93,17 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#7B9E76",
                   action: {
                     type: "uri",
-                    label: "🌐 ホームページ",
+                    label: "対面サービス予約サイト",
+                    uri: subscribeUrl
+                  }
+                },
+                {
+                  type: "button",
+                  style: "primary",
+                  color: "#7B9E76",
+                  action: {
+                    type: "uri",
+                    label: "🌐 ととのうケアナビとは",
                     uri: "https://totonoucare.com"
                   }
                 },
