@@ -13,9 +13,9 @@ const CARE_LABEL = {
 function buildCareButtonsFlex() {
   const buttons = Object.entries(CARE_LABEL).map(([key, label]) => ({
     type: "button",
-    style: "secondary",
+    style: "primary",
     height: "sm",
-    color: "#FAF4E1", // 薄いクリーム色
+    color: "#C69D54",
     action: { type: "message", label, text: `${label}完了☑️` },
   }));
 
@@ -24,8 +24,7 @@ function buildCareButtonsFlex() {
     altText: "実施記録",
     contents: {
       type: "bubble",
-      size: "mega",
-      hero: {
+      header: {
         type: "box",
         layout: "vertical",
         contents: [
@@ -34,57 +33,30 @@ function buildCareButtonsFlex() {
             text: "🌿 実施したケアを記録",
             weight: "bold",
             size: "lg",
-            color: "#FFFFFF",
-            align: "center",
+            color: "#ffffff",
           },
         ],
         backgroundColor: "#C69D54",
-        paddingAll: "16px",
-        cornerRadius: "16px 16px 0px 0px",
+        paddingAll: "12px",
+        cornerRadius: "12px",
       },
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
-        paddingAll: "16px",
-        backgroundColor: "#FFFDF8",
         contents: [
           {
             type: "box",
             layout: "vertical",
             spacing: "sm",
-            contents: buttons.map((b) => ({
-              ...b,
-              color: "#F5EEDC",
-              action: b.action,
-              style: "secondary",
-            })),
+            margin: "md",
+            contents: buttons,
           },
         ],
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: "記録はあなたのととのいを育てます 🌱",
-            size: "xs",
-            color: "#A38E5C",
-            align: "center",
-          },
-        ],
-        backgroundColor: "#FBF8F3",
-        paddingAll: "10px",
-      },
-      styles: {
-        body: {
-          separator: true,
-        },
       },
     },
   };
 }
+
 /**
  * ケア実施褒めメッセージ生成
  * totalはGPTに渡さず、JS側で条件に応じて追記する
