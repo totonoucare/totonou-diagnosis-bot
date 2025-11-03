@@ -7,7 +7,7 @@
 // - 同じ称号のときは再通知しない
 // =======================================
 
-const { updateCareTitleByLineId, supabase } = require("../supabaseMemoryManager");
+const { updateCareTitleByLineId, getCareTitlesByLineId } = require("../supabaseMemoryManager");
 
 // 🌿 ケア表示名（ボタン表示用：長い）
 const CARE_LABEL_DISPLAY = {
@@ -203,28 +203,22 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
     message += "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
   }
 
-  // 🏅 称号の変更検知＆保存
-  try {
-    const { data: userRow, error: userErr } = await supabase
-      .from("users")
-      .select("care_titles")
-      .eq("line_id", lineId)
-      .maybeSingle();
+  // 🏅 称号の変更検知＆保存（supabase直接参照を廃止）
+try {
+  // 🩵 現在の称号一覧を Supabase から取得（新しく作った関数）
+  const prevTitles = await getCareTitlesByLineId(lineId);
+  const prevRank = prevTitles[pillarKey];
 
-    if (userErr) throw userErr;
-
-    const prevTitles = userRow?.care_titles || {};
-    const prevRank = prevTitles[pillarKey];
-
-    if (prevRank !== rank) {
-      await updateCareTitleByLineId(lineId, pillarKey, rank);
-      message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
-    } else {
-      console.log(`[generatePraiseReply] Rank unchanged: ${rank}`);
-    }
-  } catch (err) {
-    console.error("❌ updateCareTitleByLineId error:", err);
+  // 🩵 称号が変わったときのみ保存＆通知
+  if (prevRank !== rank) {
+    await updateCareTitleByLineId(lineId, pillarKey, rank);
+    message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
+  } else {
+    console.log(`[generatePraiseReply] Rank unchanged: ${rank}`);
   }
+} catch (err) {
+  console.error("❌ updateCareTitleByLineId error:", err);
+}
 
   return message;
 }
