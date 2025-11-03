@@ -114,7 +114,7 @@ function generatePraiseReply({ pillarKey, countsAll }) {
           `${tone} ${label}を重ねるたび、少しずつ整ってきてるね🌱`,
           `${tone} ${label}の時間が、体にやさしく響いてるね🌿`,
           `${tone} 無理なく続けられててすごく自然✨`,
-          `${tone} 今日は小さな一歩、それが未来の整いにつながる🍃`,
+          `${tone} 今日の小さな一歩、それが未来の整いにつながる🍃`,
           `${tone} 丁寧に続けてる感じ、とてもいいリズムだね🕊️`,
         ]);
         break;
