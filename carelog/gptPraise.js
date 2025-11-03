@@ -1,15 +1,41 @@
 // carelog/gptPraise.js
-const { OpenAI } = require("openai");
-const oai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// =======================================
+// 🌿 ととのうケアナビ：ケア別トーン＆自然な褒めコメント
+// - 各フェーズ5パターン（うち3つにケア名）
+// - 節目対応：10, 30, 100, 300, 500, 700, 1000回
+// - GPT不要・安定運用
+// =======================================
 
 const CARE_LABEL = {
   habits: "体質改善習慣",
   breathing: "巡りととのう呼吸法",
   stretch: "経絡ストレッチ",
-  tsubo: "指先・ツボケア",
-  kampo: "漢方薬(任意)",
+  tsubo: "ツボ刺激ケア",
+  kampo: "漢方（任意）",
 };
 
+// 🌈 ケア別トーン絵文字
+const CARE_TONE = {
+  habits: "🌿",
+  breathing: "🫁",
+  stretch: "💪",
+  tsubo: "🫶",
+  kampo: "🍵",
+};
+
+// 🌱 ステージ定義
+const STAGES = [
+  { name: "初期", min: 0, max: 29 },
+  { name: "定着期", min: 30, max: 99 },
+  { name: "継続期", min: 100, max: 299 },
+  { name: "熟達期", min: 300, max: 699 },
+  { name: "達人期", min: 700, max: Infinity },
+];
+
+// 🎯 節目リスト
+const MILESTONES = [10, 30, 100, 300, 500, 700, 1000];
+
+// 🌿 FlexボタンUI
 function buildCareButtonsFlex() {
   const buttons = Object.entries(CARE_LABEL).map(([key, label]) => ({
     type: "button",
@@ -21,20 +47,14 @@ function buildCareButtonsFlex() {
 
   return {
     type: "flex",
-    altText: "実施記録",
+    altText: "セルフケア実施記録",
     contents: {
       type: "bubble",
       header: {
         type: "box",
         layout: "vertical",
         contents: [
-          {
-            type: "text",
-            text: "🌿 実施したケアを記録",
-            weight: "bold",
-            size: "lg",
-            color: "#ffffff",
-          },
+          { type: "text", text: "🌿 実施したケアを記録", weight: "bold", size: "lg", color: "#ffffff" },
         ],
         backgroundColor: "#7B9E76",
         paddingAll: "12px",
@@ -43,70 +63,116 @@ function buildCareButtonsFlex() {
       body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#f8f9f7",
         contents: [
-          {
-            type: "box",
-            layout: "vertical",
-            spacing: "sm",
-            margin: "md",
-            contents: buttons,
-          },
+          { type: "box", layout: "vertical", spacing: "sm", margin: "md", contents: buttons },
         ],
       },
     },
   };
 }
 
-/**
- * ケア実施褒めメッセージ生成
- * totalはGPTに渡さず、JS側で条件に応じて追記する
- */
-async function generatePraiseReply({ pillarKey, countsAll }) {
+// 🌿 褒めメッセージ生成
+function generatePraiseReply({ pillarKey, countsAll }) {
   const label = CARE_LABEL[pillarKey] || "ケア";
+  const tone = CARE_TONE[pillarKey] || "🌿";
   const count = countsAll[pillarKey] || 0;
   const total = Object.values(countsAll).reduce((a, b) => a + (b || 0), 0);
+  const stage = STAGES.find(s => count >= s.min && count <= s.max)?.name || "初期";
 
-  const system = `
-あなたはセルフケアを褒めるAIパートナー『トトノウくん』です。
-各ケア項目（体質改善習慣・呼吸法・ストレッチ・ツボ・漢方）ごとに、
-ユーザーの積み重ねを優しく褒めて、次へのやる気につながる一言を70字前後で出してください。
+  let message = "";
 
-【ルール】
-- 今回押されたケア項目を中心に褒める。
-- パートナーらしく温かく、短文＋絵文字もOK。
-- 否定・命令は禁止。
-  `.trim();
+  // 🎯 節目優先
+  if (MILESTONES.includes(count)) {
+    switch (count) {
+      case 10:
+        message = `${tone} ${label}10回！整いのリズムが生まれてきたね🌱`;
+        break;
+      case 30:
+        message = `${tone} ${label}30回達成！習慣として定着してきた感じ✨`;
+        break;
+      case 100:
+        message = `${tone} ${label}100回！日々の積み重ねが芯を作ってるね🌿`;
+        break;
+      case 300:
+        message = `${tone} ${label}300回！安定した整い方、素敵です🕊️`;
+        break;
+      case 500:
+        message = `${tone} ${label}500回！静かな継続に心から拍手👏`;
+        break;
+      case 700:
+        message = `${tone} ${label}700回！整いがすっかり自分の一部に🌸`;
+        break;
+      case 1000:
+        message = `${tone} ${label}1000回！整いの達人、その姿勢に敬意を✨`;
+        break;
+    }
+  } else {
+    // 🌿 ステージ別通常コメント
+    switch (stage) {
+      case "初期":
+        message = random([
+          `${tone} ${label}を重ねるたび、少しずつ整ってきてるね🌱`,
+          `${tone} ${label}の時間が、体にやさしく響いてるね🌿`,
+          `${tone} 無理なく続けられててすごく自然✨`,
+          `${tone} 今日は小さな一歩、それが未来の整いにつながる🍃`,
+          `${tone} 丁寧に続けてる感じ、とてもいいリズムだね🕊️`,
+        ]);
+        break;
 
-  // 👇 totalは一切渡さない
-  const user = `
-【今回】${label} +1回
-【このケアの累計】${count}回
+      case "定着期":
+        message = random([
+          `${tone} ${label}が自然に日常に溶け込んできたね🌿`,
+          `${tone} ${label}を続ける姿勢が安定感を作ってる✨`,
+          `${tone} 継続の流れ、とても落ち着いてるね🕊️`,
+          `${tone} 穏やかに整ってる、その感じすごくいい🍃`,
+          `${tone} 体の声にちゃんと耳を傾けられてるね🌸`,
+        ]);
+        break;
 
-※「${count}」は、10回目・50回目・100回目など節目のときだけメッセージ内で触れてください。
-  `.trim();
+      case "継続期":
+        message = random([
+          `${tone} ${label}の積み重ねが深い整いを生んでるね🌿`,
+          `${tone} ${label}を軸にした生活、安定感ある✨`,
+          `${tone} 落ち着いた整い方、とても自然で美しい🕊️`,
+          `${tone} 静かに続けてる感じ、すばらしい流れ🌸`,
+          `${tone} 体が整うリズムを自分で作れてるね🍵`,
+        ]);
+        break;
 
-  const rsp = await oai.responses.create({
-    model: process.env.TOTONOU_PRAISE_MODEL || "gpt-5-mini",
-    input: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    reasoning: { effort: "minimal" },
-  });
+      case "熟達期":
+        message = random([
+          `${tone} 穏やかな継続が整いの深さを作ってるね🌿`,
+          `${tone} ${label}が心と体をやさしく支えてる感じ✨`,
+          `${tone} 整い方が落ち着いてて安定してるね🕊️`,
+          `${tone} 丁寧に積み重ねてる姿勢が本当にすてき🌸`,
+          `${tone} 静けさの中に芯の強さを感じる🍃`,
+        ]);
+        break;
 
-  let praise =
-    rsp.output_text?.trim() ||
-    rsp.output?.[0]?.content?.map((c) => c?.text || "").join("\n").trim() ||
-    `記録しました✅ ${label}の積み重ね、良い感じです！`;
-
-  // 🩵 JS側で条件追加（count/total ≈ 0.5）
-  const ratio = total ? count / total : 0;
-  if (ratio > 0.45 && ratio < 0.55 && total > 4) {
-    praise += "\n\n他のケアも少しずつ取り入れると、さらに整いやすいよ🌿";
+      case "達人期":
+        message = random([
+          `${tone} ${label}がもう呼吸みたいな存在だね🌿`,
+          `${tone} 穏やかでブレない整い、まさに達人の域👏`,
+          `${tone} 静かに続けている姿がとても尊い🕊️`,
+          `${tone} 整いの深さがまぶしいほど✨`,
+          `${tone} 習慣じゃなく、"生き方"として整ってるね🌸`,
+        ]);
+        break;
+    }
   }
 
-  return praise;
+  // ⚖️ バランス補足（偏りチェック）
+  const ratio = total ? count / total : 0;
+  if (ratio > 0.45 && ratio < 0.55 && total > 4) {
+    message += "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
+  }
+
+  return message;
+}
+
+/** 🎲 ランダム選択ユーティリティ */
+function random(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 module.exports = { generatePraiseReply, buildCareButtonsFlex };
