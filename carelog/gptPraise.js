@@ -1,17 +1,20 @@
 // carelog/gptPraise.js
 // =======================================
-// 🌿 ととのうケアナビ：ケア別トーン＆自然な褒めコメント
+// 🌿 ととのうケアナビ：ケア別トーン＆自然な褒めコメント＋称号保存
 // - 各フェーズ5パターン（うち3つにケア名）
 // - 節目対応：10, 30, 100, 300, 500, 700, 1000回
-// - GPT不要・安定運用
+// - 称号を自動生成し、Supabase(users.care_titles)に保存
 // =======================================
 
+const { updateCareTitleByLineId } = require("../supabaseMemoryManager");
+
+// 🌿 ケア表示名
 const CARE_LABEL = {
   habits: "体質改善習慣",
-  breathing: "巡りととのう呼吸法",
-  stretch: "経絡ストレッチ",
-  tsubo: "ツボ刺激ケア",
-  kampo: "漢方（任意）",
+  breathing: "呼吸法",
+  stretch: "ストレッチ",
+  tsubo: "ツボケア",
+  kampo: "漢方ケア",
 };
 
 // 🌈 ケア別トーン絵文字
@@ -23,7 +26,10 @@ const CARE_TONE = {
   kampo: "🍵",
 };
 
-// 🌱 ステージ定義
+// 🎯 節目回数リスト
+const MILESTONES = [10, 30, 100, 300, 500, 700, 1000];
+
+// 🌱 ステージ定義（回数でフェーズ分類）
 const STAGES = [
   { name: "初期", min: 0, max: 29 },
   { name: "定着期", min: 30, max: 99 },
@@ -32,10 +38,18 @@ const STAGES = [
   { name: "達人期", min: 700, max: Infinity },
 ];
 
-// 🎯 節目リスト
-const MILESTONES = [10, 30, 100, 300, 500, 700, 1000];
+// 🏅 称号生成
+function getRankTitle(label, count) {
+  if (count >= 1000) return `${label}名人`;
+  if (count >= 700) return `${label}の楷`;
+  if (count >= 300) return `${label}の匠`;
+  if (count >= 100) return `${label}達人`;
+  if (count >= 30) return `${label}上手`;
+  if (count >= 10) return `${label}習慣者`;
+  return `${label}はじめ`;
+}
 
-// 🌿 FlexボタンUI
+// 🎨 FlexボタンUI（そのまま）
 function buildCareButtonsFlex() {
   const buttons = Object.entries(CARE_LABEL).map(([key, label]) => ({
     type: "button",
@@ -71,17 +85,19 @@ function buildCareButtonsFlex() {
   };
 }
 
-// 🌿 褒めメッセージ生成
-function generatePraiseReply({ pillarKey, countsAll }) {
+// 🌿 褒めメッセージ生成（称号保存付き）
+async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
   const label = CARE_LABEL[pillarKey] || "ケア";
   const tone = CARE_TONE[pillarKey] || "🌿";
   const count = countsAll[pillarKey] || 0;
   const total = Object.values(countsAll).reduce((a, b) => a + (b || 0), 0);
-  const stage = STAGES.find(s => count >= s.min && count <= s.max)?.name || "初期";
+
+  const stage = STAGES.find((s) => count >= s.min && count <= s.max)?.name || "初期";
+  const rank = getRankTitle(label, count); // ← 称号生成
 
   let message = "";
 
-  // 🎯 節目優先
+  // 🎯 節目優先コメント
   if (MILESTONES.includes(count)) {
     switch (count) {
       case 10:
@@ -103,11 +119,11 @@ function generatePraiseReply({ pillarKey, countsAll }) {
         message = `${tone} ${label}700回！整いがすっかり自分の一部に🌸`;
         break;
       case 1000:
-        message = `${tone} ${label}1000回！整いの達人、その姿勢に敬意を✨`;
+        message = `${tone} ${label}1000回！その姿勢、まさに本物の達人✨`;
         break;
     }
   } else {
-    // 🌿 ステージ別通常コメント
+    // 🌿 通常ステージ別コメント
     switch (stage) {
       case "初期":
         message = random([
@@ -165,6 +181,14 @@ function generatePraiseReply({ pillarKey, countsAll }) {
   const ratio = total ? count / total : 0;
   if (ratio > 0.45 && ratio < 0.55 && total > 4) {
     message += "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
+  }
+
+  // 🏅 称号を付加して保存
+  message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
+  try {
+    await updateCareTitleByLineId(lineId, pillarKey, rank);
+  } catch (err) {
+    console.error("❌ updateCareTitleByLineId error:", err);
   }
 
   return message;
