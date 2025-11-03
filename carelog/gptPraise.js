@@ -40,12 +40,13 @@ const STAGES = [
 
 // 🏅 称号生成
 function getRankTitle(label, count) {
-  if (count >= 1000) return `${label}名人`;
-  if (count >= 700) return `${label}の楷`;
+  if (count >= 1000) return `${label}仙人`;
+  if (count >= 700) return `${label}賢者`;
+  if (count >= 500) return `${label}マスター`;
   if (count >= 300) return `${label}の匠`;
-  if (count >= 100) return `${label}達人`;
-  if (count >= 30) return `${label}上手`;
-  if (count >= 10) return `${label}習慣者`;
+  if (count >= 100) return `${label}名人`;
+  if (count >= 30) return `${label}整い手`;
+  if (count >= 10) return `${label}リズムメイカー`;
   return `${label}はじめ`;
 }
 
