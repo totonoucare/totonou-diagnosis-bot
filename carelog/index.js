@@ -24,7 +24,7 @@ module.exports = async function handleCarelog(event, client, lineId, userMessage
     try {
       await addCareLogDailyByLineId(lineId, pillarKey);
       const countsAll = await getAllCareCountsRawByLineId(lineId);
-      const praise = await generatePraiseReply({ pillarKey, countsAll });
+      const praise = await generatePraiseReply({ lineId, pillarKey, countsAll });
       await client.replyMessage(event.replyToken, {
         type: "text",
         text: `✅ 記録しました\n${praise}`,
