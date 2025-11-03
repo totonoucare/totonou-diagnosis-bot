@@ -603,6 +603,34 @@ async function getAllCareCountsRawByLineId(lineId, { sinceDays = null } = {}) {
   return result;
 }
 
+/**
+ * ユーザーのケア称号を更新（ケアごとに最新称号を保存）
+ * @param {string} lineId - LINEユーザーID
+ * @param {string} pillar - ケア種別キー（habits / breathing / stretch / tsubo / kampo）
+ * @param {string} title - 新しい称号（例: "呼吸法達人"）
+ */
+async function updateCareTitleByLineId(lineId, pillar, title) {
+  const { data: userRow, error: userErr } = await supabase
+    .from(USERS_TABLE)
+    .select("id, care_titles")
+    .eq("line_id", lineId)
+    .maybeSingle();
+
+  if (userErr || !userRow) throw userErr || new Error("ユーザーが見つかりません");
+
+  const careTitles = userRow.care_titles || {};
+  careTitles[pillar] = title;
+
+  const { error: updErr } = await supabase
+    .from(USERS_TABLE)
+    .update({ care_titles: careTitles })
+    .eq("id", userRow.id);
+
+  if (updErr) throw updErr;
+
+  console.log(`[updateCareTitleByLineId] ${pillar}: ${title}`);
+}
+
 module.exports = {
   initializeUser,
   getUser,
@@ -627,4 +655,5 @@ module.exports = {
   getCareCountSinceLastFollowupByLineId,
   getAllCareCountsSinceLastFollowupByLineId,
   getAllCareCountsRawByLineId,
+  updateCareTitleByLineId,
 };
