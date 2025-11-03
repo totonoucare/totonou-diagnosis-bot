@@ -15,7 +15,7 @@ function buildCareButtonsFlex() {
     type: "button",
     style: "primary",
     height: "sm",
-    color: "#C6A047",
+    color: "#C69D54",
     action: { type: "message", label, text: `${label}完了☑️` },
   }));
 
@@ -36,7 +36,7 @@ function buildCareButtonsFlex() {
             color: "#ffffff",
           },
         ],
-        backgroundColor: "#C6A047",
+        backgroundColor: "#C69D54",
         paddingAll: "12px",
         cornerRadius: "12px",
       },
