@@ -17,7 +17,7 @@ module.exports = async function handleCarelog(event, client, lineId, userMessage
     "巡りととのう呼吸法完了☑️": "breathing",
     "経絡ストレッチ完了☑️": "stretch",
     "指先・ツボケア完了☑️": "tsubo",
-    "漢方薬服用完了☑️": "kampo",
+    "漢方薬(任意)完了☑️": "kampo",
   };
   const pillarKey = CARE_BY_TEXT[userMessage];
   if (pillarKey) {
