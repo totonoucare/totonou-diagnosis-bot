@@ -145,7 +145,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           },
           {
             type: "text",
-            text: `体質タイプ分析もセルフケアフォローも健康相談も、すべてLINEひとつで。🔗 公式LINE登録はこちら\n${shareUrl}`,
+            text: `体質タイプ分析もセルフケアサポートも健康相談も、すべてLINEひとつで。🔗 公式LINE登録はこちら\n${shareUrl}`,
           },
         ]);
         return;
@@ -337,7 +337,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
           } else if (!handleFollowup.hasSession(lineId)) {
             await client.replyMessage(event.replyToken, {
               type: "text",
-              text: "ととのい度チェックを始めるには、メニューバーの【定期チェックナビ】をタップしてください。",
+              text: "ととのい度チェックを始めるには、メニューの【ととのい度チェック】ボタンをタップしてください。",
             });
           }
         } catch (err) {
