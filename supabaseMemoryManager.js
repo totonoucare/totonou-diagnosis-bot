@@ -618,12 +618,12 @@ async function updateCareTitleByLineId(lineId, pillar, title) {
 
   if (userErr || !userRow) throw userErr || new Error("ユーザーが見つかりません");
 
-  const careTitles = userRow.care_titles || {};
-  careTitles[pillar] = title;
+  const oldTitles = userRow.care_titles || {};
+  const newTitles = { ...oldTitles, [pillar]: title }; // ← JSONマージ
 
   const { error: updErr } = await supabase
     .from(USERS_TABLE)
-    .update({ care_titles: careTitles })
+    .update({ care_titles: newTitles })
     .eq("id", userRow.id);
 
   if (updErr) throw updErr;
