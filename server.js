@@ -103,7 +103,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#7B9E76",
                   action: {
                     type: "uri",
-                    label: "🌐 ととのうケアナビとは",
+                    label: "🌐 ご利用の流れ",
                     uri: "https://totonoucare.com/#flow"
                   }
                 },
