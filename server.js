@@ -104,7 +104,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   action: {
                     type: "uri",
                     label: "🌐 ととのうケアナビとは",
-                    uri: "https://totonoucare.com"
+                    uri: "https://totonoucare.com/#flow"
                   }
                 },
                 {
