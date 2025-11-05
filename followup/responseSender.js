@@ -364,7 +364,7 @@ const systemPrompt = `
 - **セルフケア実施努力点（actionScoreFinal）**  
 　期間中にどれだけケアを実践できたか（行動密度）。  
 　生活系4柱（habits, breathing, stretch, tsubo）を重視し、  
-　漢方（kampo）は0.25倍の補助加点。
+　漢方・サプリ（kampo）は0.25倍の補助加点。
 
 - **ケア効果反映度（careEffectScore）**  
 　行動スコアを「努力の信頼性」として重み付けし、  
@@ -388,7 +388,7 @@ const systemPrompt = `
 　体質分析時に最も伸展負担がかかる経絡ラインの伸展動作(motion)をもとに、対応する経絡ラインのストレッチやツボ刺激でその経絡ラインの筋膜テンションを緩め、関連臓腑(organType)の乱れも整え、不調(主訴)の改善にもつながる。
   motion_level の改善はこの経絡ケアの成果指標となる。
 
-4. kampo（漢方）：
+4. kampo（漢方・栄養サプリ）：
 　他のセルフケア（habits, breathing, stretch, tsubo）を一定期間継続しても
 　体調や motion_level の改善が停滞している場合、
 　補助的な手段として体質・弁証に基づいた漢方を取り入れることを検討します。
