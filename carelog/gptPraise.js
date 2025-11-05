@@ -15,7 +15,7 @@ const CARE_LABEL_DISPLAY = {
   breathing: "巡りととのう呼吸法",
   stretch: "経絡ストレッチ",
   tsubo: "指先・ツボケア",
-  kampo: "漢方薬（任意）",
+  kampo: "漢方・サプリ（任意）",
 };
 
 // 💬 内部処理・称号用（短い）
@@ -24,7 +24,7 @@ const CARE_LABEL = {
   breathing: "呼吸法",
   stretch: "ストレッチ",
   tsubo: "ツボケア",
-  kampo: "漢方ケア",
+  kampo: "漢方・サプリ",
 };
 
 // 🌈 ケア別トーン絵文字
