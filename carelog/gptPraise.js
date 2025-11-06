@@ -67,7 +67,7 @@ function buildCareButtonsFlex() {
     breathing: { label: "巡りととのう呼吸法", text: "呼吸法完了☑️" },
     stretch: { label: "経絡ストレッチ", text: "ストレッチ完了☑️" },
     tsubo: { label: "指先・ツボケア", text: "ツボケア完了☑️" },
-    kampo: { label: "漢方薬（任意）", text: "漢方ケア完了☑️" },
+    kampo: { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
   };
 
   const buttons = Object.entries(BUTTON_CONFIG).map(([key, cfg]) => ({
