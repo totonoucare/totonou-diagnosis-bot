@@ -57,14 +57,14 @@ function buildFlexFromText(aiText) {
     if (/^[-・]/.test(trimmed)) {
       // 「-」や「・」を「•」に変換
       line = trimmed.replace(/^[-・]\s*/, "• ");
-      bulletColor = "#3b5d40";
+      bulletColor = "#2E6417";
     } else if (/^\d+\./.test(trimmed)) {
       // 数字＋ピリオドを丸数字に変換
       const numMatch = trimmed.match(/^(\d+)\./);
       const num = parseInt(numMatch?.[1] || "0", 10);
       const circle = numToCircle[num] || "•";
       line = trimmed.replace(/^\d+\.\s*/, `${circle} `);
-      bulletColor = "#3b5d40";
+      bulletColor = "#2E6417";
     }
 
     // 🌿 特殊ボタントリガー
@@ -74,7 +74,7 @@ function buildFlexFromText(aiText) {
         type: "text",
         text: cleanText,
         wrap: true,
-        color: isHeading ? "#3b5d40" : (bulletColor || "#222222"),
+        color: isHeading ? "#2E6417" : (bulletColor || "#222222"),
         weight: isHeading ? "bold" : "regular",
       });
       contents.push({
@@ -96,7 +96,7 @@ function buildFlexFromText(aiText) {
         type: "text",
         text: cleanText,
         wrap: true,
-        color: isHeading ? "#3b5d40" : (bulletColor || "#222222"),
+        color: isHeading ? "#2E6417" : (bulletColor || "#222222"),
         weight: isHeading ? "bold" : "regular",
       });
       contents.push({
@@ -117,7 +117,7 @@ function buildFlexFromText(aiText) {
       type: "text",
       text: line.trim(),
       wrap: true,
-      color: isHeading ? "#3b5d40" : (bulletColor || "#222222"),
+      color: isHeading ? "#2E6417" : (bulletColor || "#222222"),
       weight: isHeading ? "bold" : "regular",
     });
   }
