@@ -64,8 +64,8 @@ function buildFlexFromText(aiText) {
       continue;
     }
 
-    if (line.includes("(実施を記録しよう！)")) {
-      const cleanText = line.replace("(実施を記録しよう！)", "").trim();
+    if (line.includes("(記録ボタンへ！)")) {
+      const cleanText = line.replace("(記録ボタンへ！)", "").trim();
       contents.push({
         type: "text",
         text: cleanText,
