@@ -126,16 +126,11 @@ const messages = buildConsultMessages({
   try {
     // ✅ GPT-5 Responses API
     const rsp = await openai.responses.create({
-      model: "gpt-5",
-      input: [
-        {
-          role: "system",
-          content: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
-        },
-      ],
-      reasoning: { effort: "minimal" },
-      text: { verbosity: "medium" },
-    });
+  model: "gpt-5",
+  input: messages, // ← 各roleを分離した配列
+  reasoning: { effort: "minimal" },
+  text: { verbosity: "low" },
+});
 
     // ✅ 出力抽出
     const text =
