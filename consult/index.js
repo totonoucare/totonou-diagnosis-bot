@@ -1,6 +1,6 @@
 /**
  * consult/index.js
- * LINE相談用：GPT-5（Responses API対応・安定版）
+ * LINE相談用：GPT-5（Responses API対応・安定版／Flex対応）
  */
 
 const { OpenAI } = require("openai");
@@ -23,28 +23,94 @@ function isAllowed(user) {
   );
 }
 
-/** LINE返信：reply失敗時はpushで再送 */
-async function safeReplyThenPushFallback({ client, event, text }) {
-  try {
-    await client.replyMessage(event.replyToken, { type: "text", text });
-  } catch (e) {
-    try {
-      await client.pushMessage(event.source.userId, { type: "text", text });
-    } catch (e2) {
-      console.error("reply失敗→pushも失敗:", e2);
-    }
-  }
-}
-
 /** careCounts を1日1回扱いに正規化（followupと共通仕様） */
-// ✅ supabaseMemoryManager 側ですでに distinct day 集計済みなので再正規化不要
 function normalizeCareCountsPerDay(careCounts) {
   if (!careCounts || typeof careCounts !== "object") return {};
   const normalized = {};
   for (const [pillar, count] of Object.entries(careCounts)) {
-    normalized[pillar] = Number(count) || 0; // 実際の回数（日数）をそのまま保持
+    normalized[pillar] = Number(count) || 0;
   }
   return normalized;
+}
+
+function buildFlexFromText(aiText) {
+  const contents = [];
+  const lines = aiText.split(/\r?\n/).filter((l) => l.trim() !== "");
+
+  for (const line of lines) {
+    // 見出し判定：行頭が絵文字＋文末が「：」の場合
+    const isHeading = /^[\p{Emoji}\p{So}].+[:：]\s*$/u.test(line.trim());
+
+    // 特殊ボタントリガー
+    if (line.includes("(図解はケアガイドへ！)")) {
+      const cleanText = line.replace("(図解はケアガイドへ！)", "").trim();
+      contents.push({
+        type: "text",
+        text: cleanText,
+        wrap: true,
+        color: isHeading ? "#3b5d40" : "#222222",
+        weight: isHeading ? "bold" : "regular"
+      });
+      contents.push({
+        type: "button",
+        style: "link",
+        height: "sm",
+        action: {
+          type: "message",
+          label: "📘 ととのうケアガイドを開く",
+          text: "ととのうケアガイド",
+        },
+      });
+      continue;
+    }
+
+    if (line.includes("(実施を記録しよう！)")) {
+      const cleanText = line.replace("(実施を記録しよう！)", "").trim();
+      contents.push({
+        type: "text",
+        text: cleanText,
+        wrap: true,
+        color: isHeading ? "#3b5d40" : "#222222",
+        weight: isHeading ? "bold" : "regular"
+      });
+      contents.push({
+        type: "button",
+        style: "link",
+        height: "sm",
+        action: {
+          type: "message",
+          label: "🧘‍♀️ 実施記録する",
+          text: "実施記録",
+        },
+      });
+      continue;
+    }
+
+    // 通常テキスト行
+    contents.push({
+      type: "text",
+      text: line.trim(),
+      wrap: true,
+      color: isHeading ? "#3b5d40" : "#222222",
+      weight: isHeading ? "bold" : "regular"
+    });
+  }
+
+  return {
+    type: "flex",
+    altText: "AIからのアドバイス",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        backgroundColor: "#f8f9f7",
+        contents,
+      },
+    },
+  };
 }
 
 module.exports = async function consult(event, client) {
@@ -57,18 +123,16 @@ module.exports = async function consult(event, client) {
     user = await getUser(lineId);
   } catch (err) {
     console.error("getUser失敗:", err);
-    return safeReplyThenPushFallback({
-      client,
-      event,
+    return client.replyMessage(event.replyToken, {
+      type: "text",
       text: "ユーザー情報の取得に失敗しました🙏\n一度メニューから診断を受け直してください。",
     });
   }
 
   if (!isAllowed(user)) {
     const subscribeUrl = `https://totonoucare.com/subscribe/?line_id=${lineId}`;
-    return safeReplyThenPushFallback({
-      client,
-      event,
+    return client.replyMessage(event.replyToken, {
+      type: "text",
       text:
         "恐れ入りますが、この機能はサブスク利用ユーザー様またはトライアル中のユーザー様限定となります🙏\n" +
         "ご利用希望は『サービス案内』→ サブスク登録をご確認ください。\n\n" +
@@ -85,25 +149,17 @@ module.exports = async function consult(event, client) {
       getLastNConsultMessages(user.id, 3),
     ]);
 
-    // 🔹短期：前回followup以降の実施日数（すでに supabase 側で1日1回に丸め済み）
     const shortTermCareCounts =
       await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
-
-    // 🔹長期：context作成日以降の実施日数（こっちも supabase 側で1日1回に丸め済み）
     const longTermCareCounts =
       await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, { includeContext: true });
 
-    // 🔹画面・回答のメイン基準は短期
     careCounts = shortTermCareCounts;
-
-    // 🔹GPTに「短期＋長期」両方を渡せるように
     extraCareCounts = { shortTermCareCounts, longTermCareCounts };
-
   } catch (err) {
     console.error("データ取得失敗:", err);
-    return safeReplyThenPushFallback({
-      client,
-      event,
+    return client.replyMessage(event.replyToken, {
+      type: "text",
       text: "データの取得に失敗しました🙏\n少し時間をおいてから、もう一度お試しください。",
     });
   }
@@ -113,24 +169,24 @@ module.exports = async function consult(event, client) {
     console.warn("save user msg fail", e)
   );
 
-  // 🔹プロンプト生成（careCounts追加済み）
-const messages = buildConsultMessages({
-  context,
-  followups,
-  userText,
-  recentChats,
-  careCounts,
-  extraCareCounts, // ← 長期データ追加！
-});
+  // 🔹プロンプト生成
+  const messages = buildConsultMessages({
+    context,
+    followups,
+    userText,
+    recentChats,
+    careCounts,
+    extraCareCounts,
+  });
 
   try {
-    // ✅ GPT-5 Responses API
+    // ✅ GPT-5 Responses API呼び出し
     const rsp = await openai.responses.create({
-  model: "gpt-5",
-  input: messages, // ← 各roleを分離した配列
-  reasoning: { effort: "minimal" },
-  text: { verbosity: "low" },
-});
+      model: "gpt-5",
+      input: messages,
+      reasoning: { effort: "minimal" },
+      text: { verbosity: "medium" },
+    });
 
     // ✅ 出力抽出
     const text =
@@ -141,8 +197,11 @@ const messages = buildConsultMessages({
 
     console.log("GPT出力:", text);
 
-    // ✅ LINEへ返信
-    await safeReplyThenPushFallback({ client, event, text });
+    // ✅ テキストをFlexに変換
+    const flexMessage = buildFlexFromText(text);
+
+    // ✅ Flexを返信（pushなし）
+    await client.replyMessage(event.replyToken, flexMessage);
 
     // 🔹AI応答ログ保存
     saveConsultMessage(user.id, "assistant", text).catch((e) =>
@@ -151,9 +210,8 @@ const messages = buildConsultMessages({
 
   } catch (err) {
     console.error("OpenAI呼び出し失敗:", err);
-    safeReplyThenPushFallback({
-      client,
-      event,
+    await client.replyMessage(event.replyToken, {
+      type: "text",
       text: "ただいまAIの応答が混み合っています🙏\n少し時間をおいて、もう一度お試しください。",
     });
   }
