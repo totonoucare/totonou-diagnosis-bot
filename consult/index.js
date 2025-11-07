@@ -37,24 +37,42 @@ function buildFlexFromText(aiText) {
   const contents = [];
   const lines = aiText.split(/\r?\n/).filter((l) => l.trim() !== "");
 
-  for (const line of lines) {
-    // 見出し判定：行頭が絵文字＋文末が「：」の場合
-    const isHeading = /^[\p{Emoji}\p{So}].+[:：]\s*$/u.test(line.trim());
+  // ❶〜❿ 対応マップ
+  const circledNums = ["❶", "❷", "❸", "❹", "❺", "❻", "❼", "❽", "❾", "❿"];
 
-    // 特殊ボタントリガー
-    if (line.includes("(図解はケアガイドへ！)")) {
-      const cleanText = line.replace("(図解はケアガイドへ！)", "").trim();
+  for (const line of lines) {
+    let textLine = line.trim();
+
+    // 🌿 見出し判定：行頭が絵文字＋文末が「：」の場合
+    const isHeading = /^[\p{Emoji}\p{So}].+[:：]\s*$/u.test(textLine);
+
+    // 🌿 箇条書き変換
+    // - や ・ で始まる場合 → "•" に統一
+    if (/^\s*[-・]/.test(textLine)) {
+      textLine = textLine.replace(/^\s*[-・]\s*/, "• ");
+    }
+
+    // 数字＋. や 数字＋) の場合 → 囲み数字に変換（1〜10のみ）
+    textLine = textLine.replace(/^(\d+)[\.\)]\s*/, (_, num) => {
+      const n = parseInt(num, 10);
+      return circledNums[n - 1] ? `${circledNums[n - 1]} ` : `${num}. `;
+    });
+
+    // 🌿 特殊ボタントリガー：ケアガイド
+    if (textLine.includes("(図解はケアガイドへ！)")) {
+      const cleanText = textLine.replace("(図解はケアガイドへ！)", "").trim();
       contents.push({
         type: "text",
         text: cleanText,
         wrap: true,
         color: isHeading ? "#3b5d40" : "#222222",
-        weight: isHeading ? "bold" : "regular"
+        weight: isHeading ? "bold" : "regular",
       });
       contents.push({
         type: "button",
         style: "link",
         height: "sm",
+        color: "#f8f9f7",
         action: {
           type: "message",
           label: "📘 ととのうケアガイドを開く",
@@ -64,19 +82,21 @@ function buildFlexFromText(aiText) {
       continue;
     }
 
-    if (line.includes("(記録ボタンへ！)")) {
-      const cleanText = line.replace("(記録ボタンへ！)", "").trim();
+    // 🌿 特殊ボタントリガー：実施記録
+    if (textLine.includes("(記録ボタンへ！)")) {
+      const cleanText = textLine.replace("(記録ボタンへ！)", "").trim();
       contents.push({
         type: "text",
         text: cleanText,
         wrap: true,
         color: isHeading ? "#3b5d40" : "#222222",
-        weight: isHeading ? "bold" : "regular"
+        weight: isHeading ? "bold" : "regular",
       });
       contents.push({
         type: "button",
         style: "link",
         height: "sm",
+        color: "#f8f9f7",
         action: {
           type: "message",
           label: "🧘‍♀️ 実施記録する",
@@ -86,16 +106,21 @@ function buildFlexFromText(aiText) {
       continue;
     }
 
-    // 通常テキスト行
+    // 🌿 通常テキスト行
     contents.push({
       type: "text",
-      text: line.trim(),
+      text: textLine,
       wrap: true,
-      color: isHeading ? "#3b5d40" : "#222222",
-      weight: isHeading ? "bold" : "regular"
+      color: isHeading
+        ? "#3b5d40" // 見出しのみ濃いグリーン
+        : /^•|^❶|^❷|^❸|^❹|^❺|^❻|^❼|^❽|^❾|^❿/.test(textLine)
+        ? "#3b5d40" // 箇条書きもグリーン
+        : "#222222", // 通常黒
+      weight: isHeading ? "bold" : "regular",
     });
   }
 
+  // 🌿 最終Flex
   return {
     type: "flex",
     altText: "AIからのアドバイス",
