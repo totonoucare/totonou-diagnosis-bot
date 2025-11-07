@@ -4,6 +4,15 @@
 // 「ととのい度チェック」は体調スコア、「ケアログ」は日々の実践記録として扱う。
 // ===========================================
 
+const legend_v1 = require("./cache/legend_v1");
+const rule_v1 = require("./cache/rule_v1");
+const structure_v1 = require("./cache/structure_v1");
+
+// ===========================================
+// AI相談用プロンプト生成：contexts / followups / careLogs / 直近チャット3件を参照
+// ===========================================
+
+
 function normalizeAdvice(advice) {
   if (!advice) return null;
 
@@ -86,86 +95,38 @@ function normalizeCareCountsPerDay(rawCounts = {}) {
 }
 
 
-/**
- * ▼ GPT向けスコア・ケアログ構造説明
- * （Q3の「実施度」質問は廃止。care_logs_daily により日次記録を自動カウント）
- */
-function buildScoreLegend() {
-  const lines = [
-    "▼ ととのい度チェックとは？",
-    "・体の状態を数値で自己評価するチェックです。symptom_level（主訴の強さ）と、生活リズム指標（sleep / meal / stress）および動作時のつらさ（motion_level）を1〜5で入力します。",
-    "・数値は 1 が良好、5 が乱れ・つらさの強い状態を示します。",
-    "・ケアの実施状況は別の仕組み（care_logs_daily）で自動的に保存されます。",
-    "",
-    "▼ ケアログ（care_logs_daily）とは？",
-    "・ユーザーが実施ボタンを押すことで、体質改善習慣・呼吸法・ストレッチ・ツボ刺激・漢方の各セルフケア項目が記録されます。",
-    "・同一日に同じケアを複数回行っても1回として扱われます。",
-    "・直近の『ととのい度チェック』から次のチェックまでの期間で集計します。",
-    "",
-    "▼ 因果構造（整いのメカニズム）",
-    "1. habits（体質改善習慣） ↔ sleep / meal / stress → symptom_level：",
-    "　体質分析で把握された気・血・津液・寒熱のバランスを整える基盤ケア。生活習慣を整えることで睡眠・食事・ストレスのリズムが安定し、主訴の改善につながる。",
-    "",
-    "2. breathing（呼吸法） ↔ 構造バランス・腹圧テンション → symptom_level：",
-    "　おへそから指４〜5本くらい上のあたり(中脘)を軽く膨らませる(胸式でもなく、臍下を突き出す呼吸でもない)深呼吸によって、腹圧と体幹テンションが安定し、姿勢と循環が整いやすくなる。構造的な安定が、全身の“整い”を支える。",
-    "",
-    "3. motion_level ↔ stretch / tsubo → symptom_level：",
-    "　体質分析時に最も負担があった経絡動作(motion)をもとに、ストレッチやツボ刺激でその経絡ラインのテンション(筋膜ライン)を緩め、関連臓腑のバランスも整える。motion_level の改善はこの経絡ケアの成果指標となる。",
-    "",
-    "4. kampo（漢方やサプリ）：",
-    "　セルフケアを続けても改善が停滞している場合、弁証に基づく漢方・栄養学等に基づくサプリを補助的に用いる。ただし依存せず、自律的ケアの補助として扱う。",
-    "",
-    "▼ 評価構造（内部算出）",
-    "・セルフケア実施努力点（actionScoreFinal）：前回チェック以降(初回なら体質分析以降)、どれだけ提案されたケアを実践できたか（行動密度）。",
-    "・ケア効果反映度（careEffectScore）：努力がどれだけ体調改善に反映されたか（行動×改善）。",
-    "・これら2つのスコアをもとに、総合的な整い度を評価する。",
-  ];
-  return lines.join('\n');
-}
-
-// ===========================================
-// メイン：GPTに渡すプロンプトを組み立てる
-// ===========================================
 module.exports = function buildConsultMessages({
   context,
   followups,
   userText,
   recentChats = [],
   careCounts = {},
-  extraCareCounts = null, // ← 追加
+  extraCareCounts = null,
 }) {
   const ctx = pickContext(context);
   const latest = followups?.latest ?? null;
   const prev = followups?.prev ?? null;
-
-  // ✅ ここは「短期をもう一度1 or 0にしたいとき」だけ使うが、
-  // supabase側ですでに「日数」で来てるので今は素通しでもいい。
-  // ただし壊さないために既存の関数は残しておく。
   const normalizedCareCounts = normalizeCareCountsPerDay(careCounts);
-
-  // 長期（context基準）が来ていたらここでJSON化しておく
   const longTermCareJson = extraCareCounts?.longTermCareCounts
     ? JSON.stringify(extraCareCounts.longTermCareCounts, null, 2)
     : null;
 
   const chatHistory = (recentChats || [])
     .slice(-3)
-    .map((c) => {
-      const role = c?.role === "assistant" ? "assistant" : "user";
-      const content = String(c?.message ?? c?.content ?? "").slice(0, 300);
-      if (!content) return null;
-      return { role, content };
-    })
-    .filter(Boolean);
+    .map((c) => ({
+      role: c?.role === "assistant" ? "assistant" : "user",
+      content: String(c?.message ?? c?.content ?? "").slice(0, 300),
+    }))
+    .filter((c) => c.content);
 
-    const systemHeader = [
+  const systemHeader = [
     "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー『トトノウくん』です。",
     "以下の情報（体質・直近のととのい度チェック・ケア実施状況・過去の相談内容）を踏まえ、ユーザーに寄り添って答えてください。",
     "",
     "▼ 体質・所見（contexts）",
     toJSON(ctx),
     "",
-    "▼ 直近のケア実施記録（すでに『前回のチェック翌日〜今回のチェック当日』で集計済みです。ここから1日引いたり、0に補正したりしないこと）",
+    "▼ 直近のケア実施記録",
     toJSON(normalizedCareCounts),
     "",
     longTermCareJson
@@ -180,39 +141,11 @@ module.exports = function buildConsultMessages({
     "▼ ととのい度チェック（前回）",
     toJSON(prev),
     "",
-    // 🔽🔽 ここに新しいデータ構造の説明ブロックを追記 🔽🔽
-    "### contexts（体質・タイプ情報）",
-    "- type：体質タイプ名（陰虚タイプなど）",
-    "- trait：体質傾向（乾燥で熱がこもりやすい等）",
-    "- flowType：流通病理（気滞・水滞・瘀血）",
-    "- organType：負担が出やすい臓腑（肝・心・脾・肺・腎）",
-    "- motion：最も伸展負担がかかる経絡ラインの伸展動作で、これがorganType判定の指標。",
-    "- symptom：不調主訴（胃腸・肩こり・メンタル・冷えなど）",
-    "- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク",
-    "- created_at：初回登録日（体質分析を終えた日）",
+    structure_v1,
     "",
-    "### followups（ととのい度チェック）",
-    "- symptom_level：不調(主訴)のつらさ（1=軽い〜5=強い）",
-    "- sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）",
-    "- motion_level：最も伸展負担がかかる経絡ラインの伸展動作(motion)を再テストした際のつらさ（1=軽い〜5=強い）",
+    rule_v1,
     "",
-    "### care_logs_daily（ケア記録）",
-    "- habits / breathing / stretch / tsubo / kampo：各ケア項目の「実施日数」。",
-    "- 1日に複数回行っても1日1回としてカウント。値が高いほど、そのケアを行った日が多い。",
-    "",
-    // 🔽🔽 さらに表現ルールをここに追記 🔽🔽
-    "## 🔸 表現ルール（重要）",
-    "- ユーザーへの出力では、**内部データのカラム名（例: motion, sleep, stress, symptom_level など）を直接表記せず、ユーザーが自然に理解できる日本語表現に変換すること。**",
-    "",
-    // 🔽 ここから既存のスコアレジェンドなど続く
-    buildScoreLegend(),
-    "",
-    "【回答方針】",
-    "1) contexts（体質・所見）・followups（体調スコア）・care_logs（実践データ）・直近会話を総合的に考慮し、今の状態に沿った具体的で現実的なアドバイスを提示する。",
-    "2) 相談内容がcontexts.advice（セルフケア提案）と直接関係しない場合も、東洋医学・構造学の観点から適切な方向性を提案してよい。",
-    "3) 表現はLINE向けに短く、250字程度を目安に。段落を分け、絵文字を適度に使ってやさしく伝える。専門用語はやさしく言い換える。",
-    "4) adviceにURL（図解リンク）が含まれる場合は https://〜 の形で紹介（LINEが自動リンク化）。",
-    "5) 医学的診断・処方はしない。重症・急性兆候がある場合は受診案内を優先。",
+    legend_v1,
   ]
     .filter(Boolean)
     .join("\n");
