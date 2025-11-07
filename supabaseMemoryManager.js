@@ -1,5 +1,14 @@
 const supabase = require('./supabaseClient');
 
+// =====================================
+// Contextキャッシュ連携（外部から参照可能）
+// =====================================
+let ctxCache = null; // 外部から渡されるキャッシュオブジェクトを保持
+
+function setContextCacheRef(externalCache) {
+  ctxCache = externalCache;
+}
+
 const CONTEXT_TABLE = 'contexts';
 const USERS_TABLE = 'users';
 const FOLLOWUP_TABLE = 'followups';
@@ -87,15 +96,22 @@ async function markGuideReceived(lineId) {
   if (error) throw error;
 }
 
-// ✅ context保存
-async function saveContext(lineId, score1, score2, score3, flowType, organType, type, traits, adviceCards, symptom, motion, code) {
+// ✅ context保存（再分析時：古いキャッシュを削除）
+async function saveContext(
+  lineId,
+  score1, score2, score3,
+  flowType, organType, type, traits,
+  adviceCards, symptom, motion, code
+) {
   const cleanId = lineId.trim();
+
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id')
     .eq('line_id', cleanId)
     .maybeSingle();
-  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+  if (userError || !userRow)
+    throw userError || new Error('ユーザーが見つかりません');
 
   const payload = {
     user_id: userRow.id,
@@ -114,17 +130,36 @@ async function saveContext(lineId, score1, score2, score3, flowType, organType, 
     .from(CONTEXT_TABLE)
     .insert(payload);
   if (error) throw error;
+
+  // 🧩 再分析時など、新しいcontext保存後はキャッシュを削除
+  if (ctxCache) {
+    try {
+      ctxCache.del(cleanId);
+      console.log(`🧩 Context cache invalidated for lineId=${cleanId}`);
+    } catch (e) {
+      console.warn("ctxCache削除失敗:", e);
+    }
+  }
 }
 
-// ✅ 最新のcontext取得
+// ✅ 最新のcontext取得（キャッシュ対応版）
 async function getContext(lineId) {
   const cleanId = lineId.trim();
+
+  // 🧩 キャッシュにあれば即返す（Supabaseアクセス回避）
+  if (ctxCache && ctxCache.has(cleanId)) {
+    console.log(`⚡ Context cache hit for ${cleanId}`);
+    return ctxCache.get(cleanId);
+  }
+
+  // Supabaseから取得（キャッシュにない場合のみ）
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select('id, guide_received')
     .eq('line_id', cleanId)
     .maybeSingle();
-  if (userError || !userRow) throw userError || new Error('ユーザーが見つかりません');
+  if (userError || !userRow)
+    throw userError || new Error('ユーザーが見つかりません');
 
   const { data: context, error: contextError } = await supabase
     .from(CONTEXT_TABLE)
@@ -133,14 +168,25 @@ async function getContext(lineId) {
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-
   if (contextError) throw contextError;
 
-  return {
+  const fullContext = {
     ...context,
-    start_date: context?.created_at || null,  // ← ここを追加！
-    guide_received: userRow.guide_received || false
+    start_date: context?.created_at || null,
+    guide_received: userRow.guide_received || false,
   };
+
+  // 🧩 キャッシュに保存（次回以降の高速化）
+  if (ctxCache) {
+    try {
+      ctxCache.set(cleanId, fullContext);
+      console.log(`💾 Context cached for ${cleanId}`);
+    } catch (e) {
+      console.warn("ctxCache保存失敗:", e);
+    }
+  }
+
+  return fullContext;
 }
 
 // ✅ フォローアップ回答保存（5分以内の重複送信を防止）
@@ -671,4 +717,5 @@ module.exports = {
   getAllCareCountsRawByLineId,
   updateCareTitleByLineId,
   getCareTitlesByLineId,
+  setContextCacheRef,
 };
