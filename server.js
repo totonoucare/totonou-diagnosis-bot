@@ -1,3 +1,7 @@
+// =====================================
+// 🚀 server.js（最終形）
+// =====================================
+
 const express = require("express");
 const line = require("@line/bot-sdk");
 const diagnosis = require("./diagnosis/index");
@@ -5,19 +9,42 @@ const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const {
   buildChatConsultOptionsFlex,
-  buildCategorySelectionFlex, 
-  buildDiagnosisConfirmFlex, 
-  buildFollowupConfirmFlex, 
+  buildCategorySelectionFlex,
+  buildDiagnosisConfirmFlex,
+  buildFollowupConfirmFlex,
   buildTotonouConsultExamplesFlex,
 } = require("./utils/flexBuilder");
 const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
 
+// =====================================
+// 🧠 Supabase Memory キャッシュ初期化
+// =====================================
+const LRU = require("lru-cache");
+const supabaseMemoryManager = require("./supabaseMemoryManager");
+
+// Contextキャッシュを1時間保持（最大100ユーザー）
+const ctxCache = new LRU({
+  max: 100,                  // 最大100ユーザー分キャッシュ
+  ttl: 1000 * 60 * 60,       // 1時間で期限切れ（必要なら6時間などに変更可）
+});
+
+// キャッシュを supabaseMemoryManager に登録
+supabaseMemoryManager.setContextCacheRef(ctxCache);
+
+// =====================================
+// 他モジュールの読み込み
+// =====================================
+
 // ★ AI相談 本体（常時オンで呼び出す）
 const consult = require("./consult/index");
 
+// 実施記録ハンドラ
 const handleCarelog = require("./carelog/index");
 
+// =====================================
+// Express アプリ設定
+// =====================================
 const app = express();
 const port = process.env.PORT || 3000;
 
