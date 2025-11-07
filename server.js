@@ -18,13 +18,13 @@ const stripeWebhook = require("./stripeWebhook");
 const stripeCheckout = require("./routes/stripeCheckout");
 
 // =====================================
-// 🧠 Supabase Memory キャッシュ初期化
+// 🧠 Supabase Memory キャッシュ初期化（最新版対応）
 // =====================================
-const LRU = require("lru-cache");
+const { LRUCache } = require("lru-cache");
 const supabaseMemoryManager = require("./supabaseMemoryManager");
 
 // Contextキャッシュを1時間保持（最大100ユーザー）
-const ctxCache = new LRU({
+const ctxCache = new LRUCache({
   max: 100,                  // 最大100ユーザー分キャッシュ
   ttl: 1000 * 60 * 60,       // 1時間で期限切れ（必要なら6時間などに変更可）
 });
