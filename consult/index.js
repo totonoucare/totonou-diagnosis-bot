@@ -50,19 +50,19 @@ function buildFlexFromText(aiText) {
     const isHeading = /^[\p{Emoji}\p{So}].+[:：]\s*$/u.test(trimmed);
 
     // 🌿 箇条書き変換
-    // 例: "- 朝は白湯を飲む" → "• 朝は白湯を飲む"
+    // 例: "- 朝は白湯を飲む" → "◦ 朝は白湯を飲む"
     //     "1. 水分をとる" → "❶ 水分をとる"
     let bulletColor = null;
 
     if (/^[-・]/.test(trimmed)) {
-      // 「-」や「・」を「•」に変換
-      line = trimmed.replace(/^[-・]\s*/, "• ");
+      // 「-」や「・」を「◦」に変換
+      line = trimmed.replace(/^[-・]\s*/, "◦ ");
       bulletColor = "#2E6417";
     } else if (/^\d+\./.test(trimmed)) {
       // 数字＋ピリオドを丸数字に変換
       const numMatch = trimmed.match(/^(\d+)\./);
       const num = parseInt(numMatch?.[1] || "0", 10);
-      const circle = numToCircle[num] || "•";
+      const circle = numToCircle[num] || "◦";
       line = trimmed.replace(/^\d+\.\s*/, `${circle} `);
       bulletColor = "#2E6417";
     }
@@ -83,7 +83,7 @@ function buildFlexFromText(aiText) {
         height: "sm",
         action: {
           type: "message",
-          label: "📘 ととのうケアガイドを開く",
+          label: "📘 ケアガイドで図解チェック",
           text: "ととのうケアガイド",
         },
       });
@@ -105,7 +105,7 @@ function buildFlexFromText(aiText) {
         height: "sm",
         action: {
           type: "message",
-          label: "🧘‍♀️ 実施記録する",
+          label: "🧘‍♀️ ケア実施を記録する",
           text: "実施記録",
         },
       });
