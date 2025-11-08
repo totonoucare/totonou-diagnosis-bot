@@ -37,7 +37,6 @@ function buildFlexFromText(aiText) {
   const contents = [];
   const lines = aiText.split(/\r?\n/).filter((l) => l.trim() !== "");
 
-  // 数字→丸数字の変換マップ
   const numToCircle = {
     1: "❶", 2: "❷", 3: "❸", 4: "❹", 5: "❺",
     6: "❻", 7: "❼", 8: "❽", 9: "❾", 10: "❿",
@@ -46,22 +45,21 @@ function buildFlexFromText(aiText) {
   for (let line of lines) {
     const trimmed = line.trim();
 
-    // 🌿 見出し判定：行頭が絵文字＋文末が「：」の場合
-    const isHeading = /^[\p{Emoji}\p{So}].+[:：]\s*$/u.test(trimmed);
+    // 👇ここをゆるくした
+    // 文末が : または ： なら見出しとみなす
+    const isHeading = /[:：]\s*$/.test(trimmed);
 
-    // 🌿 箇条書き変換
+    // 箇条書き変換
     if (/^[-・]/.test(trimmed)) {
-      // 「-」や「・」を「❖」に変換
-      line = trimmed.replace(/^[-・]\s*/, "❖ ");
+      line = trimmed.replace(/^[-・]\s*/, "◦ ");
     } else if (/^\d+\./.test(trimmed)) {
-      // 数字＋ピリオドを丸数字に変換
       const numMatch = trimmed.match(/^(\d+)\./);
       const num = parseInt(numMatch?.[1] || "0", 10);
-      const circle = numToCircle[num] || "❖";
+      const circle = numToCircle[num] || "◦";
       line = trimmed.replace(/^\d+\.\s*/, `${circle} `);
     }
 
-    // 🌿 特殊ボタントリガー（ケアガイド）
+    // 特殊トリガー(図解)
     if (line.includes("(図解はケアガイドへ！)")) {
       const cleanText = line.replace("(図解はケアガイドへ！)", "").trim();
       contents.push({
@@ -78,14 +76,14 @@ function buildFlexFromText(aiText) {
         height: "sm",
         action: {
           type: "message",
-          label: "📗 図解はケアガイドへ！",
+          label: "📘 ケアガイドで図解チェック",
           text: "ととのうケアガイド",
         },
       });
       continue;
     }
 
-    // 🌿 特殊ボタントリガー（実施記録）
+    // 特殊トリガー(記録)
     if (line.includes("(記録ボタンへ！)")) {
       const cleanText = line.replace("(記録ボタンへ！)", "").trim();
       contents.push({
@@ -109,7 +107,7 @@ function buildFlexFromText(aiText) {
       continue;
     }
 
-    // 🌿 通常テキスト行
+    // 通常行
     contents.push({
       type: "text",
       text: line.trim(),
@@ -119,7 +117,6 @@ function buildFlexFromText(aiText) {
     });
   }
 
-  // 🌿 Flex構築
   return {
     type: "flex",
     altText: "AIからのアドバイス",
