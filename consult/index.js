@@ -74,7 +74,7 @@ function buildFlexFromText(aiText) {
         type: "text",
         text: cleanText,
         wrap: true,
-        color: isHeading ? "#2E6417" : (bulletColor || "#222222"),
+        color: isHeading ? "#222222" : (bulletColor || "#222222"),
         weight: isHeading ? "bold" : "regular",
       });
       contents.push({
@@ -96,7 +96,7 @@ function buildFlexFromText(aiText) {
         type: "text",
         text: cleanText,
         wrap: true,
-        color: isHeading ? "#2E6417" : (bulletColor || "#222222"),
+        color: isHeading ? "#222222" : (bulletColor || "#222222"),
         weight: isHeading ? "bold" : "regular",
       });
       contents.push({
@@ -117,7 +117,7 @@ function buildFlexFromText(aiText) {
       type: "text",
       text: line.trim(),
       wrap: true,
-      color: isHeading ? "#2E6417" : (bulletColor || "#222222"),
+      color: isHeading ? "#222222" : (bulletColor || "#222222"),
       weight: isHeading ? "bold" : "regular",
     });
   }
