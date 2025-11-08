@@ -51,13 +51,13 @@ function buildFlexFromText(aiText) {
 
     // 🌿 箇条書き変換
     if (/^[-・]/.test(trimmed)) {
-      // 「-」や「・」を「◦」に変換
-      line = trimmed.replace(/^[-・]\s*/, "◦ ");
+      // 「-」や「・」を「❖」に変換
+      line = trimmed.replace(/^[-・]\s*/, "❖ ");
     } else if (/^\d+\./.test(trimmed)) {
       // 数字＋ピリオドを丸数字に変換
       const numMatch = trimmed.match(/^(\d+)\./);
       const num = parseInt(numMatch?.[1] || "0", 10);
-      const circle = numToCircle[num] || "◦";
+      const circle = numToCircle[num] || "❖";
       line = trimmed.replace(/^\d+\.\s*/, `${circle} `);
     }
 
@@ -78,7 +78,7 @@ function buildFlexFromText(aiText) {
         height: "sm",
         action: {
           type: "message",
-          label: "📘 ケアガイドで図解チェック",
+          label: "📗 図解はケアガイドへ！",
           text: "ととのうケアガイド",
         },
       });
