@@ -50,36 +50,31 @@ function buildFlexFromText(aiText) {
     const isHeading = /^[\p{Emoji}\p{So}].+[:：]\s*$/u.test(trimmed);
 
     // 🌿 箇条書き変換
-    // 例: "- 朝は白湯を飲む" → "◦ 朝は白湯を飲む"
-    //     "1. 水分をとる" → "❶ 水分をとる"
-    let bulletColor = null;
-
     if (/^[-・]/.test(trimmed)) {
       // 「-」や「・」を「◦」に変換
       line = trimmed.replace(/^[-・]\s*/, "◦ ");
-      bulletColor = "#2E6417";
     } else if (/^\d+\./.test(trimmed)) {
       // 数字＋ピリオドを丸数字に変換
       const numMatch = trimmed.match(/^(\d+)\./);
       const num = parseInt(numMatch?.[1] || "0", 10);
       const circle = numToCircle[num] || "◦";
       line = trimmed.replace(/^\d+\.\s*/, `${circle} `);
-      bulletColor = "#2E6417";
     }
 
-    // 🌿 特殊ボタントリガー
+    // 🌿 特殊ボタントリガー（ケアガイド）
     if (line.includes("(図解はケアガイドへ！)")) {
       const cleanText = line.replace("(図解はケアガイドへ！)", "").trim();
       contents.push({
         type: "text",
         text: cleanText,
         wrap: true,
-        color: isHeading ? "#222222" : (bulletColor || "#222222"),
+        color: "#000000",
         weight: isHeading ? "bold" : "regular",
       });
       contents.push({
         type: "button",
-        style: "link",
+        style: "primary",
+        color: "#7B9E76",
         height: "sm",
         action: {
           type: "message",
@@ -90,18 +85,20 @@ function buildFlexFromText(aiText) {
       continue;
     }
 
+    // 🌿 特殊ボタントリガー（実施記録）
     if (line.includes("(記録ボタンへ！)")) {
       const cleanText = line.replace("(記録ボタンへ！)", "").trim();
       contents.push({
         type: "text",
         text: cleanText,
         wrap: true,
-        color: isHeading ? "#222222" : (bulletColor || "#222222"),
+        color: "#000000",
         weight: isHeading ? "bold" : "regular",
       });
       contents.push({
         type: "button",
-        style: "link",
+        style: "primary",
+        color: "#7B9E76",
         height: "sm",
         action: {
           type: "message",
@@ -117,7 +114,7 @@ function buildFlexFromText(aiText) {
       type: "text",
       text: line.trim(),
       wrap: true,
-      color: isHeading ? "#222222" : (bulletColor || "#222222"),
+      color: "#000000",
       weight: isHeading ? "bold" : "regular",
     });
   }
