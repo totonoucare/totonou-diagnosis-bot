@@ -138,9 +138,7 @@ module.exports = function buildConsultMessages({
     "▼ ととのい度チェック（直近のチェック結果）",
     toJSON(latest),
     "",
-    "▼ ととのい度チェック（1つ前のチェック結果）",
-    toJSON(prev),
-    "",
+
     structure_v1,
     "",
     rule_v1,
