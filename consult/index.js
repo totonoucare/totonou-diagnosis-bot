@@ -198,23 +198,24 @@ module.exports = async function consult(event, client) {
   });
 
   try {
-    // ✅ GPT呼び出し＋思考時間計測
-    const start = Date.now();
-    const rsp = await openai.responses.create({
-      model: "gpt-5",
-      input: messages,
-      reasoning: { effort: "minimal" },
-      text: { verbosity: "low" },
-    });
-    const duration = (Date.now() - start) / 1000; // 秒換算
+// ✅ GPT呼び出し＋思考時間計測
+const start = Date.now();
 
-    const text =
-      rsp.output_text ||
-      rsp.output?.[0]?.content?.map((c) => c.text).join("\n") ||
-      rsp.output?.[0]?.content?.[0]?.text ||
-      "（すみません、回答を生成できませんでした）";
+const promptText = messages
+  .map((m) => `${m.role}: ${m.content}`)
+  .join("\n");
 
-    console.log(`GPT出力 (${duration.toFixed(1)}秒):`, text);
+const rsp = await openai.responses.create({
+  model: "gpt-5",
+  input: promptText,
+  reasoning: { effort: "minimal" },
+  text: { verbosity: "low" },
+});
+
+const duration = (Date.now() - start) / 1000;
+const text = rsp.output_text?.trim() || "（すみません、回答を生成できませんでした）";
+
+console.log(`GPT出力 (${duration.toFixed(1)}秒):`, text);
 
 
     // ✅ テキストをFlexに変換
