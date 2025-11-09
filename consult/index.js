@@ -206,7 +206,7 @@ module.exports = async function consult(event, client) {
       model: "gpt-5",
       input: messages,
       reasoning: { effort: "minimal" },
-      text: { verbosity: "low" },
+
     });
 
     // ✅ 出力抽出
