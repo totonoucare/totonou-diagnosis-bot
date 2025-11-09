@@ -140,37 +140,35 @@ function judgeStagnation(reflectionHistory) {
 }
 
 /* ---------------------------
-   2) GPT呼び出しラッパ
+   2) GPT呼び出しラッパ（Responses API正式版）
 --------------------------- */
 
 async function callTotonouGPT(systemPrompt, userPrompt) {
   try {
     const rsp = await openai.responses.create({
       model: "gpt-5",
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      input: `${systemPrompt}\n\n${userPrompt}`,
+      response_format: { type: "json_object" }, // ✅ JSONを直接受け取る
       reasoning: { effort: "minimal" },
       text: { verbosity: "medium" },
     });
 
-    let raw = rsp.output_text?.trim() || "";
-    if (raw.startsWith("```")) {
-      raw = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-    }
-
-    try {
-      return JSON.parse(raw);
-    } catch {
-      const s = raw.indexOf("{");
-      const e = raw.lastIndexOf("}");
-      if (s >= 0 && e > s) return JSON.parse(raw.slice(s, e + 1));
-      return null;
-    }
+    // ✅ Responses APIでは自動でJSONパースされる
+    return rsp.output_parsed;
   } catch (err) {
     console.error("❌ callTotonouGPT error:", err);
-    return null;
+
+    // フォールバック（念のため）
+    try {
+      const raw =
+        err.response?.output_text ||
+        err.response?.output?.[0]?.content?.map((c) => c.text).join("\n") ||
+        "";
+      return JSON.parse(raw);
+    } catch (e2) {
+      console.warn("⚠️ JSONフォールバック失敗:", e2);
+      return null;
+    }
   }
 }
 
