@@ -218,7 +218,7 @@ module.exports = async function consult(event, client) {
 
 
     // ✅ テキストをFlexに変換
-    const flexMessage = buildFlexFromText(text);
+    const flexMessage = buildFlexFromText(text, duration);
 
     // ✅ Flexを返信（pushなし）
     await client.replyMessage(event.replyToken, flexMessage);
