@@ -1,6 +1,6 @@
 /**
  * consult/index.js
- * LINE相談用：GPT-5（Responses API対応・安定版／Flex対応）
+ * LINE相談用：GPT-5（Responses API対応・安定版／Flex対応／思考時間表示付き）
  */
 
 const { OpenAI } = require("openai");
@@ -23,20 +23,24 @@ function isAllowed(user) {
   );
 }
 
-/** careCounts を1日1回扱いに正規化（followupと共通仕様） */
-function normalizeCareCountsPerDay(careCounts) {
-  if (!careCounts || typeof careCounts !== "object") return {};
-  const normalized = {};
-  for (const [pillar, count] of Object.entries(careCounts)) {
-    normalized[pillar] = Number(count) || 0;
-  }
-  return normalized;
-}
-
-function buildFlexFromText(aiText) {
+// 🌿 Flex生成関数（🧠思考時間対応）
+function buildFlexFromText(aiText, thinkingTimeSec) {
   const contents = [];
-  const lines = aiText.split(/\r?\n/).filter((l) => l.trim() !== "");
 
+  // 🧠思考時間（最初に追加）
+  if (thinkingTimeSec) {
+    contents.push({
+      type: "text",
+      text: `🧠 思考時間: ${thinkingTimeSec.toFixed(1)}秒`,
+      size: "xs",
+      color: "#888888",
+      wrap: true,
+      margin: "none",
+    });
+    contents.push({ type: "separator", color: "#dddddd", margin: "sm" });
+  }
+
+  const lines = aiText.split(/\r?\n/).filter((l) => l.trim() !== "");
   const numToCircle = {
     1: "❶", 2: "❷", 3: "❸", 4: "❹", 5: "❺",
     6: "❻", 7: "❼", 8: "❽", 9: "❾", 10: "❿",
@@ -44,18 +48,14 @@ function buildFlexFromText(aiText) {
 
   for (let line of lines) {
     const trimmed = line.trim();
-
-    // 👇ここをゆるくした
-    // 文末が : または ： なら見出しとみなす
     const isHeading = /[:：]\s*$/.test(trimmed);
 
-    // 箇条書き変換
     if (/^[-・]/.test(trimmed)) {
-      line = trimmed.replace(/^[-・]\s*/, "◦ ");
+      line = trimmed.replace(/^[-・]\s*/, "• ");
     } else if (/^\d+\./.test(trimmed)) {
       const numMatch = trimmed.match(/^(\d+)\./);
       const num = parseInt(numMatch?.[1] || "0", 10);
-      const circle = numToCircle[num] || "◦";
+      const circle = numToCircle[num] || "•";
       line = trimmed.replace(/^\d+\.\s*/, `${circle} `);
     }
 
@@ -107,7 +107,6 @@ function buildFlexFromText(aiText) {
       continue;
     }
 
-    // 通常行
     contents.push({
       type: "text",
       text: line.trim(),
@@ -138,7 +137,7 @@ module.exports = async function consult(event, client) {
   const lineId = event.source.userId;
   const userText = event.message?.text || "";
 
-  // 🔹ユーザー確認
+  // ユーザー確認
   let user;
   try {
     user = await getUser(lineId);
@@ -161,7 +160,7 @@ module.exports = async function consult(event, client) {
     });
   }
 
-  // 🔹必要データ取得
+  // データ取得
   let context, followups, recentChats, careCounts = {}, extraCareCounts = {};
   try {
     [context, followups, recentChats] = await Promise.all([
@@ -185,12 +184,10 @@ module.exports = async function consult(event, client) {
     });
   }
 
-  // 🔹ユーザー発話を保存（非同期）
   saveConsultMessage(user.id, "user", userText).catch((e) =>
     console.warn("save user msg fail", e)
   );
 
-  // 🔹プロンプト生成
   const messages = buildConsultMessages({
     context,
     followups,
@@ -201,22 +198,24 @@ module.exports = async function consult(event, client) {
   });
 
   try {
-    // ✅ GPT-5 Responses API呼び出し
+    // ✅ GPT呼び出し＋思考時間計測
+    const start = Date.now();
     const rsp = await openai.responses.create({
       model: "gpt-5",
       input: messages,
       reasoning: { effort: "minimal" },
       text: { verbosity: "low" },
     });
+    const duration = (Date.now() - start) / 1000; // 秒換算
 
-    // ✅ 出力抽出
     const text =
       rsp.output_text ||
       rsp.output?.[0]?.content?.map((c) => c.text).join("\n") ||
       rsp.output?.[0]?.content?.[0]?.text ||
       "（すみません、回答を生成できませんでした）";
 
-    console.log("GPT出力:", text);
+    console.log(`GPT出力 (${duration.toFixed(1)}秒):`, text);
+
 
     // ✅ テキストをFlexに変換
     const flexMessage = buildFlexFromText(text);
