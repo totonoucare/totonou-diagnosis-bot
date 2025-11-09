@@ -203,7 +203,7 @@ module.exports = async function consult(event, client) {
   try {
     // ✅ GPT-5 Responses API呼び出し
     const rsp = await openai.responses.create({
-      model: "gpt-5",
+      model: "gpt-5-mini",
       input: messages,
       reasoning: { effort: "minimal" },
 
