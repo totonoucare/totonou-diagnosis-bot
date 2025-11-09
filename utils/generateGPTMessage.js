@@ -149,16 +149,15 @@ async function buildCycleReminder({
 【アドバイス内容（advice）】${JSON.stringify(advice || {}, null, 2)}
   `.trim();
 
-  const rsp = await openai.responses.create({
-    model: "gpt-5",
-    input: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-  });
+const rsp = await openai.responses.create({
+  model: "gpt-5",
+  input: `${system}\n\n${user}`,
+  reasoning: { effort: "minimal" },
+  text: { verbosity: "low" },
+});
 
-  const text = rsp.output_text?.trim();
-  return text || `${greeting()} 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
+const text = rsp.output_text?.trim();
+return text || `${greeting()} 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
 }
 
 async function generateGPTMessage(lineId) {
