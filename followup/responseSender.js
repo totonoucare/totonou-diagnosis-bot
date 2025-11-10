@@ -150,17 +150,15 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
       input: `${systemPrompt}\n\n${userPrompt}`,
       reasoning: { effort: "minimal" },
       text: {
-        format: "json", // ← ✅ ここが変更点（response_formatの代わり）
+        format: { type: "json_object" }, // ← ✅ 正式仕様（object型に戻った）
         verbosity: "medium",
       },
     });
 
-    // ✅ JSONは自動パース済みでここに入る
     return rsp.output_parsed;
   } catch (err) {
     console.error("❌ callTotonouGPT error:", err);
 
-    // フォールバック
     try {
       const raw =
         err.response?.output_text ||
