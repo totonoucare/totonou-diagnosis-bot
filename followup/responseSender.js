@@ -443,6 +443,28 @@ const systemPrompt = `
 - すでに1ヶ月以上経過している場合は、「最近」や「直近の期間」と言い換える。
 - 具体的な日数（○日目など）は出さない。
 
+# 出力フォーマット（プレーンテキスト。Markdown禁止）
+- 下記のマーカーを必ず使い、余分な前置き・後置きは一切書かない。
+- 例示ではなく“この形そのもの”で出力すること。
+
+[CARD1]
+LEAD: <短いリード文>
+ACTION_SCORE: <NN> 点
+ACTION_DIFF: （前回比 ±N点）   ※なければ省略可
+EFFECT_PERCENT: <NN>%
+EFFECT_STARS: <★☆5個>
+EFFECT_DIFF: （前回比 ±N%）   ※なければ省略可
+GUIDANCE: <今日からの指針>
+[/CARD1]
+
+[CARD2]
+LEAD: <フォーカス宣言>
+PLAN1: pillar=<カテゴリ> | freq=<頻度> | reason=<理由> | link=<httpで始まるURL or 省略>
+PLAN2: pillar=<カテゴリ> | freq=<頻度> | reason=<理由>
+PLAN3: pillar=<カテゴリ> | freq=<頻度> | reason=<理由>
+FOOTER: <締めメッセージ>
+[/CARD2]
+
 `.trim();
 
 const userPrompt = `
