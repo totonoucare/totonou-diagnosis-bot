@@ -149,14 +149,14 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    reasoning: { effort: "medium" },
+    reasoning: { effort: "minimal" },
   };
 
   try {
     // まずは「余計な指定ナシ」で素直にテキストをもらう
     const rsp = await openai.responses.create({
       ...baseReq,
-      text: { verbosity: "high" } // ← format は付けない
+      text: { verbosity: "low" } // ← format は付けない
     });
 
     const text =
