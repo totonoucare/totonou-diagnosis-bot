@@ -492,35 +492,22 @@ ${JSON.stringify(longTermCareCounts, null, 2)}
 
 `.trim();
 
-    // 10. GPT呼び出し
-    const sections = await callTotonouGPT(systemPrompt, userPrompt);
-    if (!sections)
-      return {
-        sections: null,
-        gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
-        statusMessage: "error",
-      };
+// 10. GPT呼び出し（テキスト出力モード）
+const gptComment = await callTotonouGPT(systemPrompt, userPrompt);
 
-    // 11. フォールバックコメント生成
-    const fallbackLines = [];
-    fallbackLines.push(sections.card1.lead || "");
-    fallbackLines.push("");
-    fallbackLines.push(sections.card1.guidance || "");
-    fallbackLines.push("");
-    fallbackLines.push(sections.card2.lead || "");
-    const planPreview = (sections.card2.care_plan || [])
-      .map(
-        (p, idx) =>
-          `${idx + 1}位: ${p.pillar}（${p.recommended_frequency}）\n${p.reason}`
-      )
-      .join("\n\n");
-    fallbackLines.push(planPreview);
-    fallbackLines.push("");
-    fallbackLines.push(sections.card2.footer || "");
+if (!gptComment)
+  return {
+    sections: null,
+    gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
+    statusMessage: "error",
+  };
 
-    const gptComment = fallbackLines.join("\n");
-
-    return { sections, gptComment, statusMessage: "ok" };
+// GPTの自然文をそのまま返却（Flex変換はindex.jsで実施）
+return {
+  sections: null,
+  gptComment,
+  statusMessage: "ok",
+};
   } catch (err) {
     console.error("❌ sendFollowupResponse error:", err);
     return {
