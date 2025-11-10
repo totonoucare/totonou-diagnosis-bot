@@ -140,35 +140,29 @@ function judgeStagnation(reflectionHistory) {
 }
 
 /* ---------------------------
-   2) GPT呼び出しラッパ（Responses API正式版 / 2025対応）
+   2) GPT呼び出しラッパ（テキストモード）
 --------------------------- */
-
 async function callTotonouGPT(systemPrompt, userPrompt) {
   try {
     const rsp = await openai.responses.create({
       model: "gpt-5",
-      input: `${systemPrompt}\n\n${userPrompt}`,
-      reasoning: { effort: "minimal" },
-      text: {
-        format: { type: "json_object" }, // ← ✅ 正式仕様（object型に戻った）
-        verbosity: "medium",
-      },
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      reasoning: { effort: "medium" },
+      text: { verbosity: "high", format: "plain" },
     });
 
-    return rsp.output_parsed;
+    const text =
+      rsp.output_text?.trim() ||
+      rsp.output?.[0]?.content?.map(c => c.text).join("\n") ||
+      "(トトノウくんが応答できませんでした🙏)";
+
+    return text;
   } catch (err) {
     console.error("❌ callTotonouGPT error:", err);
-
-    try {
-      const raw =
-        err.response?.output_text ||
-        err.response?.output?.[0]?.content?.map((c) => c.text).join("\n") ||
-        "";
-      return JSON.parse(raw);
-    } catch (e2) {
-      console.warn("⚠️ JSONフォールバック失敗:", e2);
-      return null;
-    }
+    return "（AI応答に失敗しました🙏）";
   }
 }
 
