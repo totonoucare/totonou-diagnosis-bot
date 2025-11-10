@@ -7,6 +7,90 @@
 // - pushはカルーセル(2バブル: 状態まとめ＋ケアプラン)
 // ===============================================
 
+// ======== プレーンテキスト → sections 変換（堅牢版） ========
+function parseFollowupTextToSections(text = "") {
+  const sec = { card1: { score_block: { action: {}, effect: {} } }, card2: { care_plan: [] } };
+
+  const b1 = text.match(/\[CARD1\]([\s\S]*?)\[\/CARD1\]/);
+  const b2 = text.match(/\[CARD2\]([\s\S]*?)\[\/CARD2\]/);
+
+  if (b1) {
+    const s1 = b1[1];
+
+    const lead     = (s1.match(/^\s*LEAD:\s*(.+)$/m) || [])[1];
+    const guidance = (s1.match(/^\s*GUIDANCE:\s*(.+)$/m) || [])[1];
+
+    const aScoreRaw = (s1.match(/^\s*ACTION_SCORE:\s*([0-9]{1,3})(?:\s*点)?\s*$/m) || [])[1];
+    const aDiff     = (s1.match(/^\s*ACTION_DIFF:\s*(.+)$/m) || [])[1];
+
+    const ePctNum = (s1.match(/^\s*EFFECT_PERCENT:\s*([0-9]{1,3})\s*[%％]\s*$/m) || [])[1];
+    const eStars  = (s1.match(/^\s*EFFECT_STARS:\s*([★☆]{1,5})\s*$/m) || [])[1];
+    const eDiff   = (s1.match(/^\s*EFFECT_DIFF:\s*(.+)$/m) || [])[1];
+
+    sec.card1.lead     = (lead || "").trim();
+    sec.card1.guidance = (guidance || "").trim();
+
+    sec.card1.score_block.action = {
+      label: "今週のケア努力点",
+      score_text: aScoreRaw ? `${String(aScoreRaw).trim()} 点` : undefined,
+      diff_text: aDiff ? aDiff.trim() : undefined,
+      explain: "どれだけ行動できたか",
+    };
+
+    sec.card1.score_block.effect = {
+      label: "ケア効果の反映度合い",
+      percent_text: ePctNum ? `${String(ePctNum).trim()}%` : undefined,
+      stars: eStars ? eStars.trim() : undefined,
+      diff_text: eDiff ? eDiff.trim() : undefined,
+      explain: "努力がどれだけ体調に反映されたか",
+    };
+  }
+
+  if (b2) {
+    const s2 = b2[1];
+
+    const lead   = (s2.match(/^\s*LEAD:\s*(.+)$/m) || [])[1];
+    const footer = (s2.match(/^\s*FOOTER:\s*(.+)$/m) || [])[1];
+
+    sec.card2.lead   = (lead || "").trim();
+    sec.card2.footer = (footer || "").trim();
+
+    // PLAN 行（PLAN: / PLAN1: / PLAN 1: すべて許容）
+    const planLines = s2.match(/^\s*PLAN\s*\d*\s*:\s*(.+)$/gm) || [];
+    planLines.slice(0, 3).forEach((ln, i) => {
+      const line = (ln.match(/^\s*PLAN\s*\d*\s*:\s*(.+)$/) || [])[1] || "";
+
+      // 区切りは半角バー "|" または全角バー "｜" を許容
+      const pillar = (line.match(/pillar\s*=\s*([^|｜]+)[|｜]?/i) || [])[1]?.trim();
+      const freq   = (line.match(/freq\s*=\s*([^|｜]+)[|｜]?/i)   || [])[1]?.trim();
+      const reason = (line.match(/reason\s*=\s*([^|｜]+)[|｜]?/i) || [])[1]?.trim();
+      const link   = (line.match(/link\s*=\s*(https?:\S+)/i)      || [])[1]?.trim();
+
+      sec.card2.care_plan.push({
+        pillar: pillar || `プラン${i + 1}`,
+        priority: i + 1,
+        recommended_frequency: freq || "目安",
+        reason: reason || "",
+        reference_link: link,
+      });
+    });
+  }
+
+  // マーカーが無い場合の最低限フォールバック
+  if (!b1 && !b2) {
+    const first = text.split(/\r?\n/).find(l => l.trim());
+    sec.card1.lead = (first || "おつかれさまでした😊").trim();
+    sec.card1.guidance = "今日からのケアを続けていきましょう🌿";
+    sec.card1.score_block.action = { label: "今週のケア努力点" };
+    sec.card1.score_block.effect = { label: "ケア効果の反映度合い" };
+    sec.card2.lead = "今週のフォーカス";
+    sec.card2.care_plan = [];
+    sec.card2.footer = "焦らず、今週もマイペースで🫶";
+  }
+
+  return sec;
+}
+
 const questionSets = require("./questionSets");
 const handleFollowupAnswers = require("./followupRouter");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
@@ -368,8 +452,19 @@ async function handleFollowup(event, client, lineId) {
 
 handleFollowupAnswers(lineId, answers)
   .then(async (result) => {
-    if (result?.sections) {
-      const bubbles = buildResultFlexBubbles(result.sections);
+    let sections = result?.sections;
+
+    // sections が無ければ、テキストから復元を試みる
+    if (!sections && typeof result?.gptComment === "string" && result.gptComment.trim()) {
+      try {
+        sections = parseFollowupTextToSections(result.gptComment);
+      } catch (e) {
+        console.warn("⚠️ gptCommentのパース失敗:", e);
+      }
+    }
+
+    if (sections) {
+      const bubbles = buildResultFlexBubbles(sections);
       await client.pushMessage(lineId, {
         type: "flex",
         altText: "ととのい度チェック結果",
@@ -385,14 +480,14 @@ handleFollowupAnswers(lineId, answers)
     }
     delete userSession[lineId];
   })
-        .catch(async (err) => {
-          console.error("❌ GPTコメント生成失敗:", err);
-          await client.pushMessage(lineId, {
-            type: "text",
-            text: "今週のケアプラン作成でエラーが出ました🙇\nしばらく時間をおいて再試行してください。",
-          });
-          delete userSession[lineId];
-        });
+  .catch(async (err) => {
+    console.error("❌ GPTコメント生成失敗:", err);
+    await client.pushMessage(lineId, {
+      type: "text",
+      text: "今週のケアプラン作成でエラーが出ました🙇\nしばらく時間をおいて再試行してください。",
+    });
+    delete userSession[lineId];
+  });
       return;
     }
 
