@@ -148,8 +148,8 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
   const rsp = await openai.responses.create({
     model: "gpt-5",
     input: promptText,                // ← 文字列1本でOK
-    reasoning: { effort: "minimal" },  // minimalでも可。mediumの方が型崩れしにくい
-    text: { verbosity: "low" },      // formatは付けない
+    reasoning: { effort: "medium" },  // minimalでも可。mediumの方が型崩れしにくい
+    text: { verbosity: "medium" },      // formatは付けない
     // max_output_tokens は付けない（LINEで途中送信になる件の回避）
   });
 
