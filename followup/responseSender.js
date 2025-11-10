@@ -143,44 +143,23 @@ function judgeStagnation(reflectionHistory) {
    2) GPT呼び出しラッパ（テキストモード＋安全リトライ）
 --------------------------- */
 async function callTotonouGPT(systemPrompt, userPrompt) {
-  const baseReq = {
+  const promptText = `${systemPrompt}\n\n${userPrompt}`;
+
+  const rsp = await openai.responses.create({
     model: "gpt-5",
-    input: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    reasoning: { effort: "minimal" },
-  };
+    input: promptText,                // ← 文字列1本でOK
+    reasoning: { effort: "medium" },  // minimalでも可。mediumの方が型崩れしにくい
+    text: { verbosity: "medium" },      // formatは付けない
+    // max_output_tokens は付けない（LINEで途中送信になる件の回避）
+  });
 
-  try {
-    // まずは「余計な指定ナシ」で素直にテキストをもらう
-    const rsp = await openai.responses.create({
-      ...baseReq,
-      text: { verbosity: "low" } // ← format は付けない
-    });
+  const text =
+    (rsp.output_text && rsp.output_text.trim()) ||
+    (rsp.output?.[0]?.content?.map(c => c.text).join("\n").trim()) ||
+    "";
 
-    const text =
-      rsp.output_text?.trim() ||
-      rsp.output?.[0]?.content?.map(c => c.text).join("\n") ||
-      "(トトノウくんが応答できませんでした🙏)";
-    return text;
-  } catch (err) {
-    // 稀に text ブロックが悪さをする場合があるので、完全に外して再試行
-    if (err?.code === "invalid_type" || err?.error?.param === "text.format") {
-      try {
-        const rsp2 = await openai.responses.create(baseReq); // text 指定も完全に外す
-        const text2 =
-          rsp2.output_text?.trim() ||
-          rsp2.output?.[0]?.content?.map(c => c.text).join("\n") ||
-          "(トトノウくんが応答できませんでした🙏)";
-        return text2;
-      } catch (err2) {
-        console.error("❌ callTotonouGPT retry error:", err2);
-      }
-    }
-    console.error("❌ callTotonouGPT error:", err);
-    return "（AI応答に失敗しました🙏）";
-  }
+  // たまにフェンスを吐く個体がいるので一応除去
+  return text.replace(/^```[\s\S]*?\n?|\n?```$/g, "").trim();
 }
 
 /* ---------------------------
