@@ -367,24 +367,17 @@ async function handleFollowup(event, client, lineId) {
       });
 
       handleFollowupAnswers(lineId, answers)
-        .then(async (result) => {
-          if (result?.sections) {
-            const bubbles = buildResultFlexBubbles(result.sections);
-            await client.pushMessage(lineId, {
-              type: "flex",
-              altText: "ととのい度チェック結果",
-              contents: { type: "carousel", contents: bubbles },
-            });
-          } else {
-            await client.pushMessage(lineId, {
-              type: "text",
-              text:
-                "📋 今回のととのい度チェック\n\n" +
-                (result?.gptComment || "解析コメントを生成できませんでした🙏"),
-            });
-          }
-          delete userSession[lineId];
-        })
+  .then(async (result) => {
+    const gptText = result?.gptComment || "トトノウくんが今週のケアをまとめられませんでした🙏";
+
+    // ✅ Flex整形（AI相談のbuildFlexFromTextを使う）
+    const { buildFlexFromText } = require("../consult/index.js");
+    const flexMessage = buildFlexFromText(gptText);
+
+    await client.pushMessage(lineId, flexMessage);
+
+    delete userSession[lineId];
+  })
         .catch(async (err) => {
           console.error("❌ GPTコメント生成失敗:", err);
           await client.pushMessage(lineId, {
