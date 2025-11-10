@@ -140,27 +140,44 @@ function judgeStagnation(reflectionHistory) {
 }
 
 /* ---------------------------
-   2) GPT呼び出しラッパ（テキストモード）
+   2) GPT呼び出しラッパ（テキストモード＋安全リトライ）
 --------------------------- */
 async function callTotonouGPT(systemPrompt, userPrompt) {
+  const baseReq = {
+    model: "gpt-5",
+    input: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    reasoning: { effort: "medium" },
+  };
+
   try {
+    // まずは「余計な指定ナシ」で素直にテキストをもらう
     const rsp = await openai.responses.create({
-      model: "gpt-5",
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      reasoning: { effort: "medium" },
-      text: { verbosity: "high", format: "plain" },
+      ...baseReq,
+      text: { verbosity: "high" } // ← format は付けない
     });
 
     const text =
       rsp.output_text?.trim() ||
       rsp.output?.[0]?.content?.map(c => c.text).join("\n") ||
       "(トトノウくんが応答できませんでした🙏)";
-
     return text;
   } catch (err) {
+    // 稀に text ブロックが悪さをする場合があるので、完全に外して再試行
+    if (err?.code === "invalid_type" || err?.error?.param === "text.format") {
+      try {
+        const rsp2 = await openai.responses.create(baseReq); // text 指定も完全に外す
+        const text2 =
+          rsp2.output_text?.trim() ||
+          rsp2.output?.[0]?.content?.map(c => c.text).join("\n") ||
+          "(トトノウくんが応答できませんでした🙏)";
+        return text2;
+      } catch (err2) {
+        console.error("❌ callTotonouGPT retry error:", err2);
+      }
+    }
     console.error("❌ callTotonouGPT error:", err);
     return "（AI応答に失敗しました🙏）";
   }
@@ -443,26 +460,25 @@ const systemPrompt = `
 - すでに1ヶ月以上経過している場合は、「最近」や「直近の期間」と言い換える。
 - 具体的な日数（○日目など）は出さない。
 
-# 出力フォーマット（プレーンテキスト。Markdown禁止）
-- 下記のマーカーを必ず使い、余分な前置き・後置きは一切書かない。
-- 例示ではなく“この形そのもの”で出力すること。
+## 🔸 出力仕様（テキストマークアップ）
+必ず次の2ブロックのみを、この順で返す。前後に余計な文章やコードフェンスは付けない。
 
 [CARD1]
-LEAD: <短いリード文>
+LEAD: <冒頭メッセージ。努力と反映をねぎらう。>
 ACTION_SCORE: <NN> 点
-ACTION_DIFF: （前回比 ±N点）   ※なければ省略可
+ACTION_DIFF: （前回比 ±<N>点）   // 差分が無い場合は省略可
 EFFECT_PERCENT: <NN>%
-EFFECT_STARS: <★☆5個>
-EFFECT_DIFF: （前回比 ±N%）   ※なければ省略可
-GUIDANCE: <今日からの指針>
+EFFECT_STARS: <★の数5文字（例: ★★★☆☆）>
+EFFECT_DIFF: （前回比 ±<N>%）    // 差分が無い場合は省略可
+GUIDANCE: <今日からのセルフケア指針>
 [/CARD1]
 
 [CARD2]
-LEAD: <フォーカス宣言>
-PLAN1: pillar=<カテゴリ> | freq=<頻度> | reason=<理由> | link=<httpで始まるURL or 省略>
-PLAN2: pillar=<カテゴリ> | freq=<頻度> | reason=<理由>
-PLAN3: pillar=<カテゴリ> | freq=<頻度> | reason=<理由>
-FOOTER: <締めメッセージ>
+LEAD: <「今週はこの優先順位で整えよう🌿」のようなフォーカス宣言>
+PLAN1: pillar=<呼吸法|体質改善習慣|ストレッチ|ツボ|漢方|相談サポート> | freq=<毎日|週2〜3回|必要な時> | reason=<理由> | link=<https://... 任意>
+PLAN2: pillar=... | freq=... | reason=... | link=...
+PLAN3: pillar=... | freq=... | reason=... | link=...
+FOOTER: <最後の励ましメッセージ>
 [/CARD2]
 
 `.trim();
