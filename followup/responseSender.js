@@ -140,7 +140,7 @@ function judgeStagnation(reflectionHistory) {
 }
 
 /* ---------------------------
-   2) GPT呼び出しラッパ（Responses API正式版）
+   2) GPT呼び出しラッパ（Responses API正式版 / 2025対応）
 --------------------------- */
 
 async function callTotonouGPT(systemPrompt, userPrompt) {
@@ -148,17 +148,19 @@ async function callTotonouGPT(systemPrompt, userPrompt) {
     const rsp = await openai.responses.create({
       model: "gpt-5",
       input: `${systemPrompt}\n\n${userPrompt}`,
-      response_format: { type: "json_object" }, // ✅ JSONを直接受け取る
       reasoning: { effort: "minimal" },
-      text: { verbosity: "medium" },
+      text: {
+        format: "json", // ← ✅ ここが変更点（response_formatの代わり）
+        verbosity: "medium",
+      },
     });
 
-    // ✅ Responses APIでは自動でJSONパースされる
+    // ✅ JSONは自動パース済みでここに入る
     return rsp.output_parsed;
   } catch (err) {
     console.error("❌ callTotonouGPT error:", err);
 
-    // フォールバック（念のため）
+    // フォールバック
     try {
       const raw =
         err.response?.output_text ||
