@@ -140,26 +140,36 @@ function judgeStagnation(reflectionHistory) {
 }
 
 /* ---------------------------
-   2) GPT呼び出しラッパ（テキストモード＋安全リトライ）
+   2) GPT呼び出しラッパ（Responses API正式版）
 --------------------------- */
+
 async function callTotonouGPT(systemPrompt, userPrompt) {
-  const promptText = `${systemPrompt}\n\n${userPrompt}`;
+  try {
+    const rsp = await openai.responses.create({
+      model: "gpt-5",
+      input: `${systemPrompt}\n\n${userPrompt}`,
+      response_format: { type: "json_object" }, // ✅ JSONを直接受け取る
+      reasoning: { effort: "minimal" },
+      text: { verbosity: "medium" },
+    });
 
-  const rsp = await openai.responses.create({
-    model: "gpt-5",
-    input: promptText,                // ← 文字列1本でOK
-    reasoning: { effort: "medium" },  // minimalでも可。mediumの方が型崩れしにくい
-    text: { verbosity: "medium" },      // formatは付けない
-    // max_output_tokens は付けない（LINEで途中送信になる件の回避）
-  });
+    // ✅ Responses APIでは自動でJSONパースされる
+    return rsp.output_parsed;
+  } catch (err) {
+    console.error("❌ callTotonouGPT error:", err);
 
-  const text =
-    (rsp.output_text && rsp.output_text.trim()) ||
-    (rsp.output?.[0]?.content?.map(c => c.text).join("\n").trim()) ||
-    "";
-
-  // たまにフェンスを吐く個体がいるので一応除去
-  return text.replace(/^```[\s\S]*?\n?|\n?```$/g, "").trim();
+    // フォールバック（念のため）
+    try {
+      const raw =
+        err.response?.output_text ||
+        err.response?.output?.[0]?.content?.map((c) => c.text).join("\n") ||
+        "";
+      return JSON.parse(raw);
+    } catch (e2) {
+      console.warn("⚠️ JSONフォールバック失敗:", e2);
+      return null;
+    }
+  }
 }
 
 /* ---------------------------
@@ -439,27 +449,6 @@ const systemPrompt = `
 - すでに1ヶ月以上経過している場合は、「最近」や「直近の期間」と言い換える。
 - 具体的な日数（○日目など）は出さない。
 
-## 🔸 出力仕様（テキストマークアップ）
-必ず次の2ブロックのみを、この順で返す。前後に余計な文章やコードフェンスは付けない。
-
-[CARD1]
-LEAD: <冒頭メッセージ。努力と反映をねぎらう。>
-ACTION_SCORE: <NN> 点
-ACTION_DIFF: （前回比 ±<N>点）   // 差分が無い場合は省略可
-EFFECT_PERCENT: <NN>%
-EFFECT_STARS: <★の数5文字（例: ★★★☆☆）>
-EFFECT_DIFF: （前回比 ±<N>%）    // 差分が無い場合は省略可
-GUIDANCE: <今日からのセルフケア指針>
-[/CARD1]
-
-[CARD2]
-LEAD: <「今週はこの優先順位で整えよう🌿」のようなフォーカス宣言>
-PLAN1: pillar=<呼吸法|体質改善習慣|ストレッチ|ツボ|漢方|相談サポート> | freq=<毎日|週2〜3回|必要な時> | reason=<理由> | link=<https://... 任意>
-PLAN2: pillar=... | freq=... | reason=... | link=...
-PLAN3: pillar=... | freq=... | reason=... | link=...
-FOOTER: <最後の励ましメッセージ>
-[/CARD2]
-
 `.trim();
 
 const userPrompt = `
@@ -509,22 +498,35 @@ ${JSON.stringify(longTermCareCounts, null, 2)}
 
 `.trim();
 
-// 10. GPT呼び出し（テキスト出力モード）
-const gptComment = await callTotonouGPT(systemPrompt, userPrompt);
+    // 10. GPT呼び出し
+    const sections = await callTotonouGPT(systemPrompt, userPrompt);
+    if (!sections)
+      return {
+        sections: null,
+        gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
+        statusMessage: "error",
+      };
 
-if (!gptComment)
-  return {
-    sections: null,
-    gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
-    statusMessage: "error",
-  };
+    // 11. フォールバックコメント生成
+    const fallbackLines = [];
+    fallbackLines.push(sections.card1.lead || "");
+    fallbackLines.push("");
+    fallbackLines.push(sections.card1.guidance || "");
+    fallbackLines.push("");
+    fallbackLines.push(sections.card2.lead || "");
+    const planPreview = (sections.card2.care_plan || [])
+      .map(
+        (p, idx) =>
+          `${idx + 1}位: ${p.pillar}（${p.recommended_frequency}）\n${p.reason}`
+      )
+      .join("\n\n");
+    fallbackLines.push(planPreview);
+    fallbackLines.push("");
+    fallbackLines.push(sections.card2.footer || "");
 
-// GPTの自然文をそのまま返却（Flex変換はindex.jsで実施）
-return {
-  sections: null,
-  gptComment,
-  statusMessage: "ok",
-};
+    const gptComment = fallbackLines.join("\n");
+
+    return { sections, gptComment, statusMessage: "ok" };
   } catch (err) {
     console.error("❌ sendFollowupResponse error:", err);
     return {
