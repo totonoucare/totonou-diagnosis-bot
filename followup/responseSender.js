@@ -140,38 +140,26 @@ function judgeStagnation(reflectionHistory) {
 }
 
 /* ---------------------------
-   2) GPT呼び出しラッパ
+   2) GPT呼び出しラッパ（テキストモード＋安全リトライ）
 --------------------------- */
-
 async function callTotonouGPT(systemPrompt, userPrompt) {
-  try {
-    const rsp = await openai.responses.create({
-      model: "gpt-5",
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      reasoning: { effort: "minimal" },
-      text: { verbosity: "medium" },
-    });
+  const promptText = `${systemPrompt}\n\n${userPrompt}`;
 
-    let raw = rsp.output_text?.trim() || "";
-    if (raw.startsWith("```")) {
-      raw = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-    }
+  const rsp = await openai.responses.create({
+    model: "gpt-5",
+    input: promptText,                // ← 文字列1本でOK
+    reasoning: { effort: "medium" },  // minimalでも可。mediumの方が型崩れしにくい
+    text: { verbosity: "medium" },      // formatは付けない
+    // max_output_tokens は付けない（LINEで途中送信になる件の回避）
+  });
 
-    try {
-      return JSON.parse(raw);
-    } catch {
-      const s = raw.indexOf("{");
-      const e = raw.lastIndexOf("}");
-      if (s >= 0 && e > s) return JSON.parse(raw.slice(s, e + 1));
-      return null;
-    }
-  } catch (err) {
-    console.error("❌ callTotonouGPT error:", err);
-    return null;
-  }
+  const text =
+    (rsp.output_text && rsp.output_text.trim()) ||
+    (rsp.output?.[0]?.content?.map(c => c.text).join("\n").trim()) ||
+    "";
+
+  // たまにフェンスを吐く個体がいるので一応除去
+  return text.replace(/^```[\s\S]*?\n?|\n?```$/g, "").trim();
 }
 
 /* ---------------------------
@@ -345,7 +333,7 @@ const systemPrompt = `
 - organType：負担が出やすい臓腑（肝・心・脾・肺・腎）
 - motion：最も伸展負担がかかる経絡ラインの伸展動作で、これがorganType判定の指標。
 - symptom：主訴（胃腸・肩こり・メンタル・冷えなど）
-- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア項目の内容と図解リンク
+- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク
 - created_at：初回登録日（体質分析を終えた日）
 
 ### followups（ととのい度チェック）
@@ -374,20 +362,25 @@ const systemPrompt = `
 
 ---
 
-## 🔸 ケア項目と体調項目の因果構造（整いのメカニズム）
+## 🔸 因果構造（整いのメカニズム）
 
-▼ ケア項目と体調項目の因果構造（整いのメカニズム）
-1. habits（体質改善習慣） ↔ sleep / meal / stress → symptom_level：
-　体質分析で把握された気・血・津液・寒熱のバランスを整える基盤ケア。生活習慣を整えることで睡眠・食事・ストレスのリズムが安定し、主訴の改善につながる。
+1. habits（体質改善習慣）は sleep / meal / stressの安定化を図り、symptom_levelの改善の土台を整える：
+　体質分析で把握された気血や寒熱のバランスを整える基盤ケア。生活習慣を整えることで睡眠・食事・ストレスのリズムが安定し、主訴(不調)の改善につながる。
 
-2. breathing（巡りととのう呼吸法） ↔ 構造バランス・腹圧テンション → symptom_level：
-　おへそから指４〜5本くらい上のあたり(中脘のあたり)を軽く膨らませる深呼吸によって、腹圧と体幹テンションが安定し、姿勢と循環が整いやすくなる。構造的な安定が、全身の“整い”を支える。
+2. breathing（呼吸法）は 腹圧テンションの正常化で姿勢制御を助け、流通病理(flowType)や自律機能を整え、symptom_levelの改善の土台をつくる：
+　おヘソから指４〜5本ほど上あたり(中脘)を軽く膨らませる(胸式でもなく、臍下を膨らませる呼吸でもない)深呼吸によって、腹圧と姿勢制御が安定し、循環が整いやすくなる。
+  内圧の安定が、全身の“整い”を支える。結果として循環と自律神経が整いやすくなり、不調(主訴)の改善にもつながる。
+　（※神経改善を断定はしない）
 
-3. motion_level ↔ stretch(経絡ストレッチ) / tsubo(指先・ツボほぐし) → symptom_level：
-　体質分析時に最も負担があった経絡動作(motion)をもとに、ストレッチやツボ刺激でその経絡ラインのテンション(筋膜ライン)を緩め、関連臓腑のバランスも整える。motion_level の改善はこの経絡ケアの成果指標となる。
+3. stretch / tsuboは motion_levelを改善し、motion_levelの改善は organTypeやsymptom_levelの乱れを整える：
+　体質分析時に最も伸展負担がかかる経絡ラインの伸展動作(motion)をもとに、対応する経絡ラインのストレッチやツボ刺激でその経絡ラインの筋膜テンションを緩め、関連臓腑(organType)の乱れも整え、不調(主訴)の改善にもつながる。
+  motion_level の改善はこの経絡ケアの成果指標となる。
 
-4. kampo（漢方やサプリ）：
-　セルフケアを続けても改善が停滞している場合、弁証に基づく漢方・栄養学等に基づくサプリを補助的に用いる。ただし依存せず、自律的ケアの補助として扱う。
+4. kampo（漢方・栄養サプリ）：
+　他のセルフケア（habits, breathing, stretch, tsubo）を一定期間継続しても
+　体調や motion_level の改善が停滞している場合、
+　補助的な手段として体質・弁証に基づいた漢方を取り入れることを検討します。
+　ただし、継続的依存は避け、あくまで自律的ケアの補助として扱います。
 
 ---
 
@@ -446,6 +439,27 @@ const systemPrompt = `
 - すでに1ヶ月以上経過している場合は、「最近」や「直近の期間」と言い換える。
 - 具体的な日数（○日目など）は出さない。
 
+## 🔸 出力仕様（テキストマークアップ）
+必ず次の2ブロックのみを、この順で返す。前後に余計な文章やコードフェンスは付けない。
+
+[CARD1]
+LEAD: <冒頭メッセージ。努力と反映をねぎらう。>
+ACTION_SCORE: <NN> 点
+ACTION_DIFF: （前回比 ±<N>点）   // 差分が無い場合は省略可
+EFFECT_PERCENT: <NN>%
+EFFECT_STARS: <★の数5文字（例: ★★★☆☆）>
+EFFECT_DIFF: （前回比 ±<N>%）    // 差分が無い場合は省略可
+GUIDANCE: <今日からのセルフケア指針>
+[/CARD1]
+
+[CARD2]
+LEAD: <「今週はこの優先順位で整えよう🌿」のようなフォーカス宣言>
+PLAN1: pillar=<呼吸法|体質改善習慣|ストレッチ|ツボ|漢方|相談サポート> | freq=<毎日|週2〜3回|必要な時> | reason=<理由> | link=<https://... 任意>
+PLAN2: pillar=... | freq=... | reason=... | link=...
+PLAN3: pillar=... | freq=... | reason=... | link=...
+FOOTER: <最後の励ましメッセージ>
+[/CARD2]
+
 `.trim();
 
 const userPrompt = `
@@ -495,35 +509,22 @@ ${JSON.stringify(longTermCareCounts, null, 2)}
 
 `.trim();
 
-    // 10. GPT呼び出し
-    const sections = await callTotonouGPT(systemPrompt, userPrompt);
-    if (!sections)
-      return {
-        sections: null,
-        gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
-        statusMessage: "error",
-      };
+// 10. GPT呼び出し（テキスト出力モード）
+const gptComment = await callTotonouGPT(systemPrompt, userPrompt);
 
-    // 11. フォールバックコメント生成
-    const fallbackLines = [];
-    fallbackLines.push(sections.card1.lead || "");
-    fallbackLines.push("");
-    fallbackLines.push(sections.card1.guidance || "");
-    fallbackLines.push("");
-    fallbackLines.push(sections.card2.lead || "");
-    const planPreview = (sections.card2.care_plan || [])
-      .map(
-        (p, idx) =>
-          `${idx + 1}位: ${p.pillar}（${p.recommended_frequency}）\n${p.reason}`
-      )
-      .join("\n\n");
-    fallbackLines.push(planPreview);
-    fallbackLines.push("");
-    fallbackLines.push(sections.card2.footer || "");
+if (!gptComment)
+  return {
+    sections: null,
+    gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
+    statusMessage: "error",
+  };
 
-    const gptComment = fallbackLines.join("\n");
-
-    return { sections, gptComment, statusMessage: "ok" };
+// GPTの自然文をそのまま返却（Flex変換はindex.jsで実施）
+return {
+  sections: null,
+  gptComment,
+  statusMessage: "ok",
+};
   } catch (err) {
     console.error("❌ sendFollowupResponse error:", err);
     return {
