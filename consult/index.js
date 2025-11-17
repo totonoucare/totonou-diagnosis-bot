@@ -206,9 +206,9 @@ const promptText = messages
   .join("\n");
 
 const rsp = await openai.responses.create({
-  model: "gpt-5",
+  model: "gpt-5.1",
   input: promptText,
-  reasoning: { effort: "minimal" },
+  reasoning: { effort: "none" },
   text: { verbosity: "low" },
 });
 
