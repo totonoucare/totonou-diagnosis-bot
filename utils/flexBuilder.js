@@ -370,20 +370,9 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
 }
 
 function buildResultFlex(result, imageUrl) {
-  // 新しい統合ストーリー。なければ従来の3つをつなげるフォールバック
-  const combinedText =
-    result.fullStory ||
-    [
-      result.traits || "",
-      result.flowIssue || "",
-      result.organBurden || "",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-
   return {
     type: 'flex',
-    altText: '分析結果：あなたの体質タイプ',
+    altText: `分析結果：${result.type}／${result.symptomLabel}`,
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -407,9 +396,8 @@ function buildResultFlex(result, imageUrl) {
         layout: 'vertical',
         spacing: 'md',
         backgroundColor: '#F8F9F7',
-        paddingAll: '12px',
+        paddingAll: '16px',
         contents: [
-          // ① イメージ（今まで通り）
           {
             type: 'box',
             layout: 'vertical',
@@ -424,11 +412,10 @@ function buildResultFlex(result, imageUrl) {
               },
             ],
           },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-          // ② 見出し
+
+          { type: 'separator', margin: 'md' },
+
+          // 🧭 概要セクション
           {
             type: 'text',
             text: '【 🧭 あなたのからだの今の状態 】',
@@ -436,10 +423,63 @@ function buildResultFlex(result, imageUrl) {
             size: 'sm',
             color: '#0d0d0d',
           },
-          // ③ 統合ストーリー（ここが fullStory に変わる！）
           {
             type: 'text',
-            text: combinedText,
+            text: result.overview,
+            wrap: true,
+            size: 'md',
+            color: '#333333',
+          },
+
+          { type: 'separator', margin: 'md' },
+
+          // ① 体質
+          {
+            type: 'text',
+            text: '【 ① 体質（根本）の特徴 】',
+            weight: 'bold',
+            size: 'sm',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'text',
+            text: result.traits,
+            wrap: true,
+            size: 'md',
+            color: '#333333',
+          },
+
+          { type: 'separator', margin: 'md' },
+
+          // ② 巡り
+          {
+            type: 'text',
+            text: '【 ② 巡り（流れ）の傾向 】',
+            weight: 'bold',
+            size: 'sm',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'text',
+            text: result.flowIssue,
+            wrap: true,
+            size: 'md',
+            color: '#333333',
+          },
+
+          { type: 'separator', margin: 'md' },
+
+          // ③ 経絡
+          {
+            type: 'text',
+            text: '【 ③ 経絡（偏りの局在）の傾向 】',
+            weight: 'bold',
+            size: 'sm',
+            color: '#0d0d0d',
+          },
+          {
+            type: 'text',
+            text: result.organBurden,
             wrap: true,
             size: 'md',
             color: '#333333',
