@@ -448,66 +448,6 @@ function buildResultFlex(result, imageUrl) {
           { type: "separator", margin: "md" },
 
           // ----------------------------
-          // ① 体質（根本）
-          // ----------------------------
-          {
-            type: "text",
-            text: "【 ① 体質（根本）の特徴 】",
-            weight: "bold",
-            size: "sm",
-            color: "#0d0d0d",
-          },
-          {
-            type: "text",
-            text: result.traits,
-            wrap: true,
-            size: "md",
-            color: "#333333",
-          },
-
-          { type: "separator", margin: "md" },
-
-          // ----------------------------
-          // ② 巡り（動態）
-          // ----------------------------
-          {
-            type: "text",
-            text: "【 ② 巡り（流れ）の傾向 】",
-            weight: "bold",
-            size: "sm",
-            color: "#0d0d0d",
-          },
-          {
-            type: "text",
-            text: result.flowIssue,
-            wrap: true,
-            size: "md",
-            color: "#333333",
-          },
-
-          { type: "separator", margin: "md" },
-
-          // ----------------------------
-          // ③ 経絡（局所）
-          // ----------------------------
-          {
-            type: "text",
-            text: "【 ③ 経絡（負担の局在）】",
-            weight: "bold",
-            size: "sm",
-            color: "#0d0d0d",
-          },
-          {
-            type: "text",
-            text: result.organBurden,
-            wrap: true,
-            size: "md",
-            color: "#333333",
-          },
-
-          { type: "separator", margin: "md" },
-
-          // ----------------------------
           // 🧭 最後に overview（３層まとめ）
           // ----------------------------
           {
