@@ -96,7 +96,7 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
     : `まず体質として「${typeName}」の特徴があります。`;
 
   const flowText = flowInfo
-    ? `その影響で「${flowType}」の巡りの偏りが起こりやすく、${flowInfo}`
+    ? `その影響で「${flowType}」の傾向があらわれやすく、${flowInfo}`
     : "";
 
   const organText = organInfo
