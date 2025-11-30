@@ -155,7 +155,7 @@ const rsp = await openai.responses.create({
     { role: "system", content: system },
     { role: "user", content: user }
   ],
-  reasoning: { effort: "minimal" },
+  reasoning: { effort: "low" },
   text: { verbosity: "low" }
 });
 
