@@ -15,8 +15,8 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
   console.log(" score1,2,3:", score1, score2, score3);
   console.log(" typeName:", typeName);
 
+  // 🔒 体質タイプが未定義だった場合の安全装置（元のまま）
   if (!typeName) {
-    console.warn("⚠️ 未定義の体質タイプ：", score1, score2, score3);
     return {
       type: "不明な体質タイプ",
       traits: "",
@@ -36,62 +36,131 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
     };
   }
 
-  // 各種情報の取得
+  // ==========================
+  // ① 辞書データ（元のまま）
+  // ==========================
   const baseInfo = resultDictionary[typeName] || {};
   const flowInfo = flowDictionary[flowType] || "";
   const organInfo = organDictionary[organType] || "";
   const baseAdvice = adviceDictionary[typeName] || "";
 
-  // 呼吸法・ストレッチ・ツボ：構造が { text, link } になった前提
   const flowData = flowAdviceDictionary[flowType] || { text: "", link: "" };
   const stretchData = stretchPointDictionary[organType] || {
     stretch: { text: "", link: "" },
     points: { text: "", link: "" }
   };
 
-  // flowlabel → 漢方リンク内に埋め込み
+  // flowlabel → link内部置換（元のまま）
   const flowLabel = flowlabelDictionary[flowType] || "";
   const rawLinkText = linkDictionary[typeName] || "";
   const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
 
-  // 📦 カルーセル用アドバイス構造化
+  // ==========================
+  // ② カルーセル（元のまま）
+  // ==========================
   const adviceCards = [
     {
       header: "① 体質改善習慣💡",
-      body: baseAdvice
+      body: baseAdvice,
     },
     {
       header: "② 巡りととのう呼吸法🧘",
       body: flowData.text,
-      link: flowData.link || "https://totonoucare.jp/guide/breathing"
+      link: flowData.link,
     },
     {
       header: "③ 経絡(けいらく)ストレッチ🤸",
       body: stretchData.stretch.text,
-      link: stretchData.stretch.link || "https://totonoucare.jp/guide/stretch"
+      link: stretchData.stretch.link,
     },
     {
       header: "④ 指先・ツボほぐし 👍",
       body: stretchData.points.text,
-      link: stretchData.points.link || "https://totonoucare.jp/guide/points"
+      link: stretchData.points.link,
     },
     {
       header: "⑤ 体質で選ぶオススメ漢方薬 🌿",
-      body: resolvedLink
-    }
+      body: resolvedLink,
+    },
   ];
 
+  // ==========================
+  // ③ 新：統合ストーリー（追加）
+  // ==========================
+  const symptomText = symptom
+    ? `あなたが今気にされている「${symptom}」は、`
+    : `現在気になっている不調は、`;
+
+  const baseText = baseInfo.traits
+    ? `まず体質として「${typeName}」の特徴があり、${baseInfo.traits}`
+    : `まず体質として「${typeName}」の特徴があります。`;
+
+  const flowText = flowInfo
+    ? `その影響で「${flowType}」の巡りの偏りが起こりやすく、${flowInfo}`
+    : "";
+
+  const organText = organInfo
+    ? `さらに、この巡りの偏りが「${organType}」の経絡（身体の特定のライン）に局在し、負担があらわれています。${organInfo}`
+    : "";
+
+  const summaryText = `
+以上より、
+① 体質（根本）  
+② 巡り（流れ）  
+③ 経絡（偏りの局在）  
+
+の3層が連動して今の不調につながっている状態です。
+`;
+
+  const fullStory = `
+${symptomText}
+${baseText}
+
+${flowText}
+
+${organText}
+
+${summaryText}
+`.trim();
+
+  // ==========================
+  // ④ 返却（元+追加）
+  // ==========================
   return {
     type: typeName,
     traits: baseInfo.traits || "",
     flowType,
     organType,
-    symptom: symptom || "不明な不調",
-    motion: motion || "特定の動作",
+    symptom: symptom || "",
+    motion: motion || "",
     flowIssue: flowInfo,
     organBurden: organInfo,
-    adviceCards: adviceCards,
-    scores: [score1, score2, score3]
+    adviceCards,
+    scores: [score1, score2, score3],
+
+    // 追加（Flexに使える）
+    fullStory,
+
+    // 後でさらに UIを賢くするとき用
+    layers: {
+      base: {
+        type: typeName,
+        traits: baseInfo.traits,
+        advice: baseAdvice,
+        link: resolvedLink,
+      },
+      flow: {
+        type: flowType,
+        description: flowInfo,
+        advice: flowData,
+      },
+      organ: {
+        type: organType,
+        description: organInfo,
+        stretch: stretchData.stretch,
+        points: stretchData.points,
+      },
+    },
   };
 }
 
