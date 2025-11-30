@@ -370,6 +370,17 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
 }
 
 function buildResultFlex(result, imageUrl) {
+  // 新しい統合ストーリー。なければ従来の3つをつなげるフォールバック
+  const combinedText =
+    result.fullStory ||
+    [
+      result.traits || "",
+      result.flowIssue || "",
+      result.organBurden || "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
   return {
     type: 'flex',
     altText: '分析結果：あなたの体質タイプ',
@@ -384,7 +395,7 @@ function buildResultFlex(result, imageUrl) {
             type: 'text',
             text: `📝 【 ${result.type} 】`,
             weight: 'bold',
-            size: 'lg', // ← サイズUPでさらに強調
+            size: 'lg',
             color: '#ffffff',
           },
         ],
@@ -395,9 +406,10 @@ function buildResultFlex(result, imageUrl) {
         type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        backgroundColor: '#F8F9F7', // ✅ 柔らか背景追加！
-        paddingAll: '12px',         // ✅ 本文エリア全体に余白
+        backgroundColor: '#F8F9F7',
+        paddingAll: '12px',
         contents: [
+          // ① イメージ（今まで通り）
           {
             type: 'box',
             layout: 'vertical',
@@ -408,60 +420,26 @@ function buildResultFlex(result, imageUrl) {
                 url: imageUrl,
                 size: 'full',
                 aspectMode: 'fit',
-                aspectRatio: '1:1'
-              }
-            ]
+                aspectRatio: '1:1',
+              },
+            ],
           },
           {
             type: 'separator',
             margin: 'md',
           },
+          // ② 見出し
           {
             type: 'text',
-            text: '【 🧭 体質解説 】',
+            text: '【 🧭 あなたのからだの今の状態 】',
             weight: 'bold',
             size: 'sm',
             color: '#0d0d0d',
           },
+          // ③ 統合ストーリー（ここが fullStory に変わる！）
           {
             type: 'text',
-            text: result.traits,
-            wrap: true,
-            size: 'md',
-            color: '#333333',
-          },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-          {
-            type: 'text',
-            text: '【 🌀 巡りの傾向 】',
-            weight: 'bold',
-            size: 'sm',
-            color: '#0d0d0d',
-          },
-          {
-            type: 'text',
-            text: result.flowIssue,
-            wrap: true,
-            size: 'md',
-            color: '#333333',
-          },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-          {
-            type: 'text',
-            text: '【 🫁 経絡(けいらく)の負担傾向 】',
-            weight: 'bold',
-            size: 'sm',
-            color: '#0d0d0d',
-          },
-          {
-            type: 'text',
-            text: result.organBurden,
+            text: combinedText,
             wrap: true,
             size: 'md',
             color: '#333333',
