@@ -150,10 +150,13 @@ async function buildCycleReminder({
   `.trim();
 
 const rsp = await openai.responses.create({
-  model: "gpt-5",
-  input: `${system}\n\n${user}`,
+  model: "gpt-5.1",
+  input: [
+    { role: "system", content: system },
+    { role: "user", content: user }
+  ],
   reasoning: { effort: "minimal" },
-  text: { verbosity: "low" },
+  text: { verbosity: "low" }
 });
 
 const text = rsp.output_text?.trim();
