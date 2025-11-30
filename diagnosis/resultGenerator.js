@@ -1,3 +1,6 @@
+// ================================
+// 🔰 必要な辞書の読み込み
+// ================================
 const resultDictionary = require("./resultDictionary");
 const flowDictionary = require("./flowDictionary");
 const flowlabelDictionary = require("./flowlabelDictionary");
@@ -8,52 +11,149 @@ const stretchPointDictionary = require("./stretchPointDictionary");
 const flowAdviceDictionary = require("./flowAdviceDictionary");
 const getTypeName = require("./typeMapper");
 
-function generateResult(score1, score2, score3, flowType, organType, symptom, motion) {
+// ================================
+// 🔰 症状カテゴリ → 日本語ラベル
+// ================================
+const symptomLabelMap = {
+  stomach: "胃腸の調子",
+  sleep: "睡眠・集中力",
+  pain: "肩こり・腰痛・関節痛",
+  mental: "不安感・イライラ",
+  cold: "体温バランス・むくみ",
+  skin: "頭髪や肌の健康",
+  pollen: "花粉症・鼻炎",
+  women: "女性特有のお悩み",
+  unknown: "なんとなくの不調",
+};
+
+// ================================
+// 🔰 overview（自然なつなぎ文章）生成
+// ================================
+function buildOverviewText({
+  symptomLabel,
+  typeName,
+  traits,
+  flowLabel,
+  flowIssue,
+  organType,
+  organInfo,
+}) {
+  const lines = [];
+
+  // --- 悩み → 体質 ---------------------
+  lines.push(
+    `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴がベースにあります。`
+  );
+
+  // --- 体質の特徴の説明 -----------------
+  if (traits) {
+    lines.push(traits);
+  }
+
+  // --- 体質の影響で巡りが乱れている ------
+  if (flowLabel) {
+    lines.push(
+      `その影響で“${flowLabel}”の巡りの偏りがあらわれやすく、気の流れが滞りやすい状態です。`
+    );
+  }
+
+  if (flowIssue) {
+    lines.push(flowIssue);
+  }
+
+  // --- さらに局在としての経絡説明 -------
+  if (organType && organInfo) {
+    lines.push(
+      `さらに、この巡りの偏りが『${organType}ライン』に局在し、特定の部位に負担がかかりやすい状態です。`
+    );
+    lines.push(organInfo);
+  }
+
+  // --- 最終まとめ ------------------------
+  lines.push(
+    "まとめると、①体質（根本） ②巡り（流れ） ③経絡（負担の局在）の３層が重なり、今の不調につながっている状態です。"
+  );
+
+  return lines.join("\n\n");
+}
+
+// ================================
+// 🔰 メイン：結果生成関数
+// ================================
+function generateResult(
+  score1,
+  score2,
+  score3,
+  flowType,
+  organType,
+  symptom,
+  motion
+) {
   const typeName = getTypeName(score1, score2, score3);
 
-  console.log("📊 generateResult:");
-  console.log(" score1,2,3:", score1, score2, score3);
-  console.log(" typeName:", typeName);
+  // --- 症状ラベル変換 ---------------------
+  const symptomLabel =
+    symptomLabelMap[symptom] || symptom || "からだの不調";
 
-  // 🔒 体質タイプが未定義だった場合の安全装置（元のまま）
+  // =======================================
+  // ❌ 未定義タイプ安全処理
+  // =======================================
   if (!typeName) {
     return {
       type: "不明な体質タイプ",
       traits: "",
       flowType,
       organType,
-      symptom: symptom || "不明な不調",
-      motion: motion || "特定の動作",
+      symptomLabel,
+      motion,
       flowIssue: flowDictionary[flowType] || "",
       organBurden: organDictionary[organType] || "",
       scores: [score1, score2, score3],
+      overview: "内部エラーの可能性があります。",
       adviceCards: [
         {
           header: "分析エラー",
-          body: "スコアの組み合わせが未定義か、内部エラーが発生しています。",
-        }
-      ]
+          body: "内部エラーが発生しました。",
+        },
+      ],
     };
   }
 
-  // ==========================
-  // ① 辞書データ（元のまま）
-  // ==========================
-  const baseInfo = resultDictionary[typeName] || {};
-  const flowInfo = flowDictionary[flowType] || "";
+  // =======================================
+  // 🔰 各種辞書読み込み
+  // =======================================
+  const baseTraits = (resultDictionary[typeName] || {}).traits || "";
+  const flowIssue = flowDictionary[flowType] || "";
   const organInfo = organDictionary[organType] || "";
   const baseAdvice = adviceDictionary[typeName] || "";
+  const flowLabel = flowlabelDictionary[flowType] || "";
 
-  const flowData = flowAdviceDictionary[flowType] || { text: "", link: "" };
-  const stretchData = stretchPointDictionary[organType] || {
-    stretch: { text: "", link: "" },
-    points: { text: "", link: "" }
+  const flowData = flowAdviceDictionary[flowType] || {
+    text: "",
+    link: "",
   };
 
-  // flowlabel → link内部置換（元のまま）
-  const flowLabel = flowlabelDictionary[flowType] || "";
+  const stretchData = stretchPointDictionary[organType] || {
+    stretch: { text: "", link: "" },
+    points: { text: "", link: "" },
+  };
+
+  // --- 漢方リンクに flowlabel を埋め込む ----
   const rawLinkText = linkDictionary[typeName] || "";
   const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
+
+  // =======================================
+  // 🔰 overview の自然文生成
+  // =======================================
+  const overview = buildOverviewText({
+    symptomLabel,
+    typeName,
+    traits: baseTraits,
+    flowLabel,
+    flowIssue,
+    organType,
+    organInfo,
+  });
 
   // ==========================
   // ② カルーセル（元のまま）
@@ -84,83 +184,20 @@ function generateResult(score1, score2, score3, flowType, organType, symptom, mo
     },
   ];
 
-  // ==========================
-  // ③ 新：統合ストーリー（追加）
-  // ==========================
-  const symptomText = symptom
-    ? `あなたが今気にされている「${symptom}」は、`
-    : `現在気になっている不調は、`;
-
-  const baseText = baseInfo.traits
-    ? `まず体質として「${typeName}」の特徴があり、${baseInfo.traits}`
-    : `まず体質として「${typeName}」の特徴があります。`;
-
-  const flowText = flowInfo
-    ? `その影響で「${flowType}」の傾向があらわれやすく、${flowInfo}`
-    : "";
-
-  const organText = organInfo
-    ? `さらに、この巡りの偏りが「${organType}」の経絡（身体の特定のライン）に局在し、負担があらわれています。${organInfo}`
-    : "";
-
-  const summaryText = `
-以上より、
-① 体質（根本）  
-② 巡り（流れ）  
-③ 経絡（偏りの局在）  
-
-の3層が連動して今の不調につながっている状態です。
-`;
-
-  const fullStory = `
-${symptomText}
-${baseText}
-
-${flowText}
-
-${organText}
-
-${summaryText}
-`.trim();
-
-  // ==========================
-  // ④ 返却（元+追加）
-  // ==========================
+  // =======================================
+  // 🔰 最終返り値
+  // =======================================
   return {
     type: typeName,
-    traits: baseInfo.traits || "",
+    symptomLabel,
     flowType,
     organType,
-    symptom: symptom || "",
-    motion: motion || "",
-    flowIssue: flowInfo,
+    traits: baseTraits,
+    flowIssue,
     organBurden: organInfo,
+    overview,
     adviceCards,
     scores: [score1, score2, score3],
-
-    // 追加（Flexに使える）
-    fullStory,
-
-    // 後でさらに UIを賢くするとき用
-    layers: {
-      base: {
-        type: typeName,
-        traits: baseInfo.traits,
-        advice: baseAdvice,
-        link: resolvedLink,
-      },
-      flow: {
-        type: flowType,
-        description: flowInfo,
-        advice: flowData,
-      },
-      organ: {
-        type: organType,
-        description: organInfo,
-        stretch: stretchData.stretch,
-        points: stretchData.points,
-      },
-    },
   };
 }
 
