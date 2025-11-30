@@ -371,118 +371,158 @@ function buildFollowupQuestionFlex(questionObj, context = {}) {
 
 function buildResultFlex(result, imageUrl) {
   return {
-    type: 'flex',
+    type: "flex",
     altText: `分析結果：${result.type}／${result.symptomLabel}`,
     contents: {
-      type: 'bubble',
-      size: 'mega',
+      type: "bubble",
+      size: "mega",
+
+      // ================================
+      // 🟩 ヘッダー
+      // ================================
       header: {
-        type: 'box',
-        layout: 'vertical',
+        type: "box",
+        layout: "vertical",
         contents: [
           {
-            type: 'text',
+            type: "text",
             text: `📝 【 ${result.type} 】`,
-            weight: 'bold',
-            size: 'lg',
-            color: '#ffffff',
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff",
           },
         ],
-        backgroundColor: '#7B9E76',
-        paddingAll: '12px',
+        backgroundColor: "#7B9E76",
+        paddingAll: "12px",
       },
+
+      // ================================
+      // 🟦 ボディ
+      // ================================
       body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'md',
-        backgroundColor: '#F8F9F7',
-        paddingAll: '16px',
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "18px",
         contents: [
+
+          // ----------------------------
+          // 画像
+          // ----------------------------
           {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: '10px',
+            type: "box",
+            layout: "vertical",
+            paddingAll: "10px",
             contents: [
               {
-                type: 'image',
+                type: "image",
                 url: imageUrl,
-                size: 'full',
-                aspectMode: 'fit',
-                aspectRatio: '1:1',
+                size: "full",
+                aspectMode: "cover",
+                aspectRatio: "1:1",
               },
             ],
           },
 
-          { type: 'separator', margin: 'md' },
+          { type: "separator", margin: "md" },
 
-          // 🧭 概要セクション
+          // ----------------------------
+          // 📝 主訴（入り口）
+          // ----------------------------
           {
-            type: 'text',
-            text: '【 🧭 あなたのからだの今の状態 】',
-            weight: 'bold',
-            size: 'sm',
-            color: '#0d0d0d',
+            type: "text",
+            text: `【 📝 今回のお悩み 】`,
+            weight: "bold",
+            size: "sm",
+            color: "#0d0d0d",
           },
           {
-            type: 'text',
-            text: result.overview,
+            type: "text",
+            text: result.symptomLabel,
             wrap: true,
-            size: 'md',
-            color: '#333333',
+            size: "md",
+            color: "#333333",
           },
 
-          { type: 'separator', margin: 'md' },
+          { type: "separator", margin: "md" },
 
-          // ① 体質
+          // ----------------------------
+          // ① 体質（根本）
+          // ----------------------------
           {
-            type: 'text',
-            text: '【 ① 体質（根本）の特徴 】',
-            weight: 'bold',
-            size: 'sm',
-            color: '#0d0d0d',
+            type: "text",
+            text: "【 ① 体質（根本）の特徴 】",
+            weight: "bold",
+            size: "sm",
+            color: "#0d0d0d",
           },
           {
-            type: 'text',
+            type: "text",
             text: result.traits,
             wrap: true,
-            size: 'md',
-            color: '#333333',
+            size: "md",
+            color: "#333333",
           },
 
-          { type: 'separator', margin: 'md' },
+          { type: "separator", margin: "md" },
 
-          // ② 巡り
+          // ----------------------------
+          // ② 巡り（動態）
+          // ----------------------------
           {
-            type: 'text',
-            text: '【 ② 巡り（流れ）の傾向 】',
-            weight: 'bold',
-            size: 'sm',
-            color: '#0d0d0d',
+            type: "text",
+            text: "【 ② 巡り（流れ）の傾向 】",
+            weight: "bold",
+            size: "sm",
+            color: "#0d0d0d",
           },
           {
-            type: 'text',
+            type: "text",
             text: result.flowIssue,
             wrap: true,
-            size: 'md',
-            color: '#333333',
+            size: "md",
+            color: "#333333",
           },
 
-          { type: 'separator', margin: 'md' },
+          { type: "separator", margin: "md" },
 
-          // ③ 経絡
+          // ----------------------------
+          // ③ 経絡（局所）
+          // ----------------------------
           {
-            type: 'text',
-            text: '【 ③ 経絡（偏りの局在）の傾向 】',
-            weight: 'bold',
-            size: 'sm',
-            color: '#0d0d0d',
+            type: "text",
+            text: "【 ③ 経絡（負担の局在）】",
+            weight: "bold",
+            size: "sm",
+            color: "#0d0d0d",
           },
           {
-            type: 'text',
+            type: "text",
             text: result.organBurden,
             wrap: true,
-            size: 'md',
-            color: '#333333',
+            size: "md",
+            color: "#333333",
+          },
+
+          { type: "separator", margin: "md" },
+
+          // ----------------------------
+          // 🧭 最後に overview（３層まとめ）
+          // ----------------------------
+          {
+            type: "text",
+            text: "【 🧭 今の状態のまとめ 】",
+            weight: "bold",
+            size: "sm",
+            color: "#0d0d0d",
+          },
+          {
+            type: "text",
+            text: result.overview,
+            wrap: true,
+            size: "md",
+            color: "#333333",
           },
         ],
       },
