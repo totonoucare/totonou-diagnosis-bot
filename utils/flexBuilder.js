@@ -401,23 +401,15 @@ function buildResultFlex(result, imageUrl) {
         paddingAll: "18px",
         contents: [
           {
-            type: "box",
-            layout: "vertical",
-            paddingAll: "10px",
-            contents: [
-              {
-                type: "image",
-                url: imageUrl,
-                size: "full",
-                aspectMode: "cover",
-                aspectRatio: "1:1",
-              },
-            ],
+            type: "image",
+            url: imageUrl,
+            size: "full",
+            aspectRatio: "1:1",
+            aspectMode: "cover"
           },
 
-          { type: "separator", margin: "md" },
+          { type: "separator", margin: "lg" },
 
-          // 📝 主訴
           {
             type: "text",
             text: `【 📝 今回のお悩み 】`,
@@ -433,9 +425,8 @@ function buildResultFlex(result, imageUrl) {
             color: "#333333",
           },
 
-          { type: "separator", margin: "md" },
+          { type: "separator", margin: "lg" },
 
-          // 🧭 overview（太字対応）
           {
             type: "text",
             text: "【 🧭 今の状態のまとめ 】",
@@ -444,19 +435,29 @@ function buildResultFlex(result, imageUrl) {
             color: "#0d0d0d",
           },
 
-          ...result.overviewParts.map((p) => ({
-            type: "text",
-            text: p.text,
-            wrap: true,
-            size: "md",
-            weight: p.bold ? "bold" : "regular",
-            color: "#333333",
-          })),
+          // ⭐ overviewParts を要素化
+          ...result.overviewParts.map((p) => {
+            if (p.type === "separator") {
+              return {
+                type: "separator",
+                margin: "md",
+              };
+            }
+            return {
+              type: "text",
+              text: p.text,
+              wrap: true,
+              size: "md",
+              weight: p.bold ? "bold" : "regular",
+              color: "#333333",
+            };
+          }),
         ],
       },
     },
   };
 }
+
 function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうケアガイド') {
   const bubbles = cards.map((card) => {
     const bodyContents = [
