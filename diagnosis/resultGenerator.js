@@ -1,3 +1,6 @@
+// ================================
+// 📚 必要辞書
+// ================================
 const resultDictionary = require("./resultDictionary");
 const flowDictionary = require("./flowDictionary");
 const flowlabelDictionary = require("./flowlabelDictionary");
@@ -8,6 +11,9 @@ const stretchPointDictionary = require("./stretchPointDictionary");
 const flowAdviceDictionary = require("./flowAdviceDictionary");
 const getTypeName = require("./typeMapper");
 
+// ================================
+// 🏷 症状ラベル
+// ================================
 const symptomLabelMap = {
   stomach: "胃腸の調子",
   sleep: "睡眠・集中力",
@@ -20,10 +26,10 @@ const symptomLabelMap = {
   unknown: "なんとなくの不調",
 };
 
-// ===================================================
-// 🔥 overviewParts（太字＋セパレーター対応）
-// ===================================================
-function buildOverviewParts({
+// ================================
+// ✨ 共通：overviewParts（通常ルート）
+// ================================
+function buildDefaultOverviewParts({
   symptomLabel,
   typeName,
   traits,
@@ -40,88 +46,117 @@ function buildOverviewParts({
     bold: true,
     text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴がベースにあります。`,
   });
-
   parts.push({ type: "separator" });
 
-  // 体質 辞書
-  if (traits) {
-    parts.push({
-      type: "text",
-      bold: false,
-      text: traits,
-    });
-  }
-
+  // 体質説明
+  parts.push({ type: "text", bold: false, text: traits });
   parts.push({ type: "separator" });
 
-  // ② 巡りの偏り
+  // ② 巡り接続文
   parts.push({
     type: "text",
     bold: true,
     text: `その影響で“${flowLabel}”という巡りの偏りがあらわれやすく、流れが滞りやすい状態です。`,
   });
 
-  // 巡り 辞書
-  if (flowIssue) {
-    parts.push({
-      type: "text",
-      bold: false,
-      text: flowIssue,
-    });
-  }
-
+  // 巡り辞書
+  parts.push({ type: "text", bold: false, text: flowIssue });
   parts.push({ type: "separator" });
 
-  // ③ 経絡の偏り
-  if (organType) {
-    parts.push({
-      type: "text",
-      bold: true,
-      text: `さらに、この巡りの滞りが体表面の『${organType}の経絡ライン』に固さとして表れ、全体のバランスを崩しています。`,
-    });
-  }
-
-  if (organInfo) {
-    parts.push({
-      type: "text",
-      bold: false,
-      text: organInfo,
-    });
-  }
-
-  parts.push({ type: "separator" });
-
-  // 最終まとめ
+  // ③ 経絡接続文
   parts.push({
     type: "text",
     bold: true,
-    text: "まとめると、①体質（根本） ②巡り（流れ） ③経絡（負担の局在）の３層が重なり、今の不調につながっている状態です。",
+    text: `さらに、この巡りの滞りが体表面の『${organType}の経絡ライン』に固さとして表れ、全体のバランスを崩しています。`,
+  });
+
+  // 経絡辞書
+  parts.push({ type: "text", bold: false, text: organInfo });
+  parts.push({ type: "separator" });
+
+  // まとめ
+  parts.push({
+    type: "text",
+    bold: true,
+    text:
+      "まとめると、①体質（根本） ②巡り（流れ） ③経絡（局在）の３層が重なり、今の不調につながっている状態です。",
   });
 
   return parts;
 }
 
-// ===================================================
-// 🔥 メイン resultGenerator
-// ===================================================
-function generateResult(
-  score1,
-  score2,
-  score3,
-  flowType,
+// ================================
+// ✨ 特別ルート：巡り良好専用
+// ================================
+function buildGoodFlowOverviewParts({
+  symptomLabel,
+  typeName,
+  traits,
+  flowIssue,
   organType,
-  symptom
-) {
-  const typeName = getTypeName(score1, score2, score3);
+  organInfo,
+}) {
+  const parts = [];
 
+  // ① 悩み → 体質
+  parts.push({
+    type: "text",
+    bold: true,
+    text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴が関係しています。`,
+  });
+
+
+  // 体質説明
+  parts.push({ type: "text", bold: false, text: traits });
+  parts.push({ type: "separator" });
+
+  // ② 巡り良好の接続文
+  parts.push({
+    type: "text",
+    bold: true,
+    text: `体質の影響はあるものの、“巡り自体は大きく乱れていない状態”です。`,
+  });
+
+  // 巡り辞書（巡り良好の説明）
+  parts.push({ type: "text", bold: false, text: flowIssue });
+  parts.push({ type: "separator" });
+
+  // ③ 経絡（巡りは良好でも局所は固まり得る）
+  parts.push({
+    type: "text",
+    bold: true,
+    text: `ただし、疲労やストレスが重なると、体表面の『${organType}の経絡ライン』に緊張として現れ、局所的なこわばりがバランスを崩す原因になります。`,
+  });
+
+  // 経絡辞書
+  parts.push({ type: "text", bold: false, text: organInfo });
+  parts.push({ type: "separator" });
+
+  // まとめ
+  parts.push({
+    type: "text",
+    bold: true,
+    text:
+      "まとめると、巡りは良好ですが、体質（根本）と局所の崩れが不調の入口となりやすい状態です。",
+  });
+
+  return parts;
+}
+
+// ================================
+// 🌟 メイン：結果生成
+// ================================
+function generateResult(score1, score2, score3, flowType, organType, symptom) {
+  const typeName = getTypeName(score1, score2, score3);
   const symptomLabel =
     symptomLabelMap[symptom] || symptom || "からだの不調";
 
-  const baseTraits = (resultDictionary[typeName] || {}).traits || "";
+  const traits = (resultDictionary[typeName] || {}).traits || "";
   const flowIssue = flowDictionary[flowType] || "";
-  const organInfo = organDictionary[organType] || "";
   const flowLabel = flowlabelDictionary[flowType] || "";
+  const organInfo = organDictionary[organType] || "";
 
+  // ケアガイド（カルーセル用）
   const baseAdvice = adviceDictionary[typeName] || "";
   const flowData = flowAdviceDictionary[flowType] || { text: "", link: "" };
   const stretchData = stretchPointDictionary[organType] || {
@@ -129,20 +164,37 @@ function generateResult(
     points: { text: "", link: "" },
   };
 
-  const rawLinkText = linkDictionary[typeName] || "";
-  const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
+  const resolvedLink =
+    (linkDictionary[typeName] || "").replace("{{flowlabel}}", flowLabel);
 
-  // ⭐ ここが今回の主役：overviewParts
-  const overviewParts = buildOverviewParts({
-    symptomLabel,
-    typeName,
-    traits: baseTraits,
-    flowLabel,
-    flowIssue,
-    organType,
-    organInfo,
-  });
+  // ================================
+  // 🟦 巡り良好なら特別ルートへ分岐
+  // ================================
+  let overviewParts;
+  if (flowType === "巡りは良好") {
+    overviewParts = buildGoodFlowOverviewParts({
+      symptomLabel,
+      typeName,
+      traits,
+      flowIssue,
+      organType,
+      organInfo,
+    });
+  } else {
+    overviewParts = buildDefaultOverviewParts({
+      symptomLabel,
+      typeName,
+      traits,
+      flowLabel,
+      flowIssue,
+      organType,
+      organInfo,
+    });
+  }
 
+  // ================================
+  // 🌱 ケアガイド（カルーセル）
+  // ================================
   const adviceCards = [
     {
       header: "① 体質改善習慣💡",
@@ -164,7 +216,7 @@ function generateResult(
       link: stretchData.points.link || "",
     },
     {
-      header: "⑤ 相性のよい漢方・サプリ🌿",
+      header: "⑤ 相性のよい漢方🌿",
       body: resolvedLink,
     },
   ];
@@ -172,7 +224,7 @@ function generateResult(
   return {
     type: typeName,
     symptomLabel,
-    traits: baseTraits,
+    traits,
     flowIssue,
     organBurden: organInfo,
     overviewParts,
