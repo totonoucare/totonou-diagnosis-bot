@@ -164,7 +164,7 @@ function generateResult(
       link: stretchData.points.link || "",
     },
     {
-      header: "⑤ 相性のよい漢方🌿",
+      header: "⑤ 相性のよい漢方・サプリ🌿",
       body: resolvedLink,
     },
   ];
