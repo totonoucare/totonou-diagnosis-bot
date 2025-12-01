@@ -58,7 +58,7 @@ function buildOverviewParts({
   parts.push({
     type: "text",
     bold: true,
-    text: `その影響で“${flowLabel}”の巡りの偏りがあらわれやすく、気の流れが滞りやすい状態です。`,
+    text: `その影響で“${flowLabel}”の巡りの偏りがあらわれやすく、流れが滞りやすい状態です。`,
   });
 
   // 巡り 辞書
