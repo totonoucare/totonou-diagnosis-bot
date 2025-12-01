@@ -77,7 +77,7 @@ function buildOverviewParts({
     parts.push({
       type: "text",
       bold: true,
-      text: `さらに、この巡りの偏りが『${organType}ライン』に局在し、特定の部位に負担がかかりやすい状態です。`,
+      text: `さらに、この巡りの滞りが体表面の『${organType}の経絡ライン』に固さとして表れ、全体のバランスを崩しています。`,
     });
   }
 
