@@ -46,7 +46,6 @@ function buildDefaultOverviewParts({
     bold: true,
     text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴がベースにあります。`,
   });
-  parts.push({ type: "separator" });
 
   // 体質説明
   parts.push({ type: "text", bold: false, text: traits });
