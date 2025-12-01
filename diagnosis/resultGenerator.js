@@ -215,7 +215,7 @@ function generateResult(score1, score2, score3, flowType, organType, symptom) {
       link: stretchData.points.link || "",
     },
     {
-      header: "⑤ 相性のよい漢方🌿",
+      header: "⑤ 相性のよい漢方・サプリ🌿",
       body: resolvedLink,
     },
   ];
