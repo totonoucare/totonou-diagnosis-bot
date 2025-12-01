@@ -9,7 +9,7 @@
     "lint": "eslint ."
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": "18.x"
   },
   "dependencies": {
     "@line/bot-sdk": "^7.5.0",
