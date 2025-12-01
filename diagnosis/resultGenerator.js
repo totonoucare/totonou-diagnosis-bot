@@ -1,6 +1,3 @@
-// ================================
-// 🔰 必要な辞書読み込み
-// ================================
 const resultDictionary = require("./resultDictionary");
 const flowDictionary = require("./flowDictionary");
 const flowlabelDictionary = require("./flowlabelDictionary");
@@ -11,9 +8,6 @@ const stretchPointDictionary = require("./stretchPointDictionary");
 const flowAdviceDictionary = require("./flowAdviceDictionary");
 const getTypeName = require("./typeMapper");
 
-// ================================
-// 🔰 症状ラベル辞書
-// ================================
 const symptomLabelMap = {
   stomach: "胃腸の調子",
   sleep: "睡眠・集中力",
@@ -26,9 +20,9 @@ const symptomLabelMap = {
   unknown: "なんとなくの不調",
 };
 
-// ================================
-// 🔰 overviewParts 生成関数（太字行を含む）
-// ================================
+// ===================================================
+// 🔥 overviewParts（太字＋セパレーター対応）
+// ===================================================
 function buildOverviewParts({
   symptomLabel,
   typeName,
@@ -40,41 +34,66 @@ function buildOverviewParts({
 }) {
   const parts = [];
 
-  // --- 悩み → 体質（太字） ------------
+  // ① 悩み → 体質
   parts.push({
+    type: "text",
     bold: true,
     text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴がベースにあります。`,
   });
 
-  // --- 体質の説明（辞書） -------------
-  if (traits) {
-    parts.push({ bold: false, text: traits });
-  }
+  parts.push({ type: "separator" });
 
-  // --- 巡りの偏り（太字） -------------
-  if (flowLabel) {
+  // 体質 辞書
+  if (traits) {
     parts.push({
-      bold: true,
-      text: `その影響で“${flowLabel}”の巡りの偏りがあらわれやすく、気の流れが滞りやすい状態です。`,
+      type: "text",
+      bold: false,
+      text: traits,
     });
   }
 
-  // --- 巡りの説明（辞書） -------------
+  parts.push({ type: "separator" });
+
+  // ② 巡りの偏り
+  parts.push({
+    type: "text",
+    bold: true,
+    text: `その影響で“${flowLabel}”の巡りの偏りがあらわれやすく、気の流れが滞りやすい状態です。`,
+  });
+
+  // 巡り 辞書
   if (flowIssue) {
-    parts.push({ bold: false, text: flowIssue });
+    parts.push({
+      type: "text",
+      bold: false,
+      text: flowIssue,
+    });
   }
 
-  // --- 経絡の説明（太字） -------------
-  if (organType && organInfo) {
+  parts.push({ type: "separator" });
+
+  // ③ 経絡の偏り
+  if (organType) {
     parts.push({
+      type: "text",
       bold: true,
       text: `さらに、この巡りの偏りが『${organType}ライン』に局在し、特定の部位に負担がかかりやすい状態です。`,
     });
-    parts.push({ bold: false, text: organInfo });
   }
 
-  // --- 最終まとめ（太字） -------------
+  if (organInfo) {
+    parts.push({
+      type: "text",
+      bold: false,
+      text: organInfo,
+    });
+  }
+
+  parts.push({ type: "separator" });
+
+  // 最終まとめ
   parts.push({
+    type: "text",
     bold: true,
     text: "まとめると、①体質（根本） ②巡り（流れ） ③経絡（負担の局在）の３層が重なり、今の不調につながっている状態です。",
   });
@@ -82,38 +101,21 @@ function buildOverviewParts({
   return parts;
 }
 
-// ================================
-// 🔥 メイン：結果生成
-// ================================
+// ===================================================
+// 🔥 メイン resultGenerator
+// ===================================================
 function generateResult(
   score1,
   score2,
   score3,
   flowType,
   organType,
-  symptom,
-  motion
+  symptom
 ) {
   const typeName = getTypeName(score1, score2, score3);
 
   const symptomLabel =
     symptomLabelMap[symptom] || symptom || "からだの不調";
-
-  if (!typeName) {
-    return {
-      type: "不明な体質タイプ",
-      symptomLabel,
-      traits: "",
-      flowType,
-      organType,
-      flowIssue: "",
-      organBurden: "",
-      overviewParts: [
-        { bold: true, text: "内部エラーが発生しました。" },
-      ],
-      adviceCards: [],
-    };
-  }
 
   const baseTraits = (resultDictionary[typeName] || {}).traits || "";
   const flowIssue = flowDictionary[flowType] || "";
@@ -130,7 +132,7 @@ function generateResult(
   const rawLinkText = linkDictionary[typeName] || "";
   const resolvedLink = rawLinkText.replace("{{flowlabel}}", flowLabel);
 
-  // 🔥 overviewParts を構造化して生成
+  // ⭐ ここが今回の主役：overviewParts
   const overviewParts = buildOverviewParts({
     symptomLabel,
     typeName,
