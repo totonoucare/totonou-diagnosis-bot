@@ -223,23 +223,23 @@ function generateResult(score1, score2, score3, flowType, organType, symptom) {
   // ======================================
   // 🎴 カルーセルカード生成
   // ======================================
-  function buildCard(type, title, body, link) {
-    const isPriority = priority.includes(type);
-    const intro = isPriority
-      ? introPriority[type]
-      : introSupport[type];
+function buildCard(type, title, body, link) {
+  const isPriority = priority.includes(type);
+  const intro = isPriority ? introPriority[type] : introSupport[type];
 
-    return {
-      header: `${isPriority ? "最優先ケア" : "サポートケア"}：${title}`,
-      body: `${intro}\n\n${body}`,
-      link,
-      priority: isPriority ? 1 : 2,
-      key: type,
-    };
-  }
-
+  return {
+    header: `${isPriority ? "最優先ケア" : "サポートケア"}：${title}`,
+    intro,          // ← ★前置き文を独立して渡す（必須）
+    explain: null,  // ← 今後使うならここに入る
+    body,           // ← 辞書本文は混ぜない
+    link,
+    priority: isPriority ? 1 : 2,
+    key: type,
+  };
+}
+  
   const cardsRaw = [
-    buildCard("breathing", "呼吸法", flowData.text, flowData.link),
+    buildCard("breathing", "巡りととのえ呼吸法", flowData.text, flowData.link),
     buildCard(
       "stretch",
       "経絡ストレッチ",
