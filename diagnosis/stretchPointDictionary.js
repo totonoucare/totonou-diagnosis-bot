@@ -1,5 +1,3 @@
-これでいくわ
-
 const stretchPointDictionary = {
   // ============================
   // ① 肝・胆ライン
