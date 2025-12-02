@@ -461,7 +461,7 @@ function buildResultFlex(result, imageUrl) {
                 type: "text",
                 text: p.text,
                 wrap: true,
-                size: "md",
+                size: "sm",
                 weight: p.bold ? "bold" : "regular",
                 color: "#333333",
               };
