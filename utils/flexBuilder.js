@@ -458,77 +458,99 @@ function buildResultFlex(result, imageUrl) {
   };
 }
 
-function buildAdviceCarouselFlex(cards, altText = 'あなた専用ととのうケアガイド') {
-  const bubbles = cards.map((card) => {
-    const bodyContents = [
-      {
-        type: 'text',
-        text: card.body,
-        wrap: true,
-        color: '#0d0d0d',
-        size: 'md',
-      },
-    ];
+function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
 
-    // ✅ 図解ボタンがある場合のみ、区切り線＋ボタンを追加
+  const bubbles = cards.map((card, index) => {
+    const isPriority = index === 0 || index === 1; // ❶と❷だけ特別扱い
+
+    const bodyContents = [];
+
+    // --- 優先ケアの冒頭メッセージ（自動追加） ---
+    if (isPriority) {
+      bodyContents.push({
+        type: "text",
+        text: index === 0 
+          ? "💡 今の不調に最も直結する、まず取り組むべきケアです。" 
+          : "💡 優先ケア❶ と併せて行うと、より整いやすくなります。",
+        wrap: true,
+        color: "#333333",
+        size: "sm",
+      });
+
+      bodyContents.push({
+        type: "separator",
+        margin: "md",
+      });
+    }
+
+    // --- 本文（辞書本文） ---
+    bodyContents.push({
+      type: "text",
+      text: card.body,
+      wrap: true,
+      color: "#0d0d0d",
+      size: "md",
+    });
+
+    // --- 図解ボタンがある場合のみ ---
     if (card.link) {
       bodyContents.push({
-        type: 'separator',
-        margin: 'md',
+        type: "separator",
+        margin: "md",
       });
       bodyContents.push({
-        type: 'button',
+        type: "button",
         action: {
-          type: 'uri',
-          label: '📖 図解を見る',
+          type: "uri",
+          label: "📖 図解を見る",
           uri: card.link,
         },
-        style: 'primary',
-        color: '#7B9E76', // トーン統一
-        height: 'sm',
+        style: "primary",
+        color: "#7B9E76",
+        height: "sm",
       });
     }
 
     return {
-      type: 'bubble',
-      size: 'mega',
+      type: "bubble",
+      size: isPriority ? "mega" : "mega", // サイズは統一でOK
       header: {
-        type: 'box',
-        layout: 'vertical',
+        type: "box",
+        layout: "vertical",
         contents: [
           {
-            type: 'text',
+            type: "text",
             text: card.header,
-            weight: 'bold',
-            size: 'md',
-            color: '#ffffff',
+            weight: "bold",
+            size: isPriority ? "md" : "md", // ←優先ケアだけ大きく
+            color: "#ffffff",
           },
         ],
-        backgroundColor: '#7B9E76',
-        paddingAll: '12px',
+        backgroundColor: isPriority ? "#5F7F59" : "#7B9E76", // ←優先ケアは濃いトーン
+        paddingAll: "12px",
       },
       body: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: '#F8F9F7',
-        paddingAll: '16px',
-        spacing: 'md',
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "16px",
+        spacing: "md",
         contents: bodyContents,
       },
     };
   });
 
   return {
-    type: 'flex',
+    type: "flex",
     altText,
     contents: {
-      type: 'carousel',
+      type: "carousel",
       contents: bubbles,
     },
   };
 }
 
-function buildCarouselFlex(cards, altText = '分析結果・ととのえ方提案') {
+function buildCarouselFlex(cards, altText = "分析結果・ととのえ方提案") {
   return buildAdviceCarouselFlex(cards, altText);
 }
 
