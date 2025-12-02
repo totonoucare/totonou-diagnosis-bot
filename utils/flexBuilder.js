@@ -440,7 +440,7 @@ function buildResultFlex(result, imageUrl) {
             if (p.type === "separator") {
               return {
                 type: "separator",
-                margin: "md",
+                margin: "lg",
               };
             }
             return {
