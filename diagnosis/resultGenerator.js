@@ -196,26 +196,26 @@ function generateResult(score1, score2, score3, flowType, organType, symptom) {
   // ================================
   const adviceCards = [
     {
-      header: "① 体質改善習慣💡",
-      body: baseAdvice,
-    },
-    {
-      header: "② 巡りととのう呼吸法🧘",
+      header: "❶ 巡りととのう呼吸法🧘",
       body: flowData.text,
       link: flowData.link || "",
     },
     {
-      header: "③ 経絡ストレッチ🤸",
+      header: "❷ 経絡ストレッチ🤸",
       body: stretchData.stretch.text,
       link: stretchData.stretch.link || "",
     },
     {
-      header: "④ 指先・ツボほぐし👍",
+      header: "❸ 指先・ツボほぐし👍",
       body: stretchData.points.text,
       link: stretchData.points.link || "",
     },
     {
-      header: "⑤ 相性のよい漢方・サプリ🌿",
+      header: "❹ 体質改善習慣💡",
+      body: baseAdvice,
+    },
+    {
+      header: "❺ 相性のよい漢方・サプリ🌿",
       body: resolvedLink,
     },
   ];
