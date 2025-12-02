@@ -498,21 +498,28 @@ function buildResultFlex(result, imageUrl) {
 // ========================================
 function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
   const bubbles = cards.map((card, index) => {
-    const isPriority = index === 0 || index === 1; // ❶と❷だけ優先扱い
+    const isPriority = index === 0 || index === 1;
 
     const bodyContents = [];
 
-    // ===============================================================
-    // 🥇 優先ケアの冒頭メッセージ（太字・サイズsm）
-    // ===============================================================
+    // ---------------------------
+    // 🥇 優先ケア 前置き（box 包み）
+    // ---------------------------
     if (card.intro) {
       bodyContents.push({
-        type: "text",
-        text: card.intro,
-        wrap: true,
-        weight: "bold",   // ← 太字
-        color: "#333333",
-        size: "sm",
+        type: "box",
+        layout: "vertical",
+        margin: "none",
+        contents: [
+          {
+            type: "text",
+            text: card.intro,
+            wrap: true,
+            weight: "bold",
+            size: "sm",
+            color: "#333333"
+          }
+        ]
       });
 
       bodyContents.push({
@@ -521,17 +528,23 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       });
     }
 
-    // ===============================================================
-    // 📘 ケア固有の説明文（太字・サイズsm）
-    // ===============================================================
+    // ---------------------------
+    // 📘 ケア固有説明（box 包み）
+    // ---------------------------
     if (card.explain) {
       bodyContents.push({
-        type: "text",
-        text: card.explain,
-        wrap: true,
-        weight: "bold",   // ← 太字
-        color: "#333333",
-        size: "sm",
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: card.explain,
+            wrap: true,
+            weight: "bold",
+            size: "sm",
+            color: "#333333",
+          }
+        ]
       });
 
       bodyContents.push({
@@ -540,20 +553,20 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       });
     }
 
-    // ===============================================================
-    // 📚 本文（辞書本文）
-    // ===============================================================
+    // ---------------------------
+    // 📚 辞書本文（これは直接 text でOK）
+    // ---------------------------
     bodyContents.push({
       type: "text",
       text: card.body,
       wrap: true,
-      color: "#0d0d0d",
       size: "md",
+      color: "#0d0d0d",
     });
 
-    // ===============================================================
+    // ---------------------------
     // 📖 図解ボタン
-    // ===============================================================
+    // ---------------------------
     if (card.link) {
       bodyContents.push({
         type: "separator",
@@ -587,7 +600,7 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
             color: "#ffffff",
           },
         ],
-        backgroundColor: isPriority ? "#5F7F59" : "#7B9E76", // ← 優先は濃いトーン
+        backgroundColor: isPriority ? "#5F7F59" : "#7B9E76",
         paddingAll: "12px",
       },
       body: {
