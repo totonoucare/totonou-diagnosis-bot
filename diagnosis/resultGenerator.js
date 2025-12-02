@@ -256,9 +256,8 @@ function generateResult(score1, score2, score3, flowType, organType, symptom) {
     buildCard("kanpo", "漢方・サプリ", resolvedLink, null),
   ];
 
-  const adviceCards = cardsRaw
-    .sort((a, b) => a.priority - b.priority)
-    .map(({ header, body, link }) => ({ header, body, link }));
+// ← 余計な map を削除して、card オブジェクトをそのまま渡す
+const adviceCards = cardsRaw.sort((a, b) => a.priority - b.priority);
 
   return {
     type: typeName,
