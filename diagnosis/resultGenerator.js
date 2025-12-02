@@ -40,33 +40,40 @@ function buildDefaultOverviewParts({
 }) {
   const parts = [];
 
+  // ① 悩み → 体質
   parts.push({
     type: "text",
     bold: true,
     text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴がベースにあります。`,
   });
 
-  parts.push({ type: "text", bold: false, text: traits });
+  // 体質説明（辞書 → box付き）
+  parts.push({ type: "text", bold: false, text: traits, box: true });
   parts.push({ type: "separator" });
 
+  // ② 巡り接続文
   parts.push({
     type: "text",
     bold: true,
     text: `その影響で“${flowLabel}”という巡りの偏りがあらわれやすく、流れが滞りやすい状態です。`,
   });
 
-  parts.push({ type: "text", bold: false, text: flowIssue });
+  // 巡り説明（辞書 → box付き）
+  parts.push({ type: "text", bold: false, text: flowIssue, box: true });
   parts.push({ type: "separator" });
 
+  // ③ 経絡接続文
   parts.push({
     type: "text",
     bold: true,
     text: `さらに、この巡りの滞りが体表面の『${organType}の経絡ライン』に固さとして表れ、全体のバランスを崩しています。`,
   });
 
-  parts.push({ type: "text", bold: false, text: organInfo });
+  // 経絡説明（辞書 → box付き）
+  parts.push({ type: "text", bold: false, text: organInfo, box: true });
   parts.push({ type: "separator" });
 
+  // まとめ
   parts.push({
     type: "text",
     bold: true,
@@ -90,42 +97,49 @@ function buildGoodFlowOverviewParts({
 }) {
   const parts = [];
 
+  // ① 悩み → 体質
   parts.push({
     type: "text",
     bold: true,
     text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴が関係しています。`,
   });
 
-  parts.push({ type: "text", bold: false, text: traits });
+  // 体質説明（辞書 → box付き）
+  parts.push({ type: "text", bold: false, text: traits, box: true });
   parts.push({ type: "separator" });
 
+  // 巡りが良好の接続文
   parts.push({
     type: "text",
     bold: true,
     text: `体質の影響はあるものの、“巡り自体は大きく乱れていない状態”です。`,
   });
 
-  parts.push({ type: "text", bold: false, text: flowIssue });
+  // 巡り説明（辞書 → box付き）
+  parts.push({ type: "text", bold: false, text: flowIssue, box: true });
   parts.push({ type: "separator" });
 
+  // 経絡接続文（巡り良好でも局所は固まる）
   parts.push({
     type: "text",
     bold: true,
     text: `ただし、疲労やストレスが重なると、体表面の『${organType}の経絡ライン』に緊張として現れ、局所的なこわばりがバランスを崩す原因になります。`,
   });
 
-  parts.push({ type: "text", bold: false, text: organInfo });
+  // 経絡説明（辞書 → box付き）
+  parts.push({ type: "text", bold: false, text: organInfo, box: true });
   parts.push({ type: "separator" });
 
+  // まとめ
   parts.push({
     type: "text",
     bold: true,
-    text: "まとめると、巡りは良好ですが、体質（根本）と局所の崩れが不調の入口となりやすい状態です。",
+    text:
+      "まとめると、巡りは良好ですが、体質（根本）と局所の崩れが不調の入口となりやすい状態です。",
   });
 
   return parts;
 }
-
 // ======================================
 // 🥇 ケア前置き（優先 / 補助）
 // ======================================
