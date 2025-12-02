@@ -458,21 +458,24 @@ function buildResultFlex(result, imageUrl) {
   };
 }
 
+// ========================================
+// ととのうケアガイド（カルーセル生成）
+// ========================================
 function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
-
   const bubbles = cards.map((card, index) => {
-    const isPriority = index === 0 || index === 1; // ❶と❷だけ特別扱い
+    const isPriority = index === 0 || index === 1; // ❶と❷だけ優先扱い
 
     const bodyContents = [];
 
-    // --- 優先ケアの冒頭メッセージ（自動追加） ---
-    if (isPriority) {
+    // ===============================================================
+    // 🥇 優先ケアの冒頭メッセージ（太字・サイズsm）
+    // ===============================================================
+    if (card.intro) {
       bodyContents.push({
         type: "text",
-        text: index === 0 
-          ? "💡 今の不調に最も直結する、まず取り組むべきケアです。" 
-          : "💡 優先ケア❶ と併せて行うと、より整いやすくなります。",
+        text: card.intro,
         wrap: true,
+        weight: "bold",   // ← 太字
         color: "#333333",
         size: "sm",
       });
@@ -483,7 +486,28 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       });
     }
 
-    // --- 本文（辞書本文） ---
+    // ===============================================================
+    // 📘 ケア固有の説明文（太字・サイズsm）
+    // ===============================================================
+    if (card.explain) {
+      bodyContents.push({
+        type: "text",
+        text: card.explain,
+        wrap: true,
+        weight: "bold",   // ← 太字
+        color: "#333333",
+        size: "sm",
+      });
+
+      bodyContents.push({
+        type: "separator",
+        margin: "md",
+      });
+    }
+
+    // ===============================================================
+    // 📚 本文（辞書本文）
+    // ===============================================================
     bodyContents.push({
       type: "text",
       text: card.body,
@@ -492,7 +516,9 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       size: "md",
     });
 
-    // --- 図解ボタンがある場合のみ ---
+    // ===============================================================
+    // 📖 図解ボタン
+    // ===============================================================
     if (card.link) {
       bodyContents.push({
         type: "separator",
@@ -513,7 +539,7 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
 
     return {
       type: "bubble",
-      size: isPriority ? "mega" : "mega", // サイズは統一でOK
+      size: "mega",
       header: {
         type: "box",
         layout: "vertical",
@@ -522,11 +548,11 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
             type: "text",
             text: card.header,
             weight: "bold",
-            size: isPriority ? "md" : "md", // ←優先ケアだけ大きく
+            size: "md",
             color: "#ffffff",
           },
         ],
-        backgroundColor: isPriority ? "#5F7F59" : "#7B9E76", // ←優先ケアは濃いトーン
+        backgroundColor: isPriority ? "#5F7F59" : "#7B9E76", // ← 優先は濃いトーン
         paddingAll: "12px",
       },
       body: {
