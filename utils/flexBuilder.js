@@ -377,6 +377,9 @@ function buildResultFlex(result, imageUrl) {
       type: "bubble",
       size: "mega",
 
+      // ================================
+      // 🟩 ヘッダー
+      // ================================
       header: {
         type: "box",
         layout: "vertical",
@@ -393,6 +396,9 @@ function buildResultFlex(result, imageUrl) {
         paddingAll: "12px",
       },
 
+      // ================================
+      // 🟦 ボディ
+      // ================================
       body: {
         type: "box",
         layout: "vertical",
@@ -400,6 +406,8 @@ function buildResultFlex(result, imageUrl) {
         backgroundColor: "#F8F9F7",
         paddingAll: "18px",
         contents: [
+
+          // 画像
           {
             type: "image",
             url: imageUrl,
@@ -410,6 +418,7 @@ function buildResultFlex(result, imageUrl) {
 
           { type: "separator", margin: "lg" },
 
+          // 主訴
           {
             type: "text",
             text: `【 📝 今回のお悩み 】`,
@@ -435,7 +444,9 @@ function buildResultFlex(result, imageUrl) {
             color: "#0d0d0d",
           },
 
-          // ⭐ overviewParts を要素化
+          // ================================
+          // ⭐ overviewParts を描画（辞書部分だけ枠つき）
+          // ================================
           ...result.overviewParts.map((p) => {
             if (p.type === "separator") {
               return {
@@ -443,13 +454,37 @@ function buildResultFlex(result, imageUrl) {
                 margin: "lg",
               };
             }
+
+            // ▼ 普通の接続文（太字 or 通常）→ そのまま表示
+            if (!p.box) {
+              return {
+                type: "text",
+                text: p.text,
+                wrap: true,
+                size: "md",
+                weight: p.bold ? "bold" : "regular",
+                color: "#333333",
+              };
+            }
+
+            // ▼ 辞書本文（traits / flowIssue / organInfo）→ 枠で囲む
             return {
-              type: "text",
-              text: p.text,
-              wrap: true,
-              size: "md",
-              weight: p.bold ? "bold" : "regular",
-              color: "#333333",
+              type: "box",
+              layout: "vertical",
+              backgroundColor: "#ffffff",
+              borderColor: "#D7DED4",
+              borderWidth: "1px",
+              cornerRadius: "8px",
+              paddingAll: "12px",
+              contents: [
+                {
+                  type: "text",
+                  text: p.text,
+                  wrap: true,
+                  size: "md",
+                  color: "#333333",
+                },
+              ],
             };
           }),
         ],
