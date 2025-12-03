@@ -211,15 +211,20 @@ function buildCard(type, title, body, link) {
 // ← 余計な map を削除して、card オブジェクトをそのまま渡す
 const adviceCards = cardsRaw.sort((a, b) => a.priority - b.priority);
 
-  return {
-    type: typeName,
-    symptomLabel,
-    traits,
-    flowIssue,
-    organBurden: organInfo,
-    overviewParts,
-    adviceCards,
-  };
+return {
+  type: typeName,
+  symptomLabel,
+  traits,
+  flowIssue,
+  organBurden,
+  overviewParts,
+  adviceCards,
+
+  // ★ Supabase 保存で必要なフィールド
+  flowType,
+  organType,
+  scores: [score1, score2, score3],
+};
 }
 
 module.exports = generateResult;
