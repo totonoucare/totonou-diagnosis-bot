@@ -216,11 +216,10 @@ return {
   symptomLabel,
   traits,
   flowIssue,
-  organBurden,
+  organBurden: organInfo,   // ← これだけ直せばOK！
   overviewParts,
   adviceCards,
 
-  // ★ Supabase 保存で必要なフィールド
   flowType,
   organType,
   scores: [score1, score2, score3],
