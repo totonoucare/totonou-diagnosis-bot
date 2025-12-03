@@ -27,12 +27,14 @@ const symptomLabelMap = {
 };
 
 // ======================================
-// ✨ overviewParts（通常ルート）
+// ✨ 完全統合版：overviewParts Builder
+// （通常ルート + 巡り良好ルートを一本化）
 // ======================================
-function buildDefaultOverviewParts({
+function buildOverviewParts({
   symptomLabel,
   typeName,
   traits,
+  flowType,
   flowLabel,
   flowIssue,
   organType,
@@ -40,120 +42,79 @@ function buildDefaultOverviewParts({
 }) {
   const parts = [];
 
-  // ① 悩み → 体質
+  // ===========================
+  // 🟢 ① 悩み → 体質（共通）
+  // ===========================
   parts.push({
     type: "text",
     bold: true,
-    text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴がベースにあります。`,
+    text: `あなたが今気にされている「${symptomLabel}」には、
+『${typeName}』としての体質的な特徴に加え、
+"体内の巡りの状態"や"体表面の経絡ライン(けいらく：皮膚や筋膜などの繋がり)のこわばり"
+といった複数の要因が関係しています。
+
+🟢 『${typeName}』の特徴`,
   });
 
   // 体質説明（辞書 → box付き）
   parts.push({ type: "text", bold: false, text: traits, box: true });
   parts.push({ type: "separator" });
 
-  // ② 巡り接続文
+  // ===========================
+  // 🔵 ② 巡り（flowTypeに応じて分岐）
+  // ===========================
   parts.push({
     type: "text",
     bold: true,
-    text: `その影響で“${flowLabel}”という巡りの偏りがあらわれやすく、流れが滞りやすい状態です。`,
+    text: `🔵 体内で表れている巡り（流れ）の状態`,
   });
 
-  // 巡り説明（辞書 → box付き）
+  // flowIssue（巡り説明）
   parts.push({ type: "text", bold: false, text: flowIssue, box: true });
   parts.push({ type: "separator" });
 
-  // ③ 経絡接続文
+  // ===========================
+  // 🟠 ③ 経絡ライン（共通）
+  // ===========================
   parts.push({
     type: "text",
     bold: true,
-    text: `さらに、この巡りの滞りが体表面の『${organType}の経絡ライン』に固さとして表れ、全体のバランスを崩しています。`,
+    text: `🟠 体表面で負担・こわばりが出ている『${organType}の経絡ライン』`,
   });
 
   // 経絡説明（辞書 → box付き）
   parts.push({ type: "text", bold: false, text: organInfo, box: true });
   parts.push({ type: "separator" });
 
-  // まとめ
+  // ===========================
+  // 🧩 まとめ（flowType に応じて自然に変化）
+  // ===========================
   parts.push({
     type: "text",
     bold: true,
     text:
-      "まとめると、①体質（根本） ②巡り（流れ） ③経絡（局在）の３層が重なり、今の不調につながっている状態です。",
+      flowType === "巡りは良好"
+        ? "まとめると、体質（根本）と局所（経絡：体表面）のこわばりが重なり、今回の不調につながりやすい状態です。"
+        : "まとめると、①体質（根本）をベースに、②巡り（体内の流れ）や③経絡（体表面のこわばり）の３層が重なり、今の不調につながっている状態です。",
   });
 
   return parts;
 }
 
-// ======================================
-// ✨ 巡り良好ルート
-// ======================================
-function buildGoodFlowOverviewParts({
-  symptomLabel,
-  typeName,
-  traits,
-  flowIssue,
-  organType,
-  organInfo,
-}) {
-  const parts = [];
-
-  // ① 悩み → 体質
-  parts.push({
-    type: "text",
-    bold: true,
-    text: `あなたが今気にされている「${symptomLabel}」は、体質として『${typeName}』の特徴が関係しています。`,
-  });
-
-  // 体質説明（辞書 → box付き）
-  parts.push({ type: "text", bold: false, text: traits, box: true });
-  parts.push({ type: "separator" });
-
-  // 巡りが良好の接続文
-  parts.push({
-    type: "text",
-    bold: true,
-    text: `体質の影響はあるものの、“巡り自体は大きく乱れていない状態”です。`,
-  });
-
-  // 巡り説明（辞書 → box付き）
-  parts.push({ type: "text", bold: false, text: flowIssue, box: true });
-  parts.push({ type: "separator" });
-
-  // 経絡接続文（巡り良好でも局所は固まる）
-  parts.push({
-    type: "text",
-    bold: true,
-    text: `ただし、疲労やストレスが重なると、体表面の『${organType}の経絡ライン』に緊張として現れ、局所的なこわばりがバランスを崩す原因になります。`,
-  });
-
-  // 経絡説明（辞書 → box付き）
-  parts.push({ type: "text", bold: false, text: organInfo, box: true });
-  parts.push({ type: "separator" });
-
-  // まとめ
-  parts.push({
-    type: "text",
-    bold: true,
-    text:
-      "まとめると、巡りは良好ですが、体質（根本）と局所の崩れが不調の入口となりやすい状態です。",
-  });
-
-  return parts;
-}
 // ======================================
 // 🥇 ケア前置き（優先 / 補助）
 // ======================================
 const introPriority = {
-  breathing: "🧭 優先して取り組みたいケアです。内側の圧や緊張を根本から整え、全身の張りや巡りをスムーズにする基礎ケアになります。",
-  stretch: "🧭 優先して取り組みたいケアです。負担を感じる経絡ラインのこわばりをゆるめ、巡りの通り道を広げるケアです。姿勢や動きの癖で固まりやすい部分に直接働きかけます。",
-  points: "🧭 優先して取り組みたいケアです。滞りやすい要所に直接アプローチし、早めの変化につながりやすいケアです。",
+  breathing: "🧭 優先して取り組みたいケアです。内側の圧や緊張を根本から整え、全身の張りや巡りをスムーズにする万能的な基礎ケアになります。",
+  stretch: "🧭 優先して取り組みたいケアです。あなたの姿勢や動きの癖でこわばりやすい経絡ライン（内臓と関連が深い皮膚や筋膜など）のこわばりを直接ゆるめ、体の内と外の構造を整えるケアです。",
+  points: "🧭 優先して取り組みたいケアです。こわばりやすい経絡ライン（内臓と関連が深い皮膚や筋膜など）の要所に直接アプローチし、早めの変化につなげやすくするケアです。",
   lifestyle: "🧭 優先して取り組みたいケアです。からだの土台を整える長期ケアです。体質そのものを改善していきます。",
 };
 
 const introSupport = {
   breathing: "💡 優先ケアを補完するサポートケアです。内側から圧や緊張を整え、全身の張りや巡りをスムーズにする基礎ケアになります。",
-  stretch: "💡 優先ケアを補完するサポートケアです。負担の強い経絡ラインのこわばりをゆるめ、巡りの通り道を広げるケアです。姿勢や動きの癖で固まりやすい部分に直接働きかけます。",
-  points: "💡 優先ケアを補完するサポートケアです。滞りやすい経絡ラインの要所に直接アプローチし、早めの変化につなげやすくするケアです。",
+  stretch: "💡 優先ケアを補完するサポートケアです。あなたの姿勢や動きの癖でこわばりやすい経絡ラインのこわばりを直接ゆるめ、体の内と外の構造を整えるケアです。",
+  points: "💡 優先ケアを補完するサポートケアです。こわばりやすい経絡ラインの要所に直接アプローチし、早めの変化につなげやすくするケアです。",
   lifestyle: "💡 からだの土台を整え、優先ケアの効果を維持する長期ケアです。体質そのものを改善していきます。",
   kanpo: "💡 からだの傾向に合わせた“相性のよいサポート”としてご提案しています。",
 };
