@@ -212,21 +212,20 @@ function buildCard(type, title, body, link) {
 const adviceCards = cardsRaw.sort((a, b) => a.priority - b.priority);
 
 return {
-  // 表示用
   type: typeName,
-  trait: traits,
-  symptomLabel,
-  flowIssue,
-  organBurden: organInfo,
-  overviewParts,
-  adviceCards,
-
-  // ★ supabase 保存用（必須）
+  traits,                  // ← 表示 & 保存用（旧版と同じ）
   symptom,
   motion,
   flowType,
   organType,
   scores: [score1, score2, score3],
+
+  // 表示用
+  symptomLabel,
+  flowIssue,
+  organBurden: organInfo,
+  overviewParts,
+  adviceCards,
 };
 }
 
