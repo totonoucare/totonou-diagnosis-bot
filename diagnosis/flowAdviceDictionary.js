@@ -64,6 +64,6 @@ const flowAdviceDictionary = {
 【 ポイント 】
 仰向けのみで実施（ニュートラルを作りやすい姿勢のため）`,
   link: "https://x.gd/tAWr3"
-},
+}
 
 module.exports = flowAdviceDictionary;
