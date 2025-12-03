@@ -133,7 +133,7 @@ function decidePriorityCare(flowType) {
 // ======================================
 // 🌟 メイン：結果生成
 // ======================================
-function generateResult(score1, score2, score3, flowType, organType, symptom) {
+function generateResult(score1, score2, score3, flowType, organType, symptom, motion) {
   const typeName = getTypeName(score1, score2, score3);
   const symptomLabel =
     symptomLabelMap[symptom] || symptom || "からだの不調";
@@ -212,22 +212,21 @@ function buildCard(type, title, body, link) {
 const adviceCards = cardsRaw.sort((a, b) => a.priority - b.priority);
 
 return {
-  type: typeName,             // supabase 保存用
-  trait: traits,              // ← trait に統一（saveContext が trait を要求してる）
-  symptom,                    // supabase 用。そのまま保存される
-  motion: null,               // 今は motion 渡してないなら null
-
-  // 必須（supabase 用）
-  flowType,
-  organType,
-  scores: [score1, score2, score3],
-
   // 表示用
+  type: typeName,
+  trait: traits,
   symptomLabel,
   flowIssue,
   organBurden: organInfo,
   overviewParts,
   adviceCards,
+
+  // ★ supabase 保存用（必須）
+  symptom,
+  motion,
+  flowType,
+  organType,
+  scores: [score1, score2, score3],
 };
 }
 
