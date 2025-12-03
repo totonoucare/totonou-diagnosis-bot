@@ -153,28 +153,19 @@ function generateResult(score1, score2, score3, flowType, organType, symptom) {
   const resolvedLink =
     (linkDictionary[typeName] || "").replace("{{flowlabel}}", flowLabel);
 
-  // ================================
-  // overviewParts（巡り良好は別ルート）
-  // ================================
-  const overviewParts =
-    flowType === "巡りは良好"
-      ? buildGoodFlowOverviewParts({
-          symptomLabel,
-          typeName,
-          traits,
-          flowIssue,
-          organType,
-          organInfo,
-        })
-      : buildDefaultOverviewParts({
-          symptomLabel,
-          typeName,
-          traits,
-          flowLabel,
-          flowIssue,
-          organType,
-          organInfo,
-        });
+// ================================
+// overviewParts（統合版）
+// ================================
+const overviewParts = buildOverviewParts({
+  symptomLabel,
+  typeName,
+  traits,
+  flowType,
+  flowLabel,
+  flowIssue,
+  organType,
+  organInfo,
+});
 
   // ================================
   // 🌱 優先ケア判定
