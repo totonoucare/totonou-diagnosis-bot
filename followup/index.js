@@ -5,7 +5,7 @@
 // - すべて isMulti=true 形式
 // - 回答完了後：
 //    ① 前回→今回のスコア変化をローカルで可視化（カード1）
-//    ② ケア実施状況＋簡易フィードバックをローカルで可視化（カード2）
+//    ② ケア実施状況＋トトノウくんのひとこと（カード2）
 //    ③ 下に「ケア効果の反映具合を聞く」ボタン付き CTA バブルを追加
 // ===============================================
 
@@ -68,39 +68,77 @@ function normalizeFollowupRow(row = {}) {
 }
 
 // ======== スコア差分 → 矢印＆コメント ========
+// type: "main" | "general" | "motion"
 function buildTrendInfo(prevVal, curVal, type = "general") {
   // prev が無い＝初回
   if (prevVal == null || curVal == null) {
+    if (type === "main") {
+      return {
+        arrow: "－",
+        comment: "今回が最初のチェックです",
+      };
+    }
+    if (type === "motion") {
+      return {
+        arrow: "－",
+        comment: "今回が基準になります。ここから変化を見ていきましょう",
+      };
+    }
     return {
       arrow: "－",
-      comment:
-        type === "main"
-          ? "今回が最初のチェックです"
-          : "今回が基準になります",
+      comment: "今回が基準になります",
     };
   }
 
   const diff = prevVal - curVal; // 正なら「良くなった」
   let arrow = "→";
   let comment =
-    type === "main" ? "前回と大きな変化はまだ少なめ" : "ほぼ横ばい";
+    type === "main"
+      ? "前回と大きな変化はまだ少なめ"
+      : type === "motion"
+      ? "前回とあまり変わらず、土台をキープ中です"
+      : "ほぼ横ばいです";
 
+  // 改善側
   if (diff >= 2) {
     arrow = "⬆⬆✨";
-    comment =
-      type === "main" ? "だいぶ楽になってきました" : "かなり整ってきました";
+    if (type === "main") {
+      comment = "だいぶ楽になってきました";
+    } else if (type === "motion") {
+      comment = "体の土台がぐっと整いやすい状態になってきています";
+    } else {
+      comment = "かなり整ってきました";
+    }
   } else if (diff >= 1) {
     arrow = "⬆";
-    comment =
-      type === "main" ? "少し楽になってきました" : "少し整ってきました";
-  } else if (diff <= -2) {
+    if (type === "main") {
+      comment = "少し楽になってきました";
+    } else if (type === "motion") {
+      comment = "体の張りつめが少しゆるんできています";
+    } else {
+      comment = "少し整ってきています";
+    }
+  }
+
+  // 悪化側
+  if (diff <= -2) {
     arrow = "⬇⬇⚠️";
-    comment =
-      type === "main" ? "前回よりツラさが強まりぎみ" : "やや乱れが目立っています";
+    if (type === "main") {
+      comment = "前回よりツラさが強まりぎみです";
+    } else if (type === "motion") {
+      comment = "負担が強めに出ています。無理なく様子を見ていきましょう";
+    } else {
+      comment = "やや乱れが目立っています";
+    }
   } else if (diff <= -1) {
     arrow = "⬇";
-    comment =
-      type === "main" ? "少し負担が増えぎみ" : "少し乱れが出ています";
+    if (type === "main") {
+      comment = "少し負担が増えぎみです";
+    } else if (type === "motion") {
+      comment = "土台の負担が少し強まっていますが、よくある揺れの範囲です";
+    } else {
+      comment = "少し乱れが出ています";
+    }
   }
 
   return { arrow, comment };
@@ -113,18 +151,18 @@ function evalCareRatio(days, totalDays) {
   const ratio = d / base;
 
   if (ratio >= 0.8) {
-    return { icon: "🟢 ◎", comment: "かなり意識できている状態" };
+    return { icon: "🟢 ◎", comment: "かなり意識できている状態です" };
   }
   if (ratio >= 0.6) {
-    return { icon: "🟢 ○", comment: "しっかり続けられたペース" };
+    return { icon: "🟢 ○", comment: "しっかり続けられたペースです" };
   }
   if (ratio >= 0.4) {
-    return { icon: "🟡 ○", comment: "半分くらい取り入れられた" };
+    return { icon: "🟡 ○", comment: "半分くらい取り入れられています" };
   }
   if (ratio > 0) {
-    return { icon: "🟡 △", comment: "ときどきできたくらい" };
+    return { icon: "🟡 △", comment: "ときどきできたくらいのペースです" };
   }
-  return { icon: "🔴 ×", comment: "ほとんどできていない状態" };
+  return { icon: "🔴 ×", comment: "まだほとんど手をつけられていない状態です" };
 }
 
 // ======== Flex質問構築 ========
@@ -162,12 +200,17 @@ function buildResultBubbles({
     curScores.symptom_level,
     "main"
   );
-  const sleepTrend = buildTrendInfo(prevScores?.sleep, curScores.sleep);
-  const mealTrend = buildTrendInfo(prevScores?.meal, curScores.meal);
-  const stressTrend = buildTrendInfo(prevScores?.stress, curScores.stress);
+  const sleepTrend = buildTrendInfo(prevScores?.sleep, curScores.sleep, "general");
+  const mealTrend = buildTrendInfo(prevScores?.meal, curScores.meal, "general");
+  const stressTrend = buildTrendInfo(
+    prevScores?.stress,
+    curScores.stress,
+    "general"
+  );
   const motionTrend = buildTrendInfo(
     prevScores?.motion_level,
-    curScores.motion_level
+    curScores.motion_level,
+    "motion"
   );
 
   const prevSym = prevScores?.symptom_level ?? "-";
@@ -215,13 +258,13 @@ function buildResultBubbles({
             {
               type: "text",
               text: `「${symptomName}」を含めた全体の体調`,
-              size: "sm",
+              size: "md",
               wrap: true,
             },
             {
               type: "text",
               text: `${prevSym} → ${curSym}　${mainTrend.arrow}　〔${mainTrend.comment}〕`,
-              size: "sm",
+              size: "md",
               margin: "xs",
               wrap: true,
             },
@@ -255,7 +298,7 @@ function buildResultBubbles({
               text: `🌙 睡眠リズム　${prevScores?.sleep ?? "-"} → ${
                 curScores.sleep ?? "-"
               }　${sleepTrend.arrow}　〔${sleepTrend.comment}〕`,
-              size: "sm",
+              size: "md",
               wrap: true,
             },
             {
@@ -263,7 +306,7 @@ function buildResultBubbles({
               text: `🍽 食事のタイミング／量　${prevScores?.meal ?? "-"} → ${
                 curScores.meal ?? "-"
               }　${mealTrend.arrow}　〔${mealTrend.comment}〕`,
-              size: "sm",
+              size: "md",
               wrap: true,
             },
             {
@@ -273,7 +316,7 @@ function buildResultBubbles({
               } → ${curScores.stress ?? "-"}　${stressTrend.arrow}　〔${
                 stressTrend.comment
               }〕`,
-              size: "sm",
+              size: "md",
               wrap: true,
             },
           ],
@@ -294,14 +337,14 @@ function buildResultBubbles({
           } → ${curScores.motion_level ?? "-"}　${motionTrend.arrow}　〔${
             motionTrend.comment
           }〕`,
-          size: "sm",
+          size: "md",
           wrap: true,
         },
       ],
     },
   };
 
-  // ---- カード2：ケア実施状況＋簡易フィードバック ----
+  // ---- カード2：ケア実施状況 ＋ トトノウくんのひとこと ----
 
   // 優先ケア判定（context.advice 内の priority=1 を優先扱い）
   const adviceCards = Array.isArray(context.advice) ? context.advice : [];
@@ -311,11 +354,9 @@ function buildResultBubbles({
 
   const isPriority = (key) => priorityKeys.includes(key);
 
-  // careCounts: { habits, breathing, stretch, tsubo, kampo }
   const effDays = effectiveDays || 1;
   const careLinesPriority = [];
   const careLinesSupport = [];
-  const careLinesBonus = []; // ← 漢方・サプリ専用
 
   const pillars = [
     {
@@ -346,45 +387,18 @@ function buildResultBubbles({
       key: "kampo",
       label: "🌿 漢方・サプリ",
       count: careCounts.kampo ?? 0,
-      adviceKey: "kanpo",
+      adviceKey: "kanpo", // おまけ枠だが扱いは同じ。フィードバックは柔らかめに。
     },
   ];
 
   pillars.forEach((p) => {
-    // 🟣 漢方・サプリだけ「おまけケア」扱い
-    if (p.key === "kampo") {
-      const days = p.count || 0;
-      let icon = "⚪️ -";
-      let comment = "必要なときに少し取り入れられれば十分です";
-
-      if (days >= effDays * 0.5) {
-        icon = "🟢 ○";
-        comment = "いいペースで取り入れられています（無理のない範囲でOK）";
-      } else if (days > 0) {
-        icon = "🟡 △";
-        comment = "ときどき取り入れられていれば十分です";
-      } else {
-        icon = "⚪️ -";
-        comment = "今はお休み中でも問題ありません";
-      }
-
-      const lineText =
-        `・${p.label}\n` +
-        `${days}日 / ${effDays}日　${icon}〔${comment}〕`;
-
-      careLinesBonus.push(lineText);
-      return; // 優先/サポートには入れない
-    }
-
-    // 🟢 それ以外（呼吸・ストレッチ・ツボ・体質習慣）
     const evalInfo = evalCareRatio(p.count, effDays);
-    const lineText =
-      `・${p.label}\n` +
-      `${p.count}日 / ${effDays}日　${evalInfo.icon}〔${evalInfo.comment}〕`;
+    const lineText = `・${p.label}\n${p.count}日 / ${effDays}日　${evalInfo.icon}〔${evalInfo.comment}〕`;
 
-    if (isPriority(p.adviceKey)) {
+    if (isPriority(p.adviceKey) && p.key !== "kampo") {
       careLinesPriority.push(lineText);
     } else {
+      // 優先ケアに含まれないもの＋漢方はサポート側に表示
       careLinesSupport.push(lineText);
     }
   });
@@ -402,7 +416,7 @@ function buildResultBubbles({
           {
             type: "text",
             text: careLinesPriority.join("\n"),
-            size: "sm",
+            size: "md",
             wrap: true,
             margin: "xs",
           },
@@ -414,7 +428,7 @@ function buildResultBubbles({
       ? [
           {
             type: "text",
-            text: "＜サポートケア＞",
+            text: "＜サポートケア（＋おまけ枠：漢方・サプリ）＞",
             size: "sm",
             weight: "bold",
             margin: "md",
@@ -422,27 +436,7 @@ function buildResultBubbles({
           {
             type: "text",
             text: careLinesSupport.join("\n"),
-            size: "sm",
-            wrap: true,
-            margin: "xs",
-          },
-        ]
-      : [];
-
-  const bonusBlock =
-    careLinesBonus.length > 0
-      ? [
-          {
-            type: "text",
-            text: "＜おまけケア（必要な人だけでOK）＞",
-            size: "sm",
-            weight: "bold",
-            margin: "md",
-          },
-          {
-            type: "text",
-            text: careLinesBonus.join("\n"),
-            size: "sm",
+            size: "md",
             wrap: true,
             margin: "xs",
           },
@@ -451,35 +445,32 @@ function buildResultBubbles({
 
   // 簡易フィードバック文（内部ロジック）
   const goodPillars = pillars.filter(
-    (p) =>
-      p.key !== "kampo" && p.count / effDays >= 0.6 && p.count > 0
+    (p) => p.count / effDays >= 0.6 && p.count > 0
   );
-  const weakPillars = pillars.filter(
-    (p) => p.key !== "kampo" && p.count / effDays < 0.3
-  );
+  const weakPillars = pillars.filter((p) => p.count / effDays < 0.3);
 
-  let feedbackText = "今週もケアおつかれさまでした。\n";
+  let feedbackText = "今週もケアを続けてくれてありがとうございます。\n";
 
   if (goodPillars.length > 0) {
     const names = goodPillars
       .map((p) => p.label.replace(/^.+? /, ""))
       .join("・");
-    feedbackText += `特に「${names}」は、いいペースで続けられています。\n`;
+    feedbackText += `とくに「${names}」は、とても良いペースで積み重ねられています。\n`;
   }
 
   if (weakPillars.length > 0) {
     const names = weakPillars
       .map((p) => p.label.replace(/^.+? /, ""))
       .join("・");
-    feedbackText += `一方で「${names}」は、まだ手をつけづらかった様子なので、体調が許す日に1日1回だけでも足していけると、動作テストや「${symptomName}」のラクさに反映されやすくなります。\n`;
+    feedbackText += `一方で「${names}」は、まだ手をつけづらかった様子なので、体調がゆるす日だけでも「1日1回だけ」足してみると、動作テストや「${symptomName}」のラクさに少しずつ反映されやすくなります。\n`;
   }
 
   if (goodPillars.length === 0 && weakPillars.length === 0) {
     feedbackText +=
-      "まだこれからペースを作っていく段階です。焦らず、「今日できそうなケア」を1つだけ選んでみましょう。";
+      "まだこれからペースを作っていく段階です。焦らず、「今日できそうなケア」をひとつだけ一緒に選んでいきましょう。";
   } else {
     feedbackText +=
-      "焦らず、今できていることを土台に、少しずつ重ねていきましょう🌿";
+      "あせらず、今できていることを土台にしながら、すこしずつ整えていきましょう🌿";
   }
 
   const bubble2 = {
@@ -491,7 +482,7 @@ function buildResultBubbles({
       contents: [
         {
           type: "text",
-          text: "🪴 ケア実施状況とひとことフィードバック",
+          text: "🪴 ケア実施状況とトトノウくんのひとこと",
           weight: "bold",
           size: "lg",
           color: "#ffffff",
@@ -508,16 +499,32 @@ function buildResultBubbles({
       backgroundColor: "#FDFBF7",
       paddingAll: "12px",
       contents: [
+        // 上：ケア実施状況
+        {
+          type: "text",
+          text: "🧭 ケア実施状況（前回チェック〜今回）",
+          size: "md",
+          weight: "bold",
+          wrap: true,
+        },
+        ...priorityBlock,
+        ...supportBlock,
+        { type: "separator", margin: "md" },
+        // 下：一言フィードバック
+        {
+          type: "text",
+          text: "💬 トトノウくんからのひとこと",
+          size: "sm",
+          weight: "bold",
+          wrap: true,
+          margin: "sm",
+        },
         {
           type: "text",
           text: feedbackText,
-          size: "sm",
+          size: "md",
           wrap: true,
         },
-        { type: "separator", margin: "md" },
-        ...priorityBlock,
-        ...supportBlock,
-        ...bonusBlock,
       ],
     },
   };
@@ -543,8 +550,8 @@ function buildResultBubbles({
         {
           type: "text",
           text:
-            "「このケアがどのくらい体調に反映されてそうか知りたい」ときは、下のボタンからAIチャットに聞けます。",
-          size: "sm",
+            "「このケアがどのくらい体調に反映されてそうか知りたいな…」と感じたときは、下のボタンからAIチャットでトトノウくんに相談できます。",
+          size: "md",
           wrap: true,
         },
         {
@@ -582,10 +589,7 @@ async function handleFollowup(event, client, lineId) {
     // 開始トリガー
     if (message === "ととのい度チェック開始") {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (
-        !userRecord ||
-        (!userRecord.subscribed && !userRecord.trial_intro_done)
-      ) {
+      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
         return client.replyMessage(replyToken, [
           {
             type: "text",
@@ -605,10 +609,7 @@ async function handleFollowup(event, client, lineId) {
     // 未セッション
     if (!userSession[lineId]) {
       return client.replyMessage(replyToken, [
-        {
-          type: "text",
-          text: '始めるには「ととのい度チェック開始」を押してください😊',
-        },
+        { type: "text", text: '始めるには「ととのい度チェック開始」を押してください😊' },
       ]);
     }
 
@@ -627,10 +628,7 @@ async function handleFollowup(event, client, lineId) {
     const validKey = question.options.find((opt) => opt.id === key);
     if (!validKey) {
       return client.replyMessage(replyToken, [
-        {
-          type: "text",
-          text: "その選択肢は使えません。ボタンから選んでください🙏",
-        },
+        { type: "text", text: "その選択肢は使えません。ボタンから選んでください🙏" },
       ]);
     }
 
@@ -670,9 +668,7 @@ async function handleFollowup(event, client, lineId) {
       }
 
       const { latest, prev } =
-        await supabaseMemoryManager.getLastTwoFollowupsByUserId(
-          userRecord.id
-        );
+        await supabaseMemoryManager.getLastTwoFollowupsByUserId(userRecord.id);
 
       const curScores = {
         symptom_level: normalizeScore(
