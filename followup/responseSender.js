@@ -1,169 +1,80 @@
-// followup/responseSender.js
+// followup/responseSender.js（フィードバック特化版）
 // =======================================
-// 「トトノウくん」用レスポンス生成
-// - セルフケア実施努力点（行動密度）
-// - ケア効果反映度（努力×改善）
-// - 停滞時の派生ケア・相談提案を判断
+// 「トトノウくん」用レスポンス生成（2枚目フィードバックカード専用）
 //
-// 返却フォーマット：
-// {
-//   sections: { card1:{...}, card2:{...} },
-//   gptComment: <フォールバック用テキスト>,
-//   statusMessage: "ok"|"error"|"no-context"
-// }
+// - 役割：
+//   ・前回と今回のととのい度チェックの差
+//   ・前回〜今回のケア実施日数（care_logs）
+//   ・体質コンテキスト（type, trait, flowType, organType, symptom, motion, advice）
+//   を GPT に渡して、
+//
+//   👉 「ケアのがんばりが今回の結果にどう反映されていそうか」
+//      だけを日本語でまとめてもらう。
+//      （ケアの優先順位・頻度・スコアは一切出さない）
+//
+// - 返却フォーマット：
+//   {
+//     sections: null,          // Flex 変換は index 側で行う想定
+//     gptComment: "<[CARD2]...[/CARD2]> 形式のテキスト",
+//     statusMessage: "ok" | "no-context" | "error"
+//   }
 // =======================================
 
 const OpenAI = require("openai");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /* ---------------------------
-   1) データ整形・スコア計算ユーティリティ
+   小ユーティリティ
 --------------------------- */
 
-// 回答の正規化（null→デフォ3）
-function normalizeFollowup(ans = {}) {
-  const n = (v, def) =>
-    v === null || v === undefined || v === "" ? def : Number(v);
+// null / undefined / "" を許容しつつ 1〜5 の数値に揃える
+function normalizeScore(v, def = null) {
+  if (v === null || v === undefined || v === "") return def;
+  const n = Number(v);
+  if (Number.isNaN(n)) return def;
+  return n;
+}
+
+// followup row から 5項目を正規化
+function normalizeFollowupRow(row = {}) {
   return {
-    symptom_level: n(ans.symptom_level, 3),
-    sleep: n(ans.sleep, 3),
-    meal: n(ans.meal, 3),
-    stress: n(ans.stress, 3),
-    motion_level: n(ans.motion_level, 3),
+    symptom_level: normalizeScore(row.symptom, null),
+    sleep: normalizeScore(row.sleep, null),
+    meal: normalizeScore(row.meal, null),
+    stress: normalizeScore(row.stress, null),
+    motion_level: normalizeScore(row.motion_level, null),
   };
 }
 
-/**
- * セルフケア実施努力点（行動スコア）
- * - 各pillarの日数密度を加重平均
- * - 漢方は0.25倍の補助ケア扱い
- */
-function calcActionScore(careCounts, effectiveDays) {
-  const weights = {
-    habits: 1.0,
-    breathing: 1.0,
-    stretch: 1.0,
-    tsubo: 1.0,
-    kampo: 0.25,
-  };
-
-  const weightedTotal = Object.entries(weights)
-    .map(([pillar, w]) => {
-      const count = careCounts[pillar] || 0;
-      return (count / effectiveDays) * w;
-    })
-    .reduce((a, b) => a + b, 0);
-
-  const maxWeight = Object.values(weights).reduce((a, b) => a + b, 0);
-  const ratio = maxWeight > 0 ? weightedTotal / maxWeight : 0;
-  const rawScore = Math.round(Math.min(1, ratio) * 100);
-
-  const totalActions = Object.values(careCounts).reduce((a, b) => a + b, 0);
-  return { actionScoreRaw: rawScore, totalActions };
-}
-
-/**
- * ケア効果反映度（行動×体調変化・中間チューニング版）
- * - 改善があるとしっかり加点される
- * - 行動もそれなりに重視
- * - 軽い改善でも70〜80%程度に収まる自然なスケール
- */
-function calcCareEffectScore(prevN, curN, actionScoreRaw = 0) {
-  // 🟢 初回
-  if (!prevN || !curN) {
-    const careEffectScore = 50;
-    const starsNum = Math.max(1, Math.min(5, Math.ceil(careEffectScore / 20)));
-    return {
-      careEffectScore,
-      careEffectStarsNum: starsNum,
-      careEffectStarsText: "★".repeat(starsNum) + "☆".repeat(5 - starsNum),
-      careEffectDelta: null,
-    };
-  }
-
-  // 🟢 差分算出
-  const diffs = [
-    prevN.symptom_level - curN.symptom_level,
-    prevN.sleep - curN.sleep,
-    prevN.meal - curN.meal,
-    prevN.stress - curN.stress,
-    prevN.motion_level - curN.motion_level,
-  ];
-  const avgDiff = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-
-  const actionFactor = Math.min(1, Math.max(0, actionScoreRaw / 100));
-  const improvement = Math.max(0, avgDiff);
-  const deterioration = Math.max(0, -avgDiff);
-
-  // ベース点
-  let base = 58;
-  if (improvement >= 0.5) base = 62;
-  if (improvement >= 3) base = 67;
-
-  // 中間チューニング
-  const reflectionPart = improvement * actionFactor * 12;
-  const effortBonus = actionFactor * 8;
-  const penalty = deterioration * (1 - actionFactor) * 6;
-
-  let raw = base + reflectionPart + effortBonus - penalty;
-
-  raw = Math.max(0, Math.min(100, Math.round(raw)));
-
-  const starsNum = Math.max(1, Math.min(5, Math.ceil(raw / 20)));
-
-  return {
-    careEffectScore: raw,
-    careEffectStarsNum: starsNum,
-    careEffectStarsText: "★".repeat(starsNum) + "☆".repeat(5 - starsNum),
-    careEffectDelta: Number(avgDiff.toFixed(2)),
-  };
-}
-
-/**
- * 停滞判定：改善が2回連続で鈍化
- */
-function judgeStagnation(reflectionHistory) {
-  if (!Array.isArray(reflectionHistory) || reflectionHistory.length < 2)
-    return { isStuck2Times: false, severity: null };
-
-  const len = reflectionHistory.length;
-  const last = reflectionHistory[len - 1];
-  const prev = reflectionHistory[len - 2];
-  const diffAbs = Math.abs(last - prev);
-  const noChange = diffAbs < 5;
-
-  if (!noChange) return { isStuck2Times: false, severity: null };
-  if (last < 40) return { isStuck2Times: true, severity: "heavy" };
-  if (last < 60) return { isStuck2Times: true, severity: "mild" };
-  return { isStuck2Times: false, severity: null };
-}
-
-/* ---------------------------
-   2) GPT呼び出しラッパ（テキストモード＋安全リトライ）
---------------------------- */
+// GPT 呼び出し（テキスト一本返し）
 async function callTotonouGPT(systemPrompt, userPrompt) {
   const promptText = `${systemPrompt}\n\n${userPrompt}`;
 
   const rsp = await openai.responses.create({
     model: "gpt-5",
-    input: promptText,                // ← 文字列1本でOK
-    reasoning: { effort: "medium" },  // minimalでも可。mediumの方が型崩れしにくい
-    text: { verbosity: "medium" },      // formatは付けない
-    // max_output_tokens は付けない（LINEで途中送信になる件の回避）
+    input: promptText,
+    reasoning: { effort: "medium" },
+    text: { verbosity: "medium" },
   });
 
   const text =
     (rsp.output_text && rsp.output_text.trim()) ||
-    (rsp.output?.[0]?.content?.map(c => c.text).join("\n").trim()) ||
+    (rsp.output?.[0]?.content || [])
+      .map((c) => c.text || "")
+      .join("\n")
+      .trim() ||
     "";
 
-  // たまにフェンスを吐く個体がいるので一応除去
+  // たまに ``` で囲んでくる個体対策
   return text.replace(/^```[\s\S]*?\n?|\n?```$/g, "").trim();
 }
 
 /* ---------------------------
-   3) メイン：フォローアップ処理
+   メイン：フォローアップフィードバック生成
 --------------------------- */
 
 const symptomLabels = {
@@ -178,357 +89,252 @@ const symptomLabels = {
   unknown: "なんとなく不調・不定愁訴",
 };
 
-async function sendFollowupResponse(userId, followupAnswers) {
+/**
+ * @param {number|string} userId  supabase上の users.id
+ * @param {Object} rawData       followup/resultGenerator.js の rawData
+ *   {
+ *     symptom_level, sleep, meal, stress, motion_level,
+ *     carelog: { habits, breathing, stretch, tsubo, kampo },
+ *     start_date
+ *   }
+ */
+async function sendFollowupResponse(userId, rawData = {}) {
   try {
-    // 1. userId→lineId
+    // 1. userId → lineId 取得
     const users = await supabaseMemoryManager.getSubscribedUsers();
     const userRow = users.find((u) => u.id === userId);
-    if (!userRow?.line_id) throw new Error("userIdに対応するline_idが見つかりません");
+    if (!userRow?.line_id) {
+      throw new Error("userId に対応する line_id が見つかりません");
+    }
     const lineId = userRow.line_id;
 
-    // 2. コンテキスト取得
+    // 2. コンテキスト取得（体質分析・アドバイス）
     const context = await supabaseMemoryManager.getContext(lineId);
-    if (!context)
+    if (!context) {
       return {
         sections: null,
-        gptComment: "初回の体質ケア情報が見つかりません。体質分析から始めましょう🌿",
+        gptComment:
+          "初回の体質ケア情報が見つかりませんでした。体質分析から始めてみましょう🌿",
         statusMessage: "no-context",
       };
-    const { advice } = context;
+    }
 
-    const symptomName = symptomLabels[context.symptom] || "不明な主訴";
+    const symptomName =
+      symptomLabels[context.symptom] || "不明な主訴（全身の不調）";
     const motionName = context.motion || "指定の動作";
 
-    // 3. followup履歴取得
+    // 3. 直近2回の followup 履歴（前回と今回の差を見る）
     const { latest, prev } =
       await supabaseMemoryManager.getLastTwoFollowupsByUserId(userId);
-    const curN = normalizeFollowup(followupAnswers || latest || {});
-    const prevN = prev ? normalizeFollowup(prev) : null;
 
-// 4. care_logs取得（短期＋長期の両方）
-// supabaseMemoryManager.js 側で distinct 日数に丸め済みなので、ここではそのまま利用。
-let shortTermCareCounts = {};
-let longTermCareCounts = {};
+    const curScores = {
+      symptom_level: normalizeScore(rawData.symptom_level, null),
+      sleep: normalizeScore(rawData.sleep, null),
+      meal: normalizeScore(rawData.meal, null),
+      stress: normalizeScore(rawData.stress, null),
+      motion_level: normalizeScore(rawData.motion_level, null),
+    };
 
-try {
-  // 🩵 短期：supabaseMemoryManager 内で「前回→最新」区間を自動判定
-  shortTermCareCounts =
-    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
+    const prevScores = prev ? normalizeFollowupRow(prev) : null;
 
-  // 🩵 長期：context作成日以降の累計（日数ベース）
-  longTermCareCounts =
-    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
-      includeContext: true,
-    });
-} catch (err) {
-  console.error("❌ care log 集計失敗:", err);
-  shortTermCareCounts = { habits: 0, breathing: 0, stretch: 0, tsubo: 0, kampo: 0 };
-  longTermCareCounts = shortTermCareCounts;
+    // 差分（前回 → 今回）。正なら「改善傾向」、負なら「悪化傾向」くらいのニュアンスで。
+    const diffs = prevScores
+      ? {
+          symptom_level:
+            prevScores.symptom_level != null && curScores.symptom_level != null
+              ? prevScores.symptom_level - curScores.symptom_level
+              : null,
+          sleep:
+            prevScores.sleep != null && curScores.sleep != null
+              ? prevScores.sleep - curScores.sleep
+              : null,
+          meal:
+            prevScores.meal != null && curScores.meal != null
+              ? prevScores.meal - curScores.meal
+              : null,
+          stress:
+            prevScores.stress != null && curScores.stress != null
+              ? prevScores.stress - curScores.stress
+              : null,
+          motion_level:
+            prevScores.motion_level != null && curScores.motion_level != null
+              ? prevScores.motion_level - curScores.motion_level
+              : null,
+        }
+      : null;
+
+    // 4. ケア実施日数（前回チェック〜今回）を取得
+    let shortTermCareCounts = {};
+    try {
+      shortTermCareCounts =
+        await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+          lineId
+        );
+    } catch (e) {
+      console.warn("⚠️ care_logs 集計失敗（継続します）:", e.message);
+      shortTermCareCounts = {};
+    }
+
+    const careCounts = {
+      habits: shortTermCareCounts.habits ?? 0,
+      breathing: shortTermCareCounts.breathing ?? 0,
+      stretch: shortTermCareCounts.stretch ?? 0,
+      tsubo: shortTermCareCounts.tsubo ?? 0,
+      kampo: shortTermCareCounts.kampo ?? 0,
+    };
+
+    // 5. GPT 用プロンプト構成
+    const systemPrompt = `
+あなたは『トトノウくん』🧘‍♂️です。
+東洋医学と身体構造の観点から、ユーザーの「整い具合」とセルフケアの関係を
+やさしく言葉にしてあげる役割です。
+
+今回あなたにしてほしいことは１つだけです：
+
+👉 「この期間にがんばってきたケアが、今回のととのい度チェック結果に
+　　どう反映されていそうか」を、日本語でフィードバックすること。
+
+※重要な制約：
+- ケアの「優先順位」「頻度」「回数のノルマ」は提案しないこと。
+- 「もっとやりましょう」と責めるのではなく、
+  ・できていることをまず認める
+  ・その上で「ここを足していくと、より整いやすそう」というやわらかい提案までにとどめる。
+- 「点数」「％」「スコア」という言い方はできるだけ避ける。
+  → 数字が出る場合も、「〜が少し良い方向に動いています」のようなニュアンスにする。
+- 体調項目やケア項目の内部キー（symptom_level, motion_level など）はそのまま書かず、
+  日本語の説明（主訴のつらさ、睡眠の状態、動作テストのつらさ など）で表現する。
+`.trim();
+
+    // prev がない＝初回 followup の場合の説明文
+    const isFirstFollowup = !prevScores;
+
+    const userPrompt = `
+【体質・主訴の情報】
+- 体質タイプ: ${context.type || "未登録"}
+- 体質の特徴: ${context.trait || "未登録"}
+- 流れのタイプ(flowType): ${context.flowType || "未登録"}
+- 経絡ライン(organType): ${context.organType || "未登録"}
+- 主訴カテゴリ（ユーザーが一番気にしているところ）: ${symptomName}
+- 動作テストの対象動作: ${motionName}
+
+【ケア内容の概要（advice）】
+ユーザーには次の5つのケア柱が提案されています：
+- 体質改善習慣(habits): ${JSON.stringify(
+      (context.advice || [])[0] || {},
+      null,
+      2
+    )}
+- 呼吸法(breathing): ${JSON.stringify(
+      (context.advice || [])[1] || {},
+      null,
+      2
+    )}
+- 経絡ストレッチ(stretch): ${JSON.stringify(
+      (context.advice || [])[2] || {},
+      null,
+      2
+    )}
+- 指先・ツボほぐし(tsubo): ${JSON.stringify(
+      (context.advice || [])[3] || {},
+      null,
+      2
+    )}
+- 漢方・サプリ(kampo): ${JSON.stringify(
+      (context.advice || [])[4] || {},
+      null,
+      2
+    )}
+
+【今回のととのい度チェック（1=楽・整っている〜5=つらい・乱れ）】
+- 主訴を含む体調レベル(symptom_level): ${curScores.symptom_level}
+- 睡眠の状態(sleep): ${curScores.sleep}
+- 食事の状態(meal): ${curScores.meal}
+- ストレス・気分の安定度(stress): ${curScores.stress}
+- 動作テストのつらさ(motion_level): ${curScores.motion_level}
+
+${
+  isFirstFollowup
+    ? `【前回との比較】
+- 今回は「初回のととのい度チェック」です。
+- 過去との比較データはありません。`
+    : `【前回との比較（前回 → 今回）】
+- 主訴を含む体調レベル: ${prevScores.symptom_level} → ${curScores.symptom_level}（差分: ${
+        diffs.symptom_level
+      }）
+- 睡眠: ${prevScores.sleep} → ${curScores.sleep}（差分: ${diffs.sleep}）
+- 食事: ${prevScores.meal} → ${curScores.meal}（差分: ${diffs.meal}）
+- ストレス: ${prevScores.stress} → ${curScores.stress}（差分: ${diffs.stress}）
+- 動作テストのつらさ: ${
+        prevScores.motion_level
+      } → ${curScores.motion_level}（差分: ${diffs.motion_level}）`
 }
 
-// supabase 側ですでに「distinct日数」で丸め済み
-const careCounts = shortTermCareCounts;
-
-   
-
-// 5. 経過日数を算出（切り上げで正確に）
-const now = Date.now();
-const prevDate = prev?.created_at ? new Date(prev.created_at).getTime() : null;
-const contextDate = context?.created_at ? new Date(context.created_at).getTime() : null;
-
-// 日数差を「切り上げ」で算出（端数を含める）
-const diffDays = prevDate
-  ? Math.ceil((now - prevDate) / (1000 * 60 * 60 * 24))
-  : contextDate
-  ? Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24))
-  : 1;
-
-const effectiveDays = Math.max(1, diffDays);
-
-    // ✅ daysSinceStartを定義（userPromptで使用）
-    const daysSinceStart = contextDate
-      ? Math.max(1, Math.floor((now - contextDate) / (1000 * 60 * 60 * 24)))
-      : effectiveDays;
-     
-
-// 6. 行動スコア（今回）
-const { actionScoreRaw, totalActions } = calcActionScore(careCounts, effectiveDays);
-const actionScoreFinal = Math.max(actionScoreRaw, 30);
-
-// 🆕 前回スコアの再構成 -----------------------------
-let actionScorePrev = null;
-let actionScoreDiff = null;
-let careEffectPrev = null;
-let careEffectDiff = null;
-
-if (prev) {
-  // 🔸 1つ前の followup 以前（＝2つ前〜前回）を再集計
-  // supabaseMemoryManager.js に以下のような改修が必要：
-  // getAllCareCountsSinceLastFollowupByLineId(lineId, { untilFollowupId: prev.id })
-  const { prev: prev2 } = await supabaseMemoryManager.getLastTwoFollowupsByUserId(
-    userId,
-    { before: prev.id }
-  );
-
-  const prevPeriodCareCounts =
-    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId, {
-      untilFollowupId: prev.id,
-    });
-
-  if (prevPeriodCareCounts) {
-    const { actionScoreRaw: prevActionRaw } = calcActionScore(prevPeriodCareCounts, effectiveDays);
-    actionScorePrev = Math.max(prevActionRaw, 30);
-    actionScoreDiff = actionScoreFinal - actionScorePrev;
-  }
-
-  // 🔸 前回効果スコアも再計算（2つ前と前回を比較）
-  const prevN2 = prev2 ? normalizeFollowup(prev2) : null;
-  const { careEffectScore: prevEffectScore } = calcCareEffectScore(prevN2, prevN, actionScorePrev || 0);
-  careEffectPrev = prevEffectScore;
-}
-// ----------------------------------------------------
-
-
-// 7. ケア効果反映度（今回）
-const { careEffectScore, careEffectStarsText } = calcCareEffectScore(prevN, curN, actionScoreRaw);
-
-// 🔸 差分算出（％換算）
-if (careEffectPrev !== null) {
-  careEffectDiff = Math.round(careEffectScore - careEffectPrev);
-}
-
-// 🔸 努力点の差も整数に整形
-if (actionScoreDiff !== null) {
-  actionScoreDiff = Math.round(actionScoreDiff);
-}
-
-
-// 8. 停滞判定（既存そのまま）
-const reflectionHistory = [];
-if (prevN) {
-  const prevScoreBlock = calcCareEffectScore(null, prevN, 0).careEffectScore;
-  reflectionHistory.push(prevScoreBlock);
-}
-reflectionHistory.push(careEffectScore);
-const stagnationInfo = judgeStagnation(reflectionHistory);
-
-/* ---------------------------
-   9) GPTへのプロンプト準備
---------------------------- */
-
-const systemPrompt = `
-あなたは『トトノウくん』🧘‍♂️。  
-東洋医学と身体構造学（バイオメカニクスやテンセグリティ構造など）をベースに、  
-ユーザーの体と心の「整い方」を優しく支援するAIパートナーです。  
-数字やデータをもとに、安心・共感・希望を届けてください。
+【この期間に行われたケア実施日数（前回チェック〜今回）】
+- 体質改善習慣(habits): ${careCounts.habits} 日
+- 呼吸法(breathing): ${careCounts.breathing} 日
+- 経絡ストレッチ(stretch): ${careCounts.stretch} 日
+- 指先・ツボほぐし(tsubo): ${careCounts.tsubo} 日
+- 漢方・サプリ(kampo): ${careCounts.kampo} 日
 
 ---
 
-## 🔹 データ構造（AIが理解しておくべき情報）
+## あなたがやること（CARD2 だけを返してください）
 
-### contexts（体質・タイプ情報）
-- type：体質タイプ名（陰虚タイプなど）
-- trait：体質傾向（乾燥で熱がこもりやすい等）
-- flowType：流通病理（気滞・水滞・瘀血）
-- organType：負担が出やすい経絡ラインおよび臓腑とのつながり（肝・心・脾・肺・腎）
-- motion：最も伸展負担がかかる経絡ラインの伸展動作。これがorganType判定の指標。
-- symptom：主訴（胃腸・肩こり・メンタル・冷えなど）
-- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク
-- created_at：初回登録日（体質分析を終えた日）
+上記の情報を踏まえて、
 
-### followups（ととのい度チェック）
-- symptom_level：不調(主訴)のつらさ（1=軽い〜5=強い）
-- sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）
-- motion_level：最も伸展負担がかかる経絡ラインの伸展動作(motion)を再テストした際のつらさ（1=軽い〜5=強い）
+1. ユーザーの「がんばり」と「それが体調の変化にどう結びついていそうか」を、
+   冒頭の一文（LEAD）でやさしくまとめてください。
+   - 良くなっているところがあれば、そこを具体的にほめる。
+   - 変化が少ないところは「まだこれから変わっていく途中」くらいのニュアンスで。
 
-### care_logs_daily（ケア記録）
-- habits / breathing / stretch / tsubo / kampo：各ケア項目の「実施日数」。
-- 1日に複数回行っても1日1回としてカウント。値が高いほど、そのケアを行った日が多い。
+2. そのあと 2〜3 行のフィードバック（PLAN1〜3）として、
+   各ケア柱ごとに「どんな意味があって」「今回の結果から何が読み取れそうか」を書いてください。
+   - ここでは優先順位や頻度は出さず、
+     「呼吸法はこういう変化を支えていそう」「ストレッチが動作テストとこう結びついていそう」
+     といった“意味づけ・振り返り”に徹してください。
+   - pillar には 「呼吸法」「体質改善習慣」「ストレッチ」「ツボ」「漢方」などのラベルを入れてください。
+   - reason に日本語の文章を入れてください。
+   - freq / link は出さなくてかまいません（入っていても構いませんが、UIでは使いません）。
 
----
+3. 最後に FOOTER として、
+   「うまくいっている点を土台にしながら、今日できた1回を積み重ねていこう」
+   といった励ましのメッセージを1〜2文で書いてください。
 
-## 🔸 評価構造（トトノウくんの思考モデル）
-
-- **セルフケア実施努力点（actionScoreFinal）**  
-　期間中にどれだけケアを実践できたか（行動密度）。  
-　生活系4柱（habits, breathing, stretch, tsubo）を重視し、  
-　漢方・サプリ（kampo）は0.25倍の補助加点。
-
-- **ケア効果反映度（careEffectScore）**  
-　行動スコアを「努力の信頼性」として重み付けし、  
-　体調スコア（sleep, meal, stress, motion_level, symptom_level）の変化から  
-　“努力がどれだけ結果に結びついたか”を算出。  
-　改善がなくても、努力には一定の加点がある。
-
----
-
-## 🔸 因果構造（整いのメカニズム）
-
-1. habits（体質改善習慣）は sleep / meal / stressの安定化を図り、symptom_levelの改善の土台を整える：
-　体質分析で把握された気血や寒熱のバランスを整える基盤ケア。生活習慣を整えることで睡眠・食事・ストレスのリズムが安定し、主訴(不調)の改善につながる。
-
-2. breathing（呼吸法）は 腹圧テンションの正常化で姿勢制御を助け、流通病理(flowType)や自律機能を整え、symptom_levelの改善の土台をつくる：
-　おヘソから指４〜5本ほど上あたり(中脘)を軽く膨らませる深呼吸によって、腹圧と姿勢制御が安定し、循環が整いやすくなる。
-  内圧の安定が、全身の“整い”を支える。結果として循環と自律神経が整いやすくなり、不調(主訴)の改善にもつながる。
-
-3. stretch / tsuboは motion_levelを直接改善し、motion_levelの改善は organTypeやsymptom_levelの乱れを整える：
-　体質分析時に最も伸展負担がかかる経絡ラインの伸展動作(motion)をもとに、対応する経絡ラインのストレッチやツボ刺激でその経絡ラインの筋膜テンションを緩め、関連臓腑(organType)の乱れも整え、不調(主訴)の改善にもつながる。
-  motion_level の改善はこの経絡ケアの成果指標となる。
-
-4. kampo（漢方・栄養サプリ）：
-　他のセルフケア（habits, breathing, stretch, tsubo）を一定期間継続しても
-　体調や motion_level の改善が停滞している場合、
-　補助的な手段として体質・弁証に基づいた漢方を取り入れることを検討します。
-　ただし、継続的依存は避け、あくまで自律的ケアの補助として扱います。
-
----
-
-## 🔸 motion_level の扱いルール
-
-- motion / motion_level は「構造的な整い指標」であり、不調（symptom）とは別物。
-- motion_level は stretch / tsubo によって主に改善されるが、
-  呼吸法（breathing）や体質改善習慣（habits）が直接影響するとは限らない。
-
----
-
-## 🔸 出力仕様
-出力は必ず次の形式で返してください：
-
-{
-  "card1": {
-    "lead": "冒頭メッセージ。努力と反映をねぎらう。",
-    "score_block": {
-      "action": {
-        "label": "今週のケア努力点",
-        "score_text": "NN 点",
-        "diff_text": "（前回比 +5点）", 
-        "explain": "どれだけ行動できたか"
-      },
-      "effect": {
-        "label": "ケア効果の反映度合い",
-        "percent_text": "72%",       
-        "stars": "★★★☆☆",
-        "diff_text": "（前回比 +8%）",  
-        "explain": "努力がどれだけ体調に反映されたか"
-      }
-    },
-    "guidance": "今日からのセルフケア指針"
-  },
-  "card2": {
-    "lead": "『今週はこの優先順位で整えよう🌿』のようなフォーカス宣言。",
-    "care_plan": [
-      {
-        "pillar": "呼吸法" | "体質改善習慣" | "ストレッチ" | "ツボ" | "漢方" | "相談サポート",
-        "priority": 1,
-        "recommended_frequency": "毎日" | "週2〜3回" | "必要な時",
-        "reason": "なぜ今これが優先か（体調・構造・メンタル面を踏まえて）",
-        "reference_link": "contexts.advice 内の対応図解リンク"
-      }
-    ],
-    "footer": "最後の励ましメッセージ。例：『焦らず、今日の1回が未来の整いをつくるよ🫶』"
-  }
-}
----
-
-## 🔸 表現ルール（重要）
-- ユーザーへの出力では、**内部データのカラム名（例: motion, sleep, stress, symptom_level など）を直接表記せず、ユーザーが自然に理解できる日本語表現に変換すること。**
----
-## 🔸 出力制御ルール（時間表現）
-- 「はじめの1週間」などの表現は、サービス開始（context.created_at）からの日数をもとにしたときのみ使う。
-- すでに1ヶ月以上経過している場合は、「最近」や「直近の期間」と言い換える。
-- 具体的な日数（○日目など）は出さない。
-
-## 🔸 出力仕様（テキストマークアップ）
-必ず次の2ブロックのみを、この順で返す。前後に余計な文章やコードフェンスは付けない。
-
-[CARD1]
-LEAD: <冒頭メッセージ。努力と反映をねぎらう。>
-ACTION_SCORE: <NN> 点
-ACTION_DIFF: （前回比 ±<N>点）   // 差分が無い場合は省略可
-EFFECT_PERCENT: <NN>%
-EFFECT_STARS: <★の数5文字（例: ★★★☆☆）>
-EFFECT_DIFF: （前回比 ±<N>%）    // 差分が無い場合は省略可
-GUIDANCE: <今日からのセルフケア指針>
-[/CARD1]
+【出力フォーマット（CARD2 のみ）】
+必ず次の形で返してください。前後に余計な文章やコードフェンスは付けないこと。
 
 [CARD2]
-LEAD: <「今週はこの優先順位で整えよう🌿」のようなフォーカス宣言>
-PLAN1: pillar=<呼吸法|体質改善習慣|ストレッチ|ツボ|漢方|相談サポート> | freq=<毎日|週2〜3回|必要な時> | reason=<理由> | link=<https://... 任意>
-PLAN2: pillar=... | freq=... | reason=... | link=...
-PLAN3: pillar=... | freq=... | reason=... | link=...
-FOOTER: <最後の励ましメッセージ>
+LEAD: <今回のフィードバックの総括メッセージ>
+PLAN1: pillar=<ケア柱名> | reason=<フィードバック本文> 
+PLAN2: pillar=<ケア柱名> | reason=<フィードバック本文> 
+PLAN3: pillar=<ケア柱名> | reason=<フィードバック本文>  // 3つめは省略可
+FOOTER: <最後の一言メッセージ>
 [/CARD2]
 
 `.trim();
 
-const userPrompt = `
-【スコア情報】
-- 今回のケア実施努力点: ${actionScoreFinal}点${
-  actionScoreDiff !== null ? `（前回比 ${actionScoreDiff > 0 ? "+" : ""}${actionScoreDiff}点）` : ""
-}
-- ケア効果反映度: ${careEffectScore}%${
-  careEffectDiff !== null ? `（前回比 ${careEffectDiff > 0 ? "+" : ""}${careEffectDiff}%）` : ""
-}
-- ケア効果反映度の星: ${careEffectStarsText}
-- 実施合計（日数換算）: ${totalActions}回
-- 評価対象日数: ${effectiveDays}日
-- サービス利用開始からの日数: ${daysSinceStart}日
+    const gptComment = await callTotonouGPT(systemPrompt, userPrompt);
 
-【体調スコア（今回）】
-- 主訴の強さ(symptom_level): ${curN.symptom_level}（1=軽い〜5=強い）
-- 睡眠(sleep): ${curN.sleep}（1=整っている〜5=乱れ）
-- 食事(meal): ${curN.meal}（1=整っている〜5=乱れ）
-- ストレス(stress): ${curN.stress}（1=落ち着いている〜5=強い）
-- 動作のつらさ(motion_level): ${curN.motion_level}（1=軽い〜5=強い）
+    if (!gptComment) {
+      return {
+        sections: null,
+        gptComment:
+          "トトノウくんが今回のフィードバックをうまくまとめられませんでした🙏 また少し時間をおいて試してみてください。",
+        statusMessage: "error",
+      };
+    }
 
-【体質・症状情報】
-- 主訴カテゴリ: ${symptomName}
-- 動作テスト対象（motion動作）: ${motionName}
-
-【停滞情報】
-- isStuck2Times: ${stagnationInfo.isStuck2Times}
-- stagnationSeverity: ${stagnationInfo.severity || "null"}
-
-【adviceデータ】
-${JSON.stringify(advice, null, 2)}
-
-【短期ケア実施状況（前回チェック以降）】
-${JSON.stringify(careCounts, null, 2)}
-
-【長期ケア実施状況（体質分析以降の累計）】
-${JSON.stringify(longTermCareCounts, null, 2)}
-
----
-
-【補足メモ】
-- 「セルフケア実施努力点」は、どれだけ継続的にケアを実践できたかを表します。
-- 「ケア効果反映度」は、努力がどの程度、体調改善（主訴・生活リズム・構造安定）に結びついたかを表します。
-- 「停滞」がある場合は、無理に回数を増やすよりも「やり方の質」や「方向性の再調整」「相談」を促してください。
-- 出力JSONは、card1とcard2の2枚構成で返すこと。care_plan は最大3件まで出力すること。それ以上は出さないこと。
-
-`.trim();
-
-// 10. GPT呼び出し（テキスト出力モード）
-const gptComment = await callTotonouGPT(systemPrompt, userPrompt);
-
-if (!gptComment)
-  return {
-    sections: null,
-    gptComment: "トトノウくんが今週のケアをまとめられませんでした🙏",
-    statusMessage: "error",
-  };
-
-// GPTの自然文をそのまま返却（Flex変換はindex.jsで実施）
-return {
-  sections: null,
-  gptComment,
-  statusMessage: "ok",
-};
+    return {
+      sections: null, // Flex変換は followup/index.js 側で実施
+      gptComment,
+      statusMessage: "ok",
+    };
   } catch (err) {
     console.error("❌ sendFollowupResponse error:", err);
     return {
       sections: null,
-      gptComment: "今週のケアプラン生成中にエラーが発生しました。",
+      gptComment:
+        "今週のケアフィードバック生成中にエラーが発生しました。時間をおいて再試行してください🙏",
       statusMessage: "error",
     };
   }
