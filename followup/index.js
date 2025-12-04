@@ -462,7 +462,7 @@ function buildResultBubbles({
       contents: [
         {
           type: "text",
-          text: "🪴 ケア実施状況とトトノウくんからひとこと",
+          text: "🪴 ケア実施状況とひとこと",
           weight: "bold",
           size: "lg",
           color: "#ffffff",
