@@ -577,15 +577,10 @@ async function handleFollowup(event, client, lineId) {
     }
 
     // === 未セッション ===
-    if (!userSession[lineId]) {
-      return client.replyMessage(replyToken, [
-        {
-          type: "text",
-          text:
-            'ととのい度チェックを始めるには、メニューの【ととのい度チェック】ボタンをタップしてください😊',
-        },
-      ]);
-    }
+// フォローアップ未開始なら返信せず終了（通常 handler へ任せる）
+if (!userSession[lineId]) {
+  return; // これだけで良い
+}
 
     const session = userSession[lineId];
     const question = questionSets[session.step - 1];
