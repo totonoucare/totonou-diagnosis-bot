@@ -2,7 +2,7 @@ const followupQuestionSet = [
   {
     id: "Q1",
     header: "【Q1】お体の変化",
-    body: "体質分析時のお悩み\n「{{symptom}}」\n\nを含む体調レベルについて\n\n「1＝改善した」「5＝変わらずツライ」\n\nでお答えください。",
+    body: "体質分析時のお悩み\n「{{symptom}}」\n\nを含む体調レベルについて\n\n「1＝改善した」「5＝変わらずツライ」\nでお答えください。",
     isMulti: true,
     options: [
       {
@@ -15,7 +15,7 @@ const followupQuestionSet = [
   {
     id: "Q2",
     header: "【Q2】生活リズムの整い具合",
-    body: "最近の睡眠・食事・ストレスの自覚状態について、それぞれ\n\n「1＝理想的」「5＝かなり乱れている」\n\nでお答えください。",
+    body: "最近の睡眠・食事・ストレスの自覚状態について、それぞれ\n\n「1＝理想的」「5＝かなり乱れている」\nでお答えください。",
     isMulti: true,
     options: [
       {
@@ -37,8 +37,8 @@ const followupQuestionSet = [
   },
   {
     id: "Q3",
-    header: "【Q3】動作テストの変化",
-    body: "初回分析時の「{{motion}}」のツラさ度合いについて、\n「1＝改善した」「5＝変わらずツライ」\nでお答えください。",
+    header: "【Q3】動作の負荷チェックの変化",
+    body: "初回分析時の「{{motion}}」\nのツラさの度合いについて、\n\n「1＝改善した」「5＝変わらずツライ」\nでお答えください。",
     isMulti: true, // ← 統一
     options: [
       {
