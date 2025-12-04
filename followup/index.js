@@ -59,7 +59,12 @@ function normalizeScore(v, def = null) {
 
 function normalizeFollowupRow(row = {}) {
   return {
-    symptom_level: normalizeScore(row.symptom, null),
+    // 🔧 カラム名を symptom_level に修正
+    //   ついでに、もし昔 row.symptom で保存されてたデータがあっても拾えるようにフォールバック付き
+    symptom_level: normalizeScore(
+      row.symptom_level ?? row.symptom,
+      null
+    ),
     sleep: normalizeScore(row.sleep, null),
     meal: normalizeScore(row.meal, null),
     stress: normalizeScore(row.stress, null),
