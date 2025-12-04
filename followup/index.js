@@ -1,7 +1,7 @@
 // followup/index.js
 // ===============================================
 // 「ととのい度チェック」週次チェックフロー（GPT不使用版）
-// - Q1: 主訴ふくむ体調 / Q2: 生活リズム / Q3: 負荷チェック
+// - Q1: 主訴ふくむ体調 / Q2: 生活リズム / Q3: 負荷チェック（動作）
 // - すべて isMulti=true 形式
 // - 回答完了後：
 //    ① 前回→今回のスコア変化をローカルで可視化（カード1）
@@ -31,7 +31,7 @@ const multiLabels = {
   sleep: "睡眠の状態",
   meal: "食事の状態",
   stress: "ストレスの状態",
-  motion_level: "負荷チェックの変化",
+  motion_level: "負荷チェックのつらさ",
 };
 
 // ======== セッション管理 ========
@@ -46,7 +46,7 @@ function replacePlaceholders(template, context = {}) {
       /\{\{symptom\}\}/g,
       symptomLabels[context.symptom] || "不明な主訴"
     )
-    .replace(/\{\{motion\}\}/g, context.motion || "指定の動作");
+    .replace(/\{\{motion\}\}/g, context.motion || "指定の動き");
 }
 
 // ======== 数値正規化ユーティリティ ========
@@ -69,41 +69,49 @@ function normalizeFollowupRow(row = {}) {
 
 // ======== スコア差分 → 矢印＆コメント ========
 function buildTrendInfo(prevVal, curVal, type = "general") {
+  // prev or cur が未定義 → 初回 or まだデータ不足
   if (prevVal == null || curVal == null) {
     return {
       arrow: "－",
       comment:
         type === "main"
           ? "今回が最初のチェックです"
-          : "今回が基準になります",
+          : "今回がこれからの基準になります",
     };
   }
 
-  const diff = prevVal - curVal; // 正なら「良くなった」
+  const diff = prevVal - curVal; // 正なら「良くなった」（数字が小さいほどラク）
+
   let arrow = "→";
   let comment =
-    type === "main" ? "前回と大きな変化はまだ少なめ" : "ほぼ横ばいです";
+    type === "main"
+      ? "前回と大きな変化はまだ少なめ"
+      : "ほぼ横ばいの状態です";
 
   if (diff >= 2) {
     arrow = "⬆⬆✨";
     comment =
-      type === "main" ? "だいぶ楽になってきました" : "かなり整ってきました";
+      type === "main"
+        ? "だいぶラクになってきました"
+        : "かなり整ってきています";
   } else if (diff >= 1) {
     arrow = "⬆";
     comment =
-      type === "main" ? "少し楽になってきました" : "少し整ってきました";
+      type === "main"
+        ? "少しラクになってきました"
+        : "少し整ってきました";
   } else if (diff <= -2) {
     arrow = "⬇⬇⚠️";
     comment =
       type === "main"
-        ? "前回よりツラさが強まりぎみです"
-        : "すこし乱れが目立っています";
+        ? "前回よりツラさが強まりぎみ"
+        : "少し無理が重なっている様子です";
   } else if (diff <= -1) {
     arrow = "⬇";
     comment =
       type === "main"
-        ? "少し負担が増えぎみです"
-        : "すこし乱れが出てきています";
+        ? "少し負担が増えぎみ"
+        : "すこし乱れが出ています";
   }
 
   return { arrow, comment };
@@ -116,65 +124,18 @@ function evalCareRatio(days, totalDays) {
   const ratio = d / base;
 
   if (ratio >= 0.8) {
-    return { icon: "🟢 ◎", comment: "かなり意識できている状態" };
+    return { icon: "🟢 ◎", comment: "かなり意識できている状態です" };
   }
   if (ratio >= 0.6) {
-    return { icon: "🟢 ○", comment: "しっかり続けられたペース" };
+    return { icon: "🟢 ○", comment: "しっかり続けられているペースです" };
   }
   if (ratio >= 0.4) {
-    return { icon: "🟡 ○", comment: "半分くらい取り入れられた" };
+    return { icon: "🟡 ○", comment: "半分くらい取り入れられています" };
   }
   if (ratio > 0) {
-    return { icon: "🟡 △", comment: "ときどきできたくらい" };
+    return { icon: "🟡 △", comment: "ときどきできたくらいの頻度です" };
   }
-  return { icon: "🔴 ×", comment: "ほとんどできていない状態" };
-}
-
-// ======== ケア必要度スコア（0〜3） ========
-function getCareNeedScores(context = {}, curScores = {}) {
-  const flowType = context.flowType || "";
-  const main = curScores.symptom_level;
-  const sleep = curScores.sleep;
-  const meal = curScores.meal;
-  const stress = curScores.stress;
-  const motion = curScores.motion_level;
-
-  // habits（生活習慣・体質改善）
-  let habitsNeed = 1;
-  const lifeArray = [sleep, meal, stress].filter((v) => v != null);
-  const lifeMax = lifeArray.length ? Math.max(...lifeArray) : null;
-  if (lifeMax >= 4) habitsNeed = 3;
-  else if (lifeMax >= 3) habitsNeed = 2;
-
-  // breathing（呼吸法）
-  let breathingNeed = 1;
-  if (["気滞", "瘀血", "水滞"].includes(flowType)) breathingNeed += 1;
-  if ((stress != null && stress >= 4) || (main != null && main >= 4))
-    breathingNeed += 1;
-  breathingNeed = Math.max(1, Math.min(3, breathingNeed));
-
-  // stretch / tsubo（構造ライン）
-  let lineNeed = 0;
-  if (motion != null) {
-    if (motion >= 4) lineNeed = 3;
-    else if (motion >= 3) lineNeed = 2;
-    else if (motion >= 1) lineNeed = 1;
-  }
-
-  // kampo（おまけ枠）
-  let kampoNeed = 0;
-  if (main != null) {
-    if (main >= 4) kampoNeed = 2;
-    else if (main === 3) kampoNeed = 1;
-  }
-
-  return {
-    habits: habitsNeed,
-    breathing: breathingNeed,
-    stretch: lineNeed,
-    tsubo: lineNeed,
-    kampo: kampoNeed,
-  };
+  return { icon: "🔴 ×", comment: "まだほとんど手がつけられていない状態です" };
 }
 
 // ======== Flex質問構築 ========
@@ -195,7 +156,6 @@ function buildFlexMessage(question, context = {}) {
 }
 
 // ======== 結果バブル構築（2枚＋CTA） ========
-
 function buildResultBubbles({
   context,
   prevScores,
@@ -204,8 +164,8 @@ function buildResultBubbles({
   effectiveDays,
 }) {
   const symptomName =
-    symptomLabels[context.symptom] || "全身のなんとなく不調";
-  const motionName = context.motion || "指定の動作";
+    symptomLabels[context.symptom] || "全身のなんとなくした不調";
+  const motionName = context.motion || "指定の動き";
 
   // ---- トレンド情報 ----
   const mainTrend = buildTrendInfo(
@@ -221,14 +181,8 @@ function buildResultBubbles({
     curScores.motion_level
   );
 
-  const prevSym =
-    prevScores && prevScores.symptom_level != null
-      ? prevScores.symptom_level
-      : "-";
-  const curSym =
-    curScores && curScores.symptom_level != null
-      ? curScores.symptom_level
-      : "-";
+  const prevSym = prevScores?.symptom_level ?? "-";
+  const curSym = curScores.symptom_level ?? "-";
 
   // ---- カード1：体調＆構造の変化 ----
   const bubble1 = {
@@ -257,7 +211,6 @@ function buildResultBubbles({
       paddingAll: "16px",
       spacing: "md",
       contents: [
-        // 全体のととのい度
         {
           type: "text",
           text: `🌡 全体のととのい度（「${symptomName}」を含む体調）`,
@@ -272,7 +225,7 @@ function buildResultBubbles({
           contents: [
             {
               type: "text",
-              text: `「${symptomName}」をふくめた全体の体調`,
+              text: `「${symptomName}」を含めた全体の体調`,
               size: "md",
               wrap: true,
             },
@@ -318,9 +271,11 @@ function buildResultBubbles({
             },
             {
               type: "text",
-              text: `🍽 食事のタイミング／量　${prevScores?.meal ?? "-"} → ${
-                curScores.meal ?? "-"
-              }　${mealTrend.arrow}　〔${mealTrend.comment}〕`,
+              text: `🍽 食事のタイミング／量　${
+                prevScores?.meal ?? "-"
+              } → ${curScores.meal ?? "-"}　${mealTrend.arrow}　〔${
+                mealTrend.comment
+              }〕`,
               size: "md",
               wrap: true,
             },
@@ -361,7 +316,7 @@ function buildResultBubbles({
 
   // ---- カード2：ケア実施状況＋簡易フィードバック ----
 
-  // ビルド時に priority=1 のケアは「優先ケア」として扱う
+  // 優先ケア判定（context.advice 内の priority=1 を優先扱い）
   const adviceCards = Array.isArray(context.advice) ? context.advice : [];
   const priorityKeys = adviceCards
     .filter((c) => c.priority === 1 && c.key)
@@ -369,62 +324,52 @@ function buildResultBubbles({
 
   const isPriority = (key) => priorityKeys.includes(key);
 
-  // ケア必要度スコア
-  const needScores = getCareNeedScores(context, curScores);
-
+  // careCounts: { habits, breathing, stretch, tsubo, kampo }
   const effDays = effectiveDays || 1;
+  const careLinesPriority = [];
+  const careLinesSupport = [];
+
   const pillars = [
     {
       key: "breathing",
       label: "🌬 呼吸法",
       count: careCounts.breathing ?? 0,
       adviceKey: "breathing",
-      need: needScores.breathing,
     },
     {
       key: "stretch",
       label: "🤸‍♀️ 経絡ストレッチ",
       count: careCounts.stretch ?? 0,
       adviceKey: "stretch",
-      need: needScores.stretch,
     },
     {
       key: "tsubo",
       label: "👉 指先・ツボほぐし",
       count: careCounts.tsubo ?? 0,
       adviceKey: "points",
-      need: needScores.tsubo,
     },
     {
       key: "habits",
       label: "🌱 体質改善習慣（生活リズム）",
       count: careCounts.habits ?? 0,
       adviceKey: "lifestyle",
-      need: needScores.habits,
     },
     {
       key: "kampo",
       label: "🌿 漢方・サプリ（おまけ枠）",
       count: careCounts.kampo ?? 0,
       adviceKey: "kanpo",
-      need: needScores.kampo,
     },
   ];
-
-  const careLinesPriority = [];
-  const careLinesSupport = [];
-  let kampoLine = null;
 
   pillars.forEach((p) => {
     const evalInfo = evalCareRatio(p.count, effDays);
     const lineText = `・${p.label}\n${p.count}日 / ${effDays}日　${evalInfo.icon}〔${evalInfo.comment}〕`;
 
     if (p.key === "kampo") {
-      kampoLine = lineText;
-      return;
-    }
-
-    if (isPriority(p.adviceKey)) {
+      // 「漢方・サプリ」はおまけ枠扱い：常にサポート側に入れる
+      careLinesSupport.push(lineText);
+    } else if (isPriority(p.adviceKey)) {
       careLinesPriority.push(lineText);
     } else {
       careLinesSupport.push(lineText);
@@ -443,7 +388,7 @@ function buildResultBubbles({
           },
           {
             type: "text",
-            text: careLinesPriority.join("\n\n"),
+            text: careLinesPriority.join("\n"),
             size: "md",
             wrap: true,
             margin: "xs",
@@ -456,14 +401,14 @@ function buildResultBubbles({
       ? [
           {
             type: "text",
-            text: "＜サポートケア＞",
+            text: "＜サポートケア・おまけ枠＞",
             size: "sm",
             weight: "bold",
             margin: "md",
           },
           {
             type: "text",
-            text: careLinesSupport.join("\n\n"),
+            text: careLinesSupport.join("\n"),
             size: "md",
             wrap: true,
             margin: "xs",
@@ -471,58 +416,36 @@ function buildResultBubbles({
         ]
       : [];
 
-  const kampoBlock = kampoLine
-    ? [
-        {
-          type: "text",
-          text: "＜おまけ枠＞",
-          size: "sm",
-          weight: "bold",
-          margin: "md",
-        },
-        {
-          type: "text",
-          text: kampoLine,
-          size: "md",
-          wrap: true,
-          margin: "xs",
-        },
-      ]
-    : [];
-
-  // 簡易フィードバック文（必要性 × 実施頻度ベース）
-  const corePillars = pillars.filter(
-    (p) => p.key !== "kampo" && p.need >= 2
+  // 簡易フィードバック文（内部ロジック）
+  const goodPillars = pillars.filter(
+    (p) => p.count / effDays >= 0.6 && p.count > 0 && p.key !== "kampo"
   );
-  const goodCore = corePillars.filter(
-    (p) => p.count / effDays >= 0.6 && p.count > 0
-  );
-  const weakCore = corePillars.filter(
-    (p) => p.count / effDays < 0.3
+  const weakPillars = pillars.filter(
+    (p) => p.count / effDays < 0.3 && p.count >= 0 && p.key !== "kampo"
   );
 
-  let feedbackText = "今週もケアを続けてくれてありがとうございます。\n";
+  let feedbackText = "今週もセルフケアを続けてくれてありがとうございます。\n";
 
-  if (goodCore.length > 0) {
-    const names = goodCore
+  if (goodPillars.length > 0) {
+    const names = goodPillars
       .map((p) => p.label.replace(/^.+? /, ""))
       .join("・");
-    feedbackText += `とくに「${names}」は、いまのからだにとって大事なケアを、良いペースで入れられています。\n`;
+    feedbackText += `とくに「${names}」は、とても良いペースで積み重ねられています。\n`;
   }
 
-  if (weakCore.length > 0) {
-    const names = weakCore
+  if (weakPillars.length > 0) {
+    const names = weakPillars
       .map((p) => p.label.replace(/^.+? /, ""))
       .join("・");
-    feedbackText += `一方で「${names}」は、まだ手をつけづらかった様子なので、体調がゆるす日だけ「1日1回だけ」足してみるくらいで大丈夫です。\n`;
+    feedbackText += `一方で「${names}」は、まだ手をつけづらかった様子なので、体調がゆるす日だけで大丈夫なので「1日1回だけ」足してみると、負荷チェックのラクさや「${symptomName}」にも少しずつ反映されやすくなります。\n`;
   }
 
-  if (goodCore.length === 0 && weakCore.length === 0) {
+  if (goodPillars.length === 0 && weakPillars.length === 0) {
     feedbackText +=
       "まだこれからペースを作っていく段階です。あせらず、「今日できそうなケア」をひとつだけ一緒に選んでいきましょう。";
   } else {
     feedbackText +=
-      "あせらず、いまできていることを土台にしながら、すこしずつ整えていきましょう🌿";
+      "あせらず、いま出来ていることを土台にしながら、すこしずつ整えていきましょう🌿";
   }
 
   const bubble2 = {
@@ -534,7 +457,7 @@ function buildResultBubbles({
       contents: [
         {
           type: "text",
-          text: "🪴 ケア実施状況とひとことフィードバック",
+          text: "🪴 ケア実施状況とトトノウくんからひとこと",
           weight: "bold",
           size: "lg",
           color: "#ffffff",
@@ -551,7 +474,6 @@ function buildResultBubbles({
       backgroundColor: "#FDFBF7",
       paddingAll: "12px",
       contents: [
-        // まず全体フィードバック
         {
           type: "text",
           text: feedbackText,
@@ -559,10 +481,8 @@ function buildResultBubbles({
           wrap: true,
         },
         { type: "separator", margin: "md" },
-        // そのあとにケア実施状況
         ...priorityBlock,
         ...supportBlock,
-        ...kampoBlock,
       ],
     },
   };
@@ -589,7 +509,7 @@ function buildResultBubbles({
           type: "text",
           text:
             "「このケアがどのくらい体調に反映されていそうか知りたい」ときは、下のボタンからAIチャットに聞けます。",
-          size: "md",
+          size: "sm",
           wrap: true,
         },
         {
@@ -612,6 +532,7 @@ function buildResultBubbles({
 // ======== メイン処理 ========
 async function handleFollowup(event, client, lineId) {
   const replyToken = event.replyToken;
+
   try {
     let message = "";
     if (event.type === "message" && event.message.type === "text") {
@@ -620,14 +541,20 @@ async function handleFollowup(event, client, lineId) {
       message = event.postback.data.trim();
     } else {
       return client.replyMessage(replyToken, [
-        { type: "text", text: "形式が不正です。ボタンで回答してください🙏" },
+        {
+          type: "text",
+          text: "形式が不正です。ボタンから選んで送信してください🙏",
+        },
       ]);
     }
 
-    // 開始トリガー
+    // === 開始トリガー ===
     if (message === "ととのい度チェック開始") {
       const userRecord = await supabaseMemoryManager.getUser(lineId);
-      if (!userRecord || (!userRecord.subscribed && !userRecord.trial_intro_done)) {
+      if (
+        !userRecord ||
+        (!userRecord.subscribed && !userRecord.trial_intro_done)
+      ) {
         return client.replyMessage(replyToken, [
           {
             type: "text",
@@ -644,21 +571,28 @@ async function handleFollowup(event, client, lineId) {
       ]);
     }
 
-    // 未セッション
+    // === 未セッション ===
     if (!userSession[lineId]) {
       return client.replyMessage(replyToken, [
-        { type: "text", text: '始めるには「ととのい度チェック開始」を押してください😊' },
+        {
+          type: "text",
+          text:
+            'ととのい度チェックを始めるには、メニューの【ととのい度チェック】ボタンをタップしてください😊',
+        },
       ]);
     }
 
     const session = userSession[lineId];
     const question = questionSets[session.step - 1];
 
-    // === 全問マルチ ===
+    // === 全問マルチ（key:value 形式） ===
     const parts = message.split(":");
     if (parts.length !== 2) {
       return client.replyMessage(replyToken, [
-        { type: "text", text: "ボタンから選んで送信してください🙏" },
+        {
+          type: "text",
+          text: "ボタンから選んで送信してください🙏",
+        },
       ]);
     }
 
@@ -666,7 +600,10 @@ async function handleFollowup(event, client, lineId) {
     const validKey = question.options.find((opt) => opt.id === key);
     if (!validKey) {
       return client.replyMessage(replyToken, [
-        { type: "text", text: "その選択肢は使えません。ボタンから選んでください🙏" },
+        {
+          type: "text",
+          text: "その選択肢は使えません。ボタンから選んでください🙏",
+        },
       ]);
     }
 
@@ -680,18 +617,15 @@ async function handleFollowup(event, client, lineId) {
       session.partialAnswers = {};
       session.step++;
     } else {
-      // 同一Q内で継続
+      // 同一Q内で継続（ここでは返信しない。次のpostbackで続行）
       return;
     }
 
-    // === 全完了 ===
+    // === 全問完了時 ===
     if (session.step > questionSets.length) {
       const answers = session.answers;
 
-      // 1. Supabaseへ保存（従来どおり）
-      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
-
-      // 2. context + 前回スコア + carelogs を取得
+      // 1. context + userRecord を取得
       const context = await supabaseMemoryManager.getContext(lineId);
       const userRecord = await supabaseMemoryManager.getUser(lineId);
       if (!context || !userRecord) {
@@ -705,10 +639,12 @@ async function handleFollowup(event, client, lineId) {
         ]);
       }
 
+      // 2. 前回までの followup 履歴を取得（保存より前にやるのがポイント）
       const { latest, prev } =
-        await supabaseMemoryManager.getLastTwoFollowupsByUserId(userRecord.id);
+        await supabaseMemoryManager.getLastTwoFollowupsByUserId(
+          userRecord.id
+        );
 
-      // 今回スコア（answers 優先、fallback に latest）
       const curScores = {
         symptom_level: normalizeScore(
           answers.symptom ?? latest?.symptom,
@@ -725,7 +661,7 @@ async function handleFollowup(event, client, lineId) {
 
       const prevScores = prev ? normalizeFollowupRow(prev) : null;
 
-      // ケア実施日数（前回チェック〜今回）
+      // 3. ケア実施日数（前回チェック〜今回）
       let careCounts = {};
       try {
         const raw =
@@ -750,7 +686,7 @@ async function handleFollowup(event, client, lineId) {
         };
       }
 
-      // 評価対象日数（前回〜今回 or context開始〜今回）
+      // 4. 評価対象日数（前回〜今回 or context開始〜今回）
       const now = Date.now();
       const prevDate = prev?.created_at
         ? new Date(prev.created_at).getTime()
@@ -766,6 +702,7 @@ async function handleFollowup(event, client, lineId) {
         : 1;
       const effectiveDays = Math.max(1, diffDays);
 
+      // 5. 表示用バブル生成
       const { bubbles, ctaBubble } = buildResultBubbles({
         context,
         prevScores,
@@ -773,6 +710,9 @@ async function handleFollowup(event, client, lineId) {
         careCounts,
         effectiveDays,
       });
+
+      // 6. Supabaseへ保存（prev取得・care集計の「あと」で実施）
+      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
       delete userSession[lineId];
 
@@ -794,11 +734,11 @@ async function handleFollowup(event, client, lineId) {
       return client.replyMessage(replyToken, [carouselFlex, ctaFlex]);
     }
 
-    // === 次の質問 ===
+    // === 次の質問へ ===
     const nextQuestion = questionSets[session.step - 1];
     const context = await supabaseMemoryManager.getContext(lineId);
     const nextFlex = buildFlexMessage(nextQuestion, context);
-    return client.replyMessage(replyToken, nextFlex);
+    return client.replyMessage(replyToken, [nextFlex]);
   } catch (err) {
     console.error("❌ followup/index.js エラー:", err);
     return client.replyMessage(replyToken, {
