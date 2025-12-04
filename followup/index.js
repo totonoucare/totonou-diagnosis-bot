@@ -639,71 +639,78 @@ function buildDashboardBubble({ context, latest, prev, careCounts, periodDays })
 }
 
 /* ---------------------------
-   🧱 カード2：GPTセクション → Flex変換
+   🧱 カード2：GPTフィードバック → Flex変換
+   （優先順位・頻度は表示しない版）
 --------------------------- */
 
 function buildCarePlanBubbleFromSections(card2 = {}) {
   const carePlanList = Array.isArray(card2.care_plan) ? card2.care_plan : [];
 
-  const careContents = [
-    {
-      type: "text",
-      text: card2.lead || "今週はこの順で整えていこう🌿",
-      wrap: true,
-    },
-  ];
+  const contents = [];
 
-  carePlanList
-    .sort((a, b) => (a.priority || 999) - (b.priority || 999))
-    .forEach((p, idx) => {
-      careContents.push({
-        type: "box",
-        layout: "vertical",
-        margin: idx === 0 ? "md" : "sm",
-        contents: [
-          {
-            type: "text",
-            text: `【${p.priority || idx + 1}位】${p.pillar || "ケア"}（${
-              p.recommended_frequency || "目安"
-            }）`,
-            weight: "bold",
-            wrap: true,
-            size: "sm",
-          },
-          ...(p.reason
-            ? [
-                {
-                  type: "text",
-                  text: p.reason,
-                  wrap: true,
-                  size: "xs",
-                },
-              ]
-            : []),
-          ...(typeof p.reference_link === "string" &&
-          /^https?:\/\//.test(p.reference_link)
-            ? [
-                {
-                  type: "button",
-                  style: "link",
-                  height: "sm",
-                  action: {
-                    type: "uri",
-                    label: "図解を見る",
-                    uri: p.reference_link,
-                  },
-                },
-              ]
-            : []),
-        ],
-      });
+  // リード文
+  contents.push({
+    type: "text",
+    text: card2.lead || "今回のケアのがんばりが、体調にどう反映されていそうかをまとめました🌿",
+    wrap: true,
+    size: "md",
+    margin: "none",
+  });
+
+  // フィードバック箇条書き（PLANの reason だけ使う）
+  carePlanList.forEach((p) => {
+    if (!p || !p.reason) return;
+
+    // pillar はあくまで「どのケアについての話か」を軽く添える程度にする（優先順位ではない）
+    const pill = (p.pillar || "").trim();
+    const titleText = pill
+      ? `• ${pill}についてのフィードバック`
+      : "• ケアの取り組みについて";
+
+    contents.push({
+      type: "box",
+      layout: "vertical",
+      margin: "sm",
+      contents: [
+        {
+          type: "text",
+          text: titleText,
+          size: "xs",
+          weight: "bold",
+          wrap: true,
+        },
+        {
+          type: "text",
+          text: p.reason,
+          size: "xs",
+          color: "#555555",
+          wrap: true,
+          margin: "xs",
+        },
+      ],
     });
+  });
 
-  careContents.push({ type: "separator", margin: "md" });
-  careContents.push({
+  // PLAN がゼロだった場合のフォールバック
+  if (carePlanList.length === 0) {
+    contents.push({
+      type: "text",
+      text: "今回のチェックでは、具体的なフィードバック文が生成できませんでした🙏\nおおまかな体調の流れだけ参考にしてみてください。",
+      wrap: true,
+      size: "xs",
+      color: "#777777",
+      margin: "md",
+    });
+  }
+
+  contents.push({ type: "separator", margin: "md" });
+
+  // フッター
+  contents.push({
     type: "text",
     text:
-      card2.footer || "焦らず、今日の1回が未来のととのいをつくります🫶",
+      card2.footer ||
+      "うまくいったこと・続けられたことを土台にしながら、今週もマイペースでいきましょう🫶",
     wrap: true,
     size: "xs",
     color: "#888888",
@@ -718,7 +725,7 @@ function buildCarePlanBubbleFromSections(card2 = {}) {
       contents: [
         {
           type: "text",
-          text: "🪴 今週のケアプラン",
+          text: "🪴 今回のケアフィードバック",
           weight: "bold",
           size: "lg",
           color: "#ffffff",
@@ -734,7 +741,7 @@ function buildCarePlanBubbleFromSections(card2 = {}) {
       spacing: "md",
       backgroundColor: "#FDFBF7",
       paddingAll: "12px",
-      contents: careContents,
+      contents,
     },
   };
 }
