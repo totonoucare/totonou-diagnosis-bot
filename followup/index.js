@@ -77,7 +77,7 @@ function buildTrendInfo(prevVal, curVal, type = "general") {
   // prev or cur が未定義 → 初回 or まだデータ不足
   if (prevVal == null || curVal == null) {
     return {
-      arrow: "－",
+      arrow: "➖",
       comment:
         type === "main"
           ? "今回が最初のチェックです"
@@ -87,7 +87,7 @@ function buildTrendInfo(prevVal, curVal, type = "general") {
 
   const diff = prevVal - curVal; // 正なら「良くなった」（数字が小さいほどラク）
 
-  let arrow = "→";
+  let arrow = "➡️";
   let comment =
     type === "main"
       ? "前回と大きな変化はまだ少なめ"
@@ -268,8 +268,8 @@ function buildResultBubbles({
           contents: [
             {
               type: "text",
-              text: `🌙 睡眠リズム　${prevScores?.sleep ?? "-"} → ${
-                curScores.sleep ?? "-"
+              text: `🌙 睡眠リズム　${prevScores?.sleep ?? "➖"} → ${
+                curScores.sleep ?? "➖"
               }　${sleepTrend.arrow}　〔${sleepTrend.comment}〕`,
               size: "md",
               wrap: true,
@@ -277,8 +277,8 @@ function buildResultBubbles({
             {
               type: "text",
               text: `🍽 食事のタイミング／量　${
-                prevScores?.meal ?? "-"
-              } → ${curScores.meal ?? "-"}　${mealTrend.arrow}　〔${
+                prevScores?.meal ?? "➖"
+              } → ${curScores.meal ?? "➖"}　${mealTrend.arrow}　〔${
                 mealTrend.comment
               }〕`,
               size: "md",
@@ -287,8 +287,8 @@ function buildResultBubbles({
             {
               type: "text",
               text: `😮‍💨 ストレス・気分の安定度　${
-                prevScores?.stress ?? "-"
-              } → ${curScores.stress ?? "-"}　${stressTrend.arrow}　〔${
+                prevScores?.stress ?? "➖"
+              } → ${curScores.stress ?? "➖"}　${stressTrend.arrow}　〔${
                 stressTrend.comment
               }〕`,
               size: "md",
@@ -308,8 +308,8 @@ function buildResultBubbles({
         {
           type: "text",
           text: `🧍‍♀️ 負荷チェック（${motionName}）　${
-            prevScores?.motion_level ?? "-"
-          } → ${curScores.motion_level ?? "-"}　${motionTrend.arrow}　〔${
+            prevScores?.motion_level ?? "➖"
+          } → ${curScores.motion_level ?? "➖"}　${motionTrend.arrow}　〔${
             motionTrend.comment
           }〕`,
           size: "md",
