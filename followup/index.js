@@ -80,18 +80,18 @@ function buildTrendInfo(prevVal, curVal, type = "general") {
     }
     if (type === "motion") {
       return {
-        arrow: "－",
+        arrow: "➖",
         comment: "今回が基準になります。ここから変化を見ていきましょう",
       };
     }
     return {
-      arrow: "－",
+      arrow: "➖",
       comment: "今回が基準になります",
     };
   }
 
   const diff = prevVal - curVal; // 正なら「良くなった」
-  let arrow = "→";
+  let arrow = "➡️";
   let comment =
     type === "main"
       ? "前回と大きな変化はまだ少なめ"
@@ -213,8 +213,8 @@ function buildResultBubbles({
     "motion"
   );
 
-  const prevSym = prevScores?.symptom_level ?? "-";
-  const curSym = curScores.symptom_level ?? "-";
+  const prevSym = prevScores?.symptom_level ?? "➖";
+  const curSym = curScores.symptom_level ?? "➖";
 
   // ---- カード1：体調＆構造の変化 ----
   const bubble1 = {
