@@ -670,21 +670,21 @@ async function handleFollowup(event, client, lineId) {
       const { latest, prev } =
         await supabaseMemoryManager.getLastTwoFollowupsByUserId(userRecord.id);
 
-      const curScores = {
-        symptom_level: normalizeScore(
-          answers.symptom ?? latest?.symptom,
-          null
-        ),
-        sleep: normalizeScore(answers.sleep ?? latest?.sleep, null),
-        meal: normalizeScore(answers.meal ?? latest?.meal, null),
-        stress: normalizeScore(answers.stress ?? latest?.stress, null),
-        motion_level: normalizeScore(
-          answers.motion_level ?? latest?.motion_level,
-          null
-        ),
-      };
+const curScores = {
+  symptom_level: normalizeScore(
+    answers.symptom ?? latest?.symptom_level,
+    null
+  ),
+  sleep: normalizeScore(answers.sleep ?? latest?.sleep, null),
+  meal: normalizeScore(answers.meal ?? latest?.meal, null),
+  stress: normalizeScore(answers.stress ?? latest?.stress, null),
+  motion_level: normalizeScore(
+    answers.motion_level ?? latest?.motion_level,
+    null
+  ),
+};
 
-      const prevScores = prev ? normalizeFollowupRow(prev) : null;
+const prevScores = prev ? normalizeFollowupRow(prev) : null;
 
       // ケア実施日数（前回チェック〜今回）
       let careCounts = {};
