@@ -610,10 +610,10 @@ async function handleFollowup(event, client, lineId) {
       Object.assign(session.answers, session.partialAnswers);
       session.partialAnswers = {};
       session.step++;
-    } else {
-      // 同一Q内で継続（ここでは返信しない。次のpostbackで続行）
-      return;
-    }
+// 返信しないではなく「何も返さないダミー返信」を返す必要がある
+return client.replyMessage(replyToken, [
+  { type: "text", text: "つづきを選択してください😊" }
+]);
 
     // === 全問完了時 ===
     if (session.step > questionSets.length) {
