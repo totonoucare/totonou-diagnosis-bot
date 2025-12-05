@@ -576,6 +576,13 @@ async function handleFollowup(event, client, lineId) {
       ]);
     }
 
+    // 未セッション
+    if (!userSession[lineId]) {
+      return client.replyMessage(replyToken, [
+        { type: "text", text: '始めるには「ととのい度チェック開始」を押してください😊' },
+      ]);
+    }
+
     const session = userSession[lineId];
     const question = questionSets[session.step - 1];
 
