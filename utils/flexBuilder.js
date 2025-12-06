@@ -197,7 +197,7 @@ function buildDiagnosisConfirmFlex() {
         contents: [
           {
             type: "text",
-            text: "ととのえタイプ分析が初めての方は、そのまま分析をスタートしてください🌱",
+            text: "🌱 ととのえタイプ分析が初めての方は、そのまま分析をスタートしてください",
             wrap: true,
             size: "md",
             color: "#0d0d0d",
@@ -208,7 +208,7 @@ function buildDiagnosisConfirmFlex() {
           },
           {
             type: "text",
-            text: "再分析の場合は、前回の分析結果の記録が上書き保存されるのでご注意ください。",
+            text: "✍️ 再分析の場合は、今回の分析結果が前回の結果記録に上書き保存されます。\n 「回答し直したい」／「体の状態が変化したため分析し直したい」という時にご使用ください！",
             wrap: true,
             size: "xs",
             color: "#888888",
