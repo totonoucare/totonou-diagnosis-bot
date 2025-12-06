@@ -97,7 +97,7 @@ function getRankTitle(label, count) {
 function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const BUTTON_CONFIG = {
     habits:   { label: "体質改善習慣",         text: "体質改善習慣完了☑️" },
-    breathing:{ label: "巡りととのう呼吸法",   text: "呼吸法完了☑️" },
+    breathing:{ label: "ととのう呼吸法",   text: "呼吸法完了☑️" },
     stretch:  { label: "経絡ストレッチ",       text: "ストレッチ完了☑️" },
     tsubo:    { label: "指先・ツボケア",       text: "ツボケア完了☑️" },
     kampo:    { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
@@ -131,7 +131,7 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const supportButtons = [];
 
   Object.entries(BUTTON_CONFIG).forEach(([pillarKey, cfg]) => {
-    const bgColor = pillarKey === "kampo" ? "#888888" : "#7B9E76";
+    const bgColor = pillarKey === "kampo" ? "#C0C0C0" : "#7B9E76";
 
     // ← 押しやすいようにタップ領域・文字サイズを拡大
     const btnBox = {
@@ -246,7 +246,7 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
         contents: [
           {
             type: "text",
-            text: "その日に行ったケアをタップすると、実施回数として記録されます。",
+            text: "ケアを行ったそのタイミングでタップすると、すぐに記録されます ✨\n※1日の終わりにまとめて押してもOK！",
             size: "xs",
             color: "#555555",
             wrap: true,
