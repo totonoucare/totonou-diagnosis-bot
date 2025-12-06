@@ -96,13 +96,14 @@ function getRankTitle(label, count) {
 // 🎨 FlexボタンUI（優先／サポート分割・2列レイアウト）
 function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const BUTTON_CONFIG = {
-    habits:   { label: "体質改善習慣",         text: "体質改善習慣完了☑️" },
-    breathing:{ label: "巡りととのう呼吸法",   text: "呼吸法完了☑️" },
-    stretch:  { label: "経絡ストレッチ",       text: "ストレッチ完了☑️" },
-    tsubo:    { label: "指先・ツボケア",       text: "ツボケア完了☑️" },
-    kampo:    { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
+    habits: { label: "体質改善習慣", text: "体質改善習慣完了☑️" },
+    breathing: { label: "巡りととのう呼吸法", text: "呼吸法完了☑️" },
+    stretch: { label: "経絡ストレッチ", text: "ストレッチ完了☑️" },
+    tsubo: { label: "指先・ツボケア", text: "ツボケア完了☑️" },
+    kampo: { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
   };
 
+  // context.advice の key → pillarKey への対応
   const adviceKeyToPillar = {
     breathing: "breathing",
     stretch: "stretch",
@@ -131,54 +132,36 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const supportButtons = [];
 
   Object.entries(BUTTON_CONFIG).forEach(([pillarKey, cfg]) => {
-    const bgColor = pillarKey === "kampo" ? "#DDDDDD" : "#7B9E76";
-
-    // ← ここを「button」から「box + text（wrap）」に変更
-    const btnBox = {
-      type: "box",
-      layout: "vertical",
-      flex: 1,
-      backgroundColor: bgColor,
-      cornerRadius: "8px",
-      paddingAll: "6px",
-      alignItems: "center",
-      justifyContent: "center",
-      action: {
-        type: "message",
-        label: cfg.label,
-        text: cfg.text,
-      },
-      contents: [
-        {
-          type: "text",
-          text: cfg.label,
-          size: "xs",
-          color: "#ffffff",
-          wrap: true,          // ★ これで2行折り返しOK
-          align: "center",
-        },
-      ],
+    const btn = {
+      type: "button",
+      style: "primary",
+      height: "sm",
+      color: pillarKey === "kampo" ? "#C0C0C0" : "#7B9E76",
+      action: { type: "message", label: cfg.label, text: cfg.text },
     };
 
     if (pillarKey === "kampo") {
-      supportButtons.push(btnBox); // 漢方は常にサポート枠
+      // 漢方・サプリは常におまけ枠
+      supportButtons.push(btn);
     } else if (priorityPillars.has(pillarKey)) {
-      priorityButtons.push(btnBox);
+      priorityButtons.push(btn);
     } else {
-      supportButtons.push(btnBox);
+      supportButtons.push(btn);
     }
   });
 
-  // 2列レイアウト
+  // 2列レイアウトを組むヘルパー
   function buildTwoColumnRows(buttons) {
     const rows = [];
     for (let i = 0; i < buttons.length; i += 2) {
-      const rowButtons = buttons.slice(i, i + 2);
+      const rowButtons = buttons.slice(i, i + 2).map((b) => ({
+        ...b,
+        flex: 1,
+      }));
       rows.push({
         type: "box",
         layout: "horizontal",
         spacing: "sm",
-        margin: "sm",
         contents: rowButtons,
       });
     }
@@ -257,6 +240,7 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
     },
   };
 }
+
 
 // 🌿 褒めメッセージ生成（称号保存付き／変更時のみお知らせ）
 // 戻り値: { text: string, miniFlex: FlexMessageObject }
