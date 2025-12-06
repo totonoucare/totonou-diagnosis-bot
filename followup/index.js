@@ -28,10 +28,10 @@ const symptomLabels = {
 
 const multiLabels = {
   symptom: "「{{symptom}}」を含む体調レベル",
-  sleep: "睡眠の状態",
-  meal: "食事の状態",
-  stress: "ストレスの状態",
-  motion_level: "負荷チェックのつらさ",
+  sleep: "睡眠リズム",
+  meal: "食事のタイミング/量",
+  stress: "ストレス・気分の安定度",
+  motion_level: "「{{motion}}」のつらさ",
 };
 
 // ======== セッション管理 ========
