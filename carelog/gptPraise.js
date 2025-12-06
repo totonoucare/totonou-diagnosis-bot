@@ -131,7 +131,7 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const supportButtons = [];
 
   Object.entries(BUTTON_CONFIG).forEach(([pillarKey, cfg]) => {
-    const bgColor = pillarKey === "kampo" ? "#DDDDDD" : "#7B9E76";
+    const bgColor = pillarKey === "kampo" ? "#888888" : "#7B9E76";
 
     // ← 押しやすいようにタップ領域・文字サイズを拡大
     const btnBox = {
@@ -206,7 +206,7 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
       ? [
           {
             type: "text",
-            text: "＜サポートケア・おまけ＞",
+            text: "＜サポートケア＞",
             size: "sm",
             weight: "bold",
             margin: "md",
@@ -221,7 +221,7 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
     altText: "セルフケア実施記録",
     contents: {
       type: "bubble",
-      size: "kilo",
+      size: "mega",
       header: {
         type: "box",
         layout: "vertical",
