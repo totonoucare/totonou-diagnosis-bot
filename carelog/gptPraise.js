@@ -5,7 +5,8 @@
 // - 節目対応：10, 30, 100, 300, 500, 700, 1000回
 // - 称号を自動生成し、Supabase(users.care_titles)に保存
 // - 同じ称号のときは再通知しない
-// - ＋ミニフレックスで「次の節目までの進捗ゲージ」を表示
+// - ＋ミニフレックスで
+//    「累計 / 今の称号 / 次の称号まで / 進み具合」を表示
 // =======================================
 
 const {
@@ -54,14 +55,13 @@ const STAGES = [
 
 // 🏅 称号生成
 function getRankTitle(label, count) {
-  if (count >= 1000) return `${label}仙人`;
-  if (count >= 700) return `${label}賢者`;
-  if (count >= 500) return `${label}マスター`;
-  if (count >= 300) return `${label}の匠`;
-  if (count >= 100) return `${label}名人`;
-  if (count >= 30) return `${label}上手`;
-  if (count >= 10) return `${label}リズムメイカー`;
-  return `${label}はじめ`;
+  if (count >= 1000) return `${label}・ライフスタイルフェーズ`;
+  if (count >= 700)  return `${label}・自分のスタイルフェーズ`;
+  if (count >= 300)  return `${label}・深化フェーズ`;
+  if (count >= 100)  return `${label}・安定フェーズ`;
+  if (count >= 30)   return `${label}・習慣フェーズ`;
+  if (count >= 10)   return `${label}・慣れ始めフェーズ`;
+  return `${label}・導入フェーズ`;
 }
 
 // 🔜 次の節目回数
@@ -72,17 +72,42 @@ function getNextMilestone(count) {
   return null; // 1000回以上
 }
 
-// 🎚 マイルストーン進捗ゲージ（■と□ 5段階）
-function milestoneGauge(count) {
+// 🎚 マイルストーン進捗ゲージ＋次称号情報
+function milestoneGauge(count, label) {
   const next = getNextMilestone(count);
-  if (!next) return { next: null, gauge: "■■■■■" }; // MAX
 
-  if (count <= 0) return { next, gauge: "□□□□□" };
+  // もう最上位ゾーン
+  if (!next) {
+    return {
+      next: null,
+      remain: 0,
+      nextRank: null,
+      gauge: "■■■■■",
+    };
+  }
+
+  const remain = Math.max(0, next - count);
+
+  // 進み具合ゲージ（5マス）
+  if (count <= 0) {
+    return {
+      next,
+      remain,
+      nextRank: getRankTitle(label, next),
+      gauge: "□□□□□",
+    };
+  }
 
   const ratio = Math.min(1, count / next);
-  const filled = Math.max(1, Math.round(ratio * 5)); // 最低1マスは点灯
+  const filled = Math.max(1, Math.round(ratio * 5)); // 1〜5マス
   const gauge = "■".repeat(filled) + "□".repeat(5 - filled);
-  return { next, gauge };
+
+  return {
+    next,
+    remain,
+    nextRank: getRankTitle(label, next),
+    gauge,
+  };
 }
 
 // 🎨 実施記録ボタンUI（優先ケア・サポートケアに分割）
@@ -306,8 +331,8 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
     console.error("❌ updateCareTitleByLineId error:", err);
   }
 
-  // 📊 ミニフレックス（次の節目への進捗ゲージ）
-  const { next, gauge } = milestoneGauge(count);
+  // 📊 ミニフレックス（「累計 / 今の称号 / 次の称号まで / 進み具合」）
+  const { next, remain, nextRank, gauge } = milestoneGauge(count, label);
 
   const flexContents = {
     type: "bubble",
@@ -334,12 +359,16 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
         },
         {
           type: "text",
+          text: `今の称号：${rank}`,
+          size: "sm",
+          wrap: true,
+          margin: "xs",
+        },
+        {
+          type: "text",
           text: next
-            ? `次の節目：${next}回（あと${Math.max(
-                0,
-                next - count
-              )}回）`
-            : "次の節目：いちばん上の段に到達しています🎉",
+            ? `次の称号まで：あと${remain}回（${nextRank}）`
+            : "次の称号まで：最上位称号まで到達しています🎉",
           size: "xs",
           color: "#555555",
           wrap: true,
@@ -354,8 +383,8 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
         },
         {
           type: "text",
-          text: "※ ■が多いほど、次の節目に近づいている状態です。",
-          size: "xxs" in {} ? "xxs" : "xs", // 安全側で xs 扱い
+          text: "※ ■が多いほど、次の称号に近づいています。",
+          size: "xs",
           color: "#888888",
           wrap: true,
           margin: "xs",
