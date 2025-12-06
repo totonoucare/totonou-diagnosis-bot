@@ -1,3 +1,7 @@
+// server.js の先頭付近
+const APP_VERSION = "followup-local-2025-12-06-01";
+console.log("🚩 Booting totonou bot version:", APP_VERSION);
+
 // =====================================
 // 🚀 server.js（最終形）
 // =====================================
