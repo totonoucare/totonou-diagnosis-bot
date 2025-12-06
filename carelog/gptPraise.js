@@ -2,11 +2,10 @@
 // =======================================
 // 🌿 ととのうケアナビ：ケア別トーン＆自然な褒めコメント＋称号保存
 // - 各フェーズ5パターン（うち3つにケア名）
-// - 節目対応：10, 30, 100, 300, 500, 700, 1000回
+// - 節目対応：10, 30, 100, 300, 700, 1000回
 // - 称号を自動生成し、Supabase(users.care_titles)に保存
 // - 同じ称号のときは再通知しない
-// - ＋ミニフレックスで
-//    「累計 / 今の称号 / 次の称号まで / 進み具合」を表示
+// - 実施直後にミニフレックスで称号進捗を可視化
 // =======================================
 
 const {
@@ -14,7 +13,7 @@ const {
   getCareTitlesByLineId,
 } = require("../supabaseMemoryManager");
 
-// 🌿 ケア表示名（ボタン・ミニカード用）
+// 🌿 ケア表示名（ボタン表示用：長い）
 const CARE_LABEL_DISPLAY = {
   habits: "体質改善習慣",
   breathing: "巡りととのう呼吸法",
@@ -42,9 +41,9 @@ const CARE_TONE = {
 };
 
 // 🎯 節目回数リスト
-const MILESTONES = [10, 30, 100, 300, 500, 700, 1000];
+const MILESTONES = [10, 30, 100, 300, 700, 1000];
 
-// 🌱 ステージ定義
+// 🌱 ステージ定義（通常コメントの雰囲気分け）
 const STAGES = [
   { name: "初期", min: 0, max: 29 },
   { name: "定着期", min: 30, max: 99 },
@@ -53,65 +52,49 @@ const STAGES = [
   { name: "達人期", min: 700, max: Infinity },
 ];
 
-// 🏅 称号生成
-function getRankTitle(label, count) {
-  if (count >= 1000) return `${label}仙人`;
-  if (count >= 700)  return `${label}熟玄`;
-  if (count >= 300)  return `${label}の匠`;
-  if (count >= 100)  return `${label}名人`;
-  if (count >= 30)   return `${label}習慣家`;
-  if (count >= 10)   return `${label}リズムメーカー`;
-  return `${label}・はじめの一歩`;
-}
+// 🏅 称号ステップ（単一ソース）
+const TITLE_STEPS = [
+  { min: 0, suffix: "・はじめの一歩" },
+  { min: 10, suffix: "リズムメーカー" },
+  { min: 30, suffix: "習慣家" },
+  { min: 100, suffix: "名人" },
+  { min: 300, suffix: "の匠" },
+  { min: 700, suffix: "熟玄" },
+  { min: 1000, suffix: "仙人" },
+];
 
-// 🔜 次の節目回数
-function getNextMilestone(count) {
-  for (const m of MILESTONES) {
-    if (count < m) return m;
+// 🏅 現在＆次の称号メタ情報
+function getRankMeta(label, count) {
+  const c = count || 0;
+  let current = TITLE_STEPS[0];
+  let next = null;
+
+  for (let i = 0; i < TITLE_STEPS.length; i++) {
+    const step = TITLE_STEPS[i];
+    if (c >= step.min) {
+      current = step;
+      next = TITLE_STEPS[i + 1] || null;
+    } else {
+      next = step;
+      break;
+    }
   }
-  return null; // 1000回以上
-}
-
-// 🎚 マイルストーン進捗ゲージ＋次称号情報
-function milestoneGauge(count, label) {
-  const next = getNextMilestone(count);
-
-  // もう最上位ゾーン
-  if (!next) {
-    return {
-      next: null,
-      remain: 0,
-      nextRank: null,
-      gauge: "■■■■■",
-    };
-  }
-
-  const remain = Math.max(0, next - count);
-
-  // 進み具合ゲージ（5マス）
-  if (count <= 0) {
-    return {
-      next,
-      remain,
-      nextRank: getRankTitle(label, next),
-      gauge: "□□□□□",
-    };
-  }
-
-  const ratio = Math.min(1, count / next);
-  const filled = Math.max(1, Math.round(ratio * 5)); // 1〜5マス
-  const gauge = "■".repeat(filled) + "□".repeat(5 - filled);
 
   return {
-    next,
-    remain,
-    nextRank: getRankTitle(label, next),
-    gauge,
+    currentTitle: `${label}${current.suffix}`,
+    currentMin: current.min,
+    nextTitle: next ? `${label}${next.suffix}` : null,
+    nextMin: next ? next.min : null,
   };
 }
 
-// 🎨 実施記録ボタンUI（優先ケア・サポートケアに分割）
-function buildCareButtonsFlex() {
+// 🏅 称号生成（外部API互換用）
+function getRankTitle(label, count) {
+  return getRankMeta(label, count).currentTitle;
+}
+
+// 🎨 FlexボタンUI（優先／サポート分割・2列レイアウト）
+function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const BUTTON_CONFIG = {
     habits: { label: "体質改善習慣", text: "体質改善習慣完了☑️" },
     breathing: { label: "巡りととのう呼吸法", text: "呼吸法完了☑️" },
@@ -120,40 +103,112 @@ function buildCareButtonsFlex() {
     kampo: { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
   };
 
-  const primaryKeys = ["habits", "breathing", "stretch", "tsubo"];
-  const supportKeys = ["kampo"];
+  // context.advice の key → pillarKey への対応
+  const adviceKeyToPillar = {
+    breathing: "breathing",
+    stretch: "stretch",
+    points: "tsubo",
+    lifestyle: "habits",
+    kanpo: "kampo",
+  };
 
-  const primaryButtons = primaryKeys.map((key) => {
-    const cfg = BUTTON_CONFIG[key];
-    return {
+  const priorityPillars = new Set();
+
+  if (Array.isArray(adviceCards) && adviceCards.length > 0) {
+    adviceCards.forEach((card) => {
+      if (card.priority === 1 && card.key && adviceKeyToPillar[card.key]) {
+        priorityPillars.add(adviceKeyToPillar[card.key]);
+      }
+    });
+  }
+
+  // 何も取れなかったときの最低限デフォルト
+  if (priorityPillars.size === 0) {
+    priorityPillars.add("breathing");
+    priorityPillars.add("stretch");
+  }
+
+  const priorityButtons = [];
+  const supportButtons = [];
+
+  Object.entries(BUTTON_CONFIG).forEach(([pillarKey, cfg]) => {
+    const btn = {
       type: "button",
       style: "primary",
       height: "sm",
-      color: "#7B9E76",
+      color: pillarKey === "kampo" ? "#C0C0C0" : "#7B9E76",
       action: { type: "message", label: cfg.label, text: cfg.text },
     };
+
+    if (pillarKey === "kampo") {
+      // 漢方・サプリは常におまけ枠
+      supportButtons.push(btn);
+    } else if (priorityPillars.has(pillarKey)) {
+      priorityButtons.push(btn);
+    } else {
+      supportButtons.push(btn);
+    }
   });
 
-  const supportButtons = supportKeys.map((key) => {
-    const cfg = BUTTON_CONFIG[key];
-    return {
-      type: "button",
-      style: "secondary",
-      height: "sm",
-      color: "#C6CFC2",
-      action: { type: "message", label: cfg.label, text: cfg.text },
-    };
-  });
+  // 2列レイアウトを組むヘルパー
+  function buildTwoColumnRows(buttons) {
+    const rows = [];
+    for (let i = 0; i < buttons.length; i += 2) {
+      const rowButtons = buttons.slice(i, i + 2).map((b) => ({
+        ...b,
+        flex: 1,
+      }));
+      rows.push({
+        type: "box",
+        layout: "horizontal",
+        spacing: "sm",
+        contents: rowButtons,
+      });
+    }
+    return rows;
+  }
+
+  const priorityContents =
+    priorityButtons.length > 0
+      ? [
+          {
+            type: "text",
+            text: "＜優先ケア＞",
+            size: "sm",
+            weight: "bold",
+            margin: "sm",
+            wrap: true,
+          },
+          ...buildTwoColumnRows(priorityButtons),
+        ]
+      : [];
+
+  const supportContents =
+    supportButtons.length > 0
+      ? [
+          {
+            type: "text",
+            text: "＜サポートケア・おまけ＞",
+            size: "sm",
+            weight: "bold",
+            margin: "md",
+            wrap: true,
+          },
+          ...buildTwoColumnRows(supportButtons),
+        ]
+      : [];
 
   return {
     type: "flex",
     altText: "セルフケア実施記録",
     contents: {
       type: "bubble",
-      size: "mega",
+      size: "kilo",
       header: {
         type: "box",
         layout: "vertical",
+        paddingAll: "12px",
+        backgroundColor: "#7B9E76",
         contents: [
           {
             type: "text",
@@ -164,64 +219,33 @@ function buildCareButtonsFlex() {
             wrap: true,
           },
         ],
-        backgroundColor: "#7B9E76",
-        paddingAll: "12px",
       },
       body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#F8F9F7",
-        paddingAll: "14px",
         spacing: "md",
+        paddingAll: "12px",
         contents: [
           {
             type: "text",
-            text: "今日できたケアだけ、ぽちっと記録すればOKです👌",
-            size: "sm",
+            text: "その日に行ったケアをタップすると、実施回数として記録されます。",
+            size: "xs",
+            color: "#555555",
             wrap: true,
           },
-          {
-            type: "text",
-            text: "＜優先ケア＞",
-            size: "sm",
-            weight: "bold",
-            margin: "md",
-            wrap: true,
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            spacing: "sm",
-            contents: primaryButtons,
-          },
-          {
-            type: "separator",
-            margin: "md",
-          },
-          {
-            type: "text",
-            text: "＜サポートケア＞",
-            size: "sm",
-            weight: "bold",
-            margin: "md",
-            wrap: true,
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            spacing: "sm",
-            contents: supportButtons,
-          },
+          ...priorityContents,
+          ...supportContents,
         ],
       },
     },
   };
 }
 
-// 🌿 褒めメッセージ生成（称号保存＋ミニフレックス付き）
+// 🌿 褒めメッセージ生成（称号保存付き／変更時のみお知らせ）
+// 戻り値: { text: string, miniFlex: FlexMessageObject }
 async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
   const label = CARE_LABEL[pillarKey] || "ケア";
-  const displayLabel = CARE_LABEL_DISPLAY[pillarKey] || label;
+  const longLabel = CARE_LABEL_DISPLAY[pillarKey] || label;
   const tone = CARE_TONE[pillarKey] || "🌿";
 
   const count = countsAll[pillarKey] || 0;
@@ -232,7 +256,36 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
 
   const stage =
     STAGES.find((s) => count >= s.min && count <= s.max)?.name || "初期";
-  const rank = getRankTitle(label, count);
+
+  const { currentTitle, currentMin, nextTitle, nextMin } = getRankMeta(
+    label,
+    count
+  );
+  const rank = currentTitle;
+
+  // 進捗ゲージ（称号ステップ間の進み具合）
+  let progressLabel = "";
+  let progressGauge = "";
+
+  if (nextTitle && nextMin != null) {
+    const span = Math.max(1, nextMin - currentMin);
+    const progressRaw = Math.max(0, Math.min(1, (count - currentMin) / span));
+
+    let level = 1;
+    if (progressRaw >= 0.9) level = 5;
+    else if (progressRaw >= 0.7) level = 4;
+    else if (progressRaw >= 0.5) level = 3;
+    else if (progressRaw >= 0.2) level = 2;
+
+    progressGauge = "■".repeat(level) + "□".repeat(5 - level);
+    progressLabel = `次の称号「${nextTitle}」まで：あと ${
+      nextMin - count
+    }回`;
+  } else {
+    // 仙人まで到達済み
+    progressGauge = "■■■■■";
+    progressLabel = "称号は最高段階まで到達しています👏";
+  }
 
   let message = "";
 
@@ -250,9 +303,6 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
         break;
       case 300:
         message = `${tone} ${label}300回！安定した整い方、素敵です🕊️`;
-        break;
-      case 500:
-        message = `${tone} ${label}500回！静かな継続に心から拍手👏`;
         break;
       case 700:
         message = `${tone} ${label}700回！整いがすっかり自分の一部に🌸`;
@@ -312,11 +362,15 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
     }
   }
 
-  // ⚖️ バランス補足（そのケアだけに偏り過ぎていそうなとき）
+  // ⚖️ バランス補足（そのケアに偏りすぎていたら）
   const ratio = total ? count / total : 0;
   if (ratio > 0.45 && ratio < 0.55 && total > 4) {
-    message += "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
+    message +=
+      "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
   }
+
+  // 累計回数と現在称号のサマリ
+  message += `\n\n📊 ${label}の累計：${count}回\n現在の称号：${rank}`;
 
   // 🏅 称号の変更検知＆保存
   try {
@@ -326,78 +380,65 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
     if (prevRank !== rank) {
       await updateCareTitleByLineId(lineId, pillarKey, rank);
       message += `\n\n${tone} 今日からあなたは【${rank}】です！🏅`;
+    } else {
+      console.log(`[generatePraiseReply] Rank unchanged: ${rank}`);
     }
   } catch (err) {
     console.error("❌ updateCareTitleByLineId error:", err);
   }
 
-  // 📊 ミニフレックス（「累計 / 今の称号 / 次の称号まで / 進み具合」）
-  const { next, remain, nextRank, gauge } = milestoneGauge(count, label);
-
-  const flexContents = {
-    type: "bubble",
-    size: "mega",
-    body: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: "#F8F9F7",
-      paddingAll: "12px",
-      spacing: "xs",
-      contents: [
-        {
-          type: "text",
-          text: `${tone} ${displayLabel}の記録メモ`,
-          size: "sm",
-          weight: "bold",
-          wrap: true,
-        },
-        {
-          type: "text",
-          text: `累計：${count}回`,
-          size: "sm",
-          wrap: true,
-        },
-        {
-          type: "text",
-          text: `今の称号：${rank}`,
-          size: "sm",
-          wrap: true,
-          margin: "xs",
-        },
-        {
-          type: "text",
-          text: next
-            ? `次の称号まで：あと${remain}回（${nextRank}）`
-            : "次の称号まで：最上位称号まで到達しています🎉",
-          size: "xs",
-          color: "#555555",
-          wrap: true,
-          margin: "xs",
-        },
-        {
-          type: "text",
-          text: `進み具合：［${gauge}］`,
-          size: "xs",
-          wrap: true,
-          margin: "xs",
-        },
-        {
-          type: "text",
-          text: "※ ■が多いほど、次の称号に近づいています。",
-          size: "xs",
-          color: "#888888",
-          wrap: true,
-          margin: "xs",
-        },
-      ],
+  // 🎨 ミニフレックス（画面占有を抑えた状況ビュー）
+  const miniFlex = {
+    type: "flex",
+    altText: `${longLabel}の実施状況`,
+    contents: {
+      type: "bubble",
+      size: "kilo",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        paddingAll: "12px",
+        contents: [
+          {
+            type: "text",
+            text: `${tone} ${longLabel}`,
+            weight: "bold",
+            size: "md",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: `累計：${count}回`,
+            size: "sm",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: `現在の称号：${rank}`,
+            size: "sm",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: progressLabel,
+            size: "xs",
+            color: "#555555",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: `進み具合：［${progressGauge}］`,
+            size: "xs",
+            color: "#555555",
+            wrap: true,
+          },
+        ],
+      },
     },
   };
 
-  return {
-    message,
-    altText: `${displayLabel}の記録状況`,
-    flexContents,
-  };
+  return { text: message, miniFlex };
 }
 
 /** 🎲 ランダム選択 */
@@ -405,7 +446,4 @@ function random(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-module.exports = {
-  generatePraiseReply,
-  buildCareButtonsFlex,
-};
+module.exports = { generatePraiseReply, buildCareButtonsFlex };
