@@ -357,22 +357,11 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
 // ===== ととのい度チェック（強トリガー）— フロー専用。GPTは反応させない =====
 if (userMessage === "ととのい度チェック開始" || handleFollowup.hasSession?.(lineId)) {
   try {
-    const messages = await handleFollowup(event, client, lineId);
-
-    if (messages === null) {
-      return;
-    }
-
-    if (Array.isArray(messages) && messages.length > 0) {
-      await client.replyMessage(event.replyToken, messages);
-    } else if (!handleFollowup.hasSession(lineId)) {
-      await client.replyMessage(event.replyToken, {
-        type: "text",
-        text: "ととのい度チェックを始めるには、メニューの【ととのい度チェック】ボタンをタップしてください。",
-      });
-    }
+    // ここで followup/index.js に丸投げする（中で replyMessage までやる）
+    await handleFollowup(event, client, lineId);
   } catch (err) {
     console.error("❌ handleFollowup エラー:", err);
+    // ここだけは本当に失敗したときのフォールバックとして1回だけ返信
     await client.replyMessage(event.replyToken, {
       type: "text",
       text: "再診処理中にエラーが発生しました。もう一度お試しください。",
