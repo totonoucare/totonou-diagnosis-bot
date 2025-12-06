@@ -96,14 +96,13 @@ function getRankTitle(label, count) {
 // 🎨 FlexボタンUI（優先／サポート分割・2列レイアウト）
 function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const BUTTON_CONFIG = {
-    habits: { label: "体質改善習慣", text: "体質改善習慣完了☑️" },
-    breathing: { label: "巡りととのう呼吸法", text: "呼吸法完了☑️" },
-    stretch: { label: "経絡ストレッチ", text: "ストレッチ完了☑️" },
-    tsubo: { label: "指先・ツボケア", text: "ツボケア完了☑️" },
-    kampo: { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
+    habits:   { label: "体質改善習慣",         text: "体質改善習慣完了☑️" },
+    breathing:{ label: "巡りととのう呼吸法",   text: "呼吸法完了☑️" },
+    stretch:  { label: "経絡ストレッチ",       text: "ストレッチ完了☑️" },
+    tsubo:    { label: "指先・ツボケア",       text: "ツボケア完了☑️" },
+    kampo:    { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
   };
 
-  // context.advice の key → pillarKey への対応
   const adviceKeyToPillar = {
     breathing: "breathing",
     stretch: "stretch",
@@ -132,36 +131,54 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const supportButtons = [];
 
   Object.entries(BUTTON_CONFIG).forEach(([pillarKey, cfg]) => {
-    const btn = {
-      type: "button",
-      style: "primary",
-      height: "sm",
-      color: pillarKey === "kampo" ? "#C0C0C0" : "#7B9E76",
-      action: { type: "message", label: cfg.label, text: cfg.text },
+    const bgColor = pillarKey === "kampo" ? "#DDDDDD" : "#7B9E76";
+
+    // ← ここを「button」から「box + text（wrap）」に変更
+    const btnBox = {
+      type: "box",
+      layout: "vertical",
+      flex: 1,
+      backgroundColor: bgColor,
+      cornerRadius: "8px",
+      paddingAll: "6px",
+      alignItems: "center",
+      justifyContent: "center",
+      action: {
+        type: "message",
+        label: cfg.label,
+        text: cfg.text,
+      },
+      contents: [
+        {
+          type: "text",
+          text: cfg.label,
+          size: "xs",
+          color: "#ffffff",
+          wrap: true,          // ★ これで2行折り返しOK
+          align: "center",
+        },
+      ],
     };
 
     if (pillarKey === "kampo") {
-      // 漢方・サプリは常におまけ枠
-      supportButtons.push(btn);
+      supportButtons.push(btnBox); // 漢方は常にサポート枠
     } else if (priorityPillars.has(pillarKey)) {
-      priorityButtons.push(btn);
+      priorityButtons.push(btnBox);
     } else {
-      supportButtons.push(btn);
+      supportButtons.push(btnBox);
     }
   });
 
-  // 2列レイアウトを組むヘルパー
+  // 2列レイアウト
   function buildTwoColumnRows(buttons) {
     const rows = [];
     for (let i = 0; i < buttons.length; i += 2) {
-      const rowButtons = buttons.slice(i, i + 2).map((b) => ({
-        ...b,
-        flex: 1,
-      }));
+      const rowButtons = buttons.slice(i, i + 2);
       rows.push({
         type: "box",
         layout: "horizontal",
         spacing: "sm",
+        margin: "sm",
         contents: rowButtons,
       });
     }
@@ -369,8 +386,7 @@ async function generatePraiseReply({ lineId, pillarKey, countsAll }) {
       "\n\n🍃 他のケアも少し取り入れると、さらに整いやすいよ。";
   }
 
-  // 累計回数と現在称号のサマリ
-  message += `\n\n📊 ${label}の累計：${count}回\n現在の称号：${rank}`;
+  // ※ここでもう累計・称号の数字は足さない（ミニフレックスに任せる）
 
   // 🏅 称号の変更検知＆保存
   try {
