@@ -746,28 +746,30 @@ async function handleFollowup(event, client, lineId) {
         ]);
       }
 
-      // 2. 前回までの followup 履歴を取得（保存より前）
-      const { latest, prev } =
-        await supabaseMemoryManager.getLastTwoFollowupsByUserId(
-          userRecord.id
-        );
+// 2. 前回までの followup 履歴を取得（保存より前）
+const { latest, prev } =
+  await supabaseMemoryManager.getLastTwoFollowupsByUserId(
+    userRecord.id
+  );
 
-      const curScores = {
-        symptom_level: normalizeScore(
-          answers.symptom ?? latest?.symptom_level ?? latest?.symptom,
-          null
-        ),
-        sleep: normalizeScore(answers.sleep ?? latest?.sleep, null),
-        meal: normalizeScore(answers.meal ?? latest?.meal, null),
-        stress: normalizeScore(answers.stress ?? latest?.stress, null),
-        motion_level: normalizeScore(
-          answers.motion_level ?? latest?.motion_level,
-          null
-        ),
-      };
+const curScores = {
+  symptom_level: normalizeScore(
+    answers.symptom ?? latest?.symptom_level ?? latest?.symptom,
+    null
+  ),
+  sleep: normalizeScore(answers.sleep ?? latest?.sleep, null),
+  meal: normalizeScore(answers.meal ?? latest?.meal, null),
+  stress: normalizeScore(answers.stress ?? latest?.stress, null),
+  motion_level: normalizeScore(
+    answers.motion_level ?? latest?.motion_level,
+    null
+  ),
+};
 
-      const prevScores = prev ? normalizeFollowupRow(prev) : null;
-
+// ✅ 「前回のスコア」は latest（直近の記録）を使う
+//    ※ まだ記録がなければ null のまま → 「今回が最初のチェック」扱い
+const prevScores = latest ? normalizeFollowupRow(latest) : null;
+      
       // 3. ケア実施日数（前回チェック〜今回）
       let careCounts = {};
       try {
@@ -793,21 +795,27 @@ async function handleFollowup(event, client, lineId) {
         };
       }
 
-      // 4. 評価対象日数（前回〜今回 or context開始〜今回）
-      const now = Date.now();
-      const prevDate = prev?.created_at
-        ? new Date(prev.created_at).getTime()
-        : null;
-      const contextDate = context?.created_at
-        ? new Date(context.created_at).getTime()
-        : null;
+// 4. 評価対象日数（前回〜今回 or context開始〜今回）
+const now = Date.now();
 
-      const diffDays = prevDate
-        ? Math.ceil((now - prevDate) / (1000 * 60 * 60 * 24))
-        : contextDate
-        ? Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24))
-        : 1;
-      const effectiveDays = Math.max(1, diffDays);
+// ✅ 「前回チェック日」は latest（直近のfollowup）の created_at
+const lastCheckDate = latest?.created_at
+  ? new Date(latest.created_at).getTime()
+  : null;
+
+const contextDate = context?.created_at
+  ? new Date(context.created_at).getTime()
+  : null;
+
+// ✅ lastCheckDate があれば「前回チェック〜今回」
+//    なければ「体質分析(context)作成日〜今回」、それも無ければ 1日だけ
+const diffDays = lastCheckDate
+  ? Math.ceil((now - lastCheckDate) / (1000 * 60 * 60 * 24))
+  : contextDate
+  ? Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24))
+  : 1;
+
+const effectiveDays = Math.max(1, diffDays);
 
       // 5. 表示用バブル生成
       const { bubbles, ctaBubble } = buildResultBubbles({
