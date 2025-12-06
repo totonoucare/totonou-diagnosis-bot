@@ -96,14 +96,13 @@ function getRankTitle(label, count) {
 // 🎨 FlexボタンUI（優先／サポート分割・2列レイアウト）
 function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const BUTTON_CONFIG = {
-    habits: { label: "体質改善習慣", text: "体質改善習慣完了☑️" },
-    breathing: { label: "巡りととのう呼吸法", text: "呼吸法完了☑️" },
-    stretch: { label: "経絡ストレッチ", text: "ストレッチ完了☑️" },
-    tsubo: { label: "指先・ツボケア", text: "ツボケア完了☑️" },
-    kampo: { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
+    habits:   { label: "体質改善習慣",         text: "体質改善習慣完了☑️" },
+    breathing:{ label: "巡りととのう呼吸法",   text: "呼吸法完了☑️" },
+    stretch:  { label: "経絡ストレッチ",       text: "ストレッチ完了☑️" },
+    tsubo:    { label: "指先・ツボケア",       text: "ツボケア完了☑️" },
+    kampo:    { label: "漢方・サプリ（任意）", text: "漢方・サプリ服用完了☑️" },
   };
 
-  // context.advice の key → pillarKey への対応
   const adviceKeyToPillar = {
     breathing: "breathing",
     stretch: "stretch",
@@ -132,36 +131,55 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
   const supportButtons = [];
 
   Object.entries(BUTTON_CONFIG).forEach(([pillarKey, cfg]) => {
-    const btn = {
-      type: "button",
-      style: "primary",
-      height: "sm",
-      color: pillarKey === "kampo" ? "#C0C0C0" : "#7B9E76",
-      action: { type: "message", label: cfg.label, text: cfg.text },
+    const bgColor = pillarKey === "kampo" ? "#DDDDDD" : "#7B9E76";
+
+    // ← 押しやすいようにタップ領域・文字サイズを拡大
+    const btnBox = {
+      type: "box",
+      layout: "vertical",
+      flex: 1,
+      backgroundColor: bgColor,
+      cornerRadius: "10px",
+      paddingAll: "10px",          // 🔸縦・横の余白ひろめ
+      alignItems: "center",
+      justifyContent: "center",
+      action: {
+        type: "message",
+        label: cfg.label,
+        text: cfg.text,
+      },
+      contents: [
+        {
+          type: "text",
+          text: cfg.label,
+          size: "md",               // 🔸文字サイズアップ
+          color: "#ffffff",
+          wrap: true,               // 2行折り返し
+          maxLines: 2,
+          align: "center",
+        },
+      ],
     };
 
     if (pillarKey === "kampo") {
-      // 漢方・サプリは常におまけ枠
-      supportButtons.push(btn);
+      supportButtons.push(btnBox); // 漢方は常にサポート枠
     } else if (priorityPillars.has(pillarKey)) {
-      priorityButtons.push(btn);
+      priorityButtons.push(btnBox);
     } else {
-      supportButtons.push(btn);
+      supportButtons.push(btnBox);
     }
   });
 
-  // 2列レイアウトを組むヘルパー
+  // 2列レイアウト（行ごとに余白広め）
   function buildTwoColumnRows(buttons) {
     const rows = [];
     for (let i = 0; i < buttons.length; i += 2) {
-      const rowButtons = buttons.slice(i, i + 2).map((b) => ({
-        ...b,
-        flex: 1,
-      }));
+      const rowButtons = buttons.slice(i, i + 2);
       rows.push({
         type: "box",
         layout: "horizontal",
-        spacing: "sm",
+        spacing: "md",        // 🔸ボタン間を少し広めに
+        margin: "md",         // 🔸行ごとの余白も広め
         contents: rowButtons,
       });
     }
@@ -240,7 +258,6 @@ function buildCareButtonsFlex({ adviceCards = [] } = {}) {
     },
   };
 }
-
 
 // 🌿 褒めメッセージ生成（称号保存付き／変更時のみお知らせ）
 // 戻り値: { text: string, miniFlex: FlexMessageObject }
