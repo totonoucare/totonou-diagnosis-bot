@@ -55,13 +55,13 @@ const STAGES = [
 
 // 🏅 称号生成
 function getRankTitle(label, count) {
-  if (count >= 1000) return `${label}・ライフスタイルフェーズ`;
-  if (count >= 700)  return `${label}・自分のスタイルフェーズ`;
-  if (count >= 300)  return `${label}・深化フェーズ`;
-  if (count >= 100)  return `${label}・安定フェーズ`;
-  if (count >= 30)   return `${label}・習慣フェーズ`;
-  if (count >= 10)   return `${label}・慣れ始めフェーズ`;
-  return `${label}・導入フェーズ`;
+  if (count >= 1000) return `${label}仙人`;
+  if (count >= 700)  return `${label}熟玄`;
+  if (count >= 300)  return `${label}の匠`;
+  if (count >= 100)  return `${label}名人`;
+  if (count >= 30)   return `${label}習慣家`;
+  if (count >= 10)   return `${label}リズムメーカー`;
+  return `${label}・はじめの一歩`;
 }
 
 // 🔜 次の節目回数
