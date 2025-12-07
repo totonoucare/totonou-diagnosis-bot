@@ -767,48 +767,55 @@ const curScores = {
 };
 
 // ✅ 「前回のスコア」は latest（直近の記録）を使う
-//    ※ まだ記録がなければ null のまま → 「今回が最初のチェック」扱い
 const prevScores = latest ? normalizeFollowupRow(latest) : null;
-      
-      // 3. ケア実施日数（前回チェック〜今回）
-      let careCounts = {};
-      try {
-        const raw =
-          await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
-            lineId
-          );
-        careCounts = {
-          habits: raw.habits ?? 0,
-          breathing: raw.breathing ?? 0,
-          stretch: raw.stretch ?? 0,
-          tsubo: raw.tsubo ?? 0,
-          kampo: raw.kampo ?? 0,
-        };
-      } catch (e) {
-        console.warn("⚠️ care_logs_daily 取得失敗:", e.message);
-        careCounts = {
-          habits: 0,
-          breathing: 0,
-          stretch: 0,
-          tsubo: 0,
-          kampo: 0,
-        };
-      }
+
+// 3. ケア実施日数（前回チェック〜今回）
+let careCounts = {};
+try {
+  let raw;
+
+  if (latest) {
+    // 🩵 前回チェック(latest) から「今回（今）」まで
+    raw = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+      lineId,
+      { sinceFollowupId: latest.id }  // ← ここがポイント
+    );
+  } else {
+    // 🩵 まだ followup が無い初回チェックは、
+    //     体質分析(context)作成日〜今 で集計
+    raw = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+      lineId,
+      { includeContext: true }
+    );
+  }
+
+  careCounts = {
+    habits: raw.habits ?? 0,
+    breathing: raw.breathing ?? 0,
+    stretch: raw.stretch ?? 0,
+    tsubo: raw.tsubo ?? 0,
+    kampo: raw.kampo ?? 0,
+  };
+} catch (e) {
+  console.warn("⚠️ care_logs_daily 取得失敗:", e.message);
+  careCounts = {
+    habits: 0,
+    breathing: 0,
+    stretch: 0,
+    tsubo: 0,
+    kampo: 0,
+  };
+}
 
 // 4. 評価対象日数（前回〜今回 or context開始〜今回）
 const now = Date.now();
-
-// ✅ 「前回チェック日」は latest（直近のfollowup）の created_at
 const lastCheckDate = latest?.created_at
   ? new Date(latest.created_at).getTime()
   : null;
-
 const contextDate = context?.created_at
   ? new Date(context.created_at).getTime()
   : null;
 
-// ✅ lastCheckDate があれば「前回チェック〜今回」
-//    なければ「体質分析(context)作成日〜今回」、それも無ければ 1日だけ
 const diffDays = lastCheckDate
   ? Math.ceil((now - lastCheckDate) / (1000 * 60 * 60 * 24))
   : contextDate
