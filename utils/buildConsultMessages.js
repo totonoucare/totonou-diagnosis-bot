@@ -105,7 +105,7 @@ module.exports = function buildConsultMessages({
 }) {
   const ctx = pickContext(context);
   const latest = followups?.latest ?? null;
-  const prev = followups?.prev ?? null;
+  const prev   = followups?.prev   ?? null;
   const normalizedCareCounts = normalizeCareCountsPerDay(careCounts);
   const longTermCareJson = extraCareCounts?.longTermCareCounts
     ? JSON.stringify(extraCareCounts.longTermCareCounts, null, 2)
@@ -121,24 +121,27 @@ module.exports = function buildConsultMessages({
 
   const systemHeader = [
     "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー『トトノウくん』です。",
-    "以下の情報（体質・直近のととのい度チェック・ケア実施状況・過去の相談内容）を踏まえ、ユーザーに寄り添って答えてください。",
+    "以下の情報（体質・ととのい度チェックの推移・ケア実施状況・過去の相談内容）を踏まえ、ユーザーに寄り添って答えてください。",
     "",
     "▼ 体質・所見（contexts）",
     toJSON(ctx),
     "",
-    "▼ 直近のケア実施記録",
+    "▼ 直近のケア実施記録（日数ベース）",
     toJSON(normalizedCareCounts),
     "",
     longTermCareJson
       ? "▼ サービス開始(体質分析)以降の累計ケア実施日数\n" + longTermCareJson
       : null,
     "",
-    "（各ケア項目は1日1回扱い。短期は1つ前〜直近のととのい度チェック日、長期は体質分析日〜現在で集計しています）",
+    "（各ケア項目は1日1回扱い。短期は「1つ前〜直近のととのい度チェック日」、長期は「体質分析日〜現在」で集計しています）",
+    "",
+    prev
+      ? "▼ ととのい度チェック（1つ前のチェック結果・比較用）\n" + toJSON(prev)
+      : null,
     "",
     "▼ ととのい度チェック（直近のチェック結果）",
     toJSON(latest),
     "",
-
     structure_v1,
     "",
     rule_v1,
