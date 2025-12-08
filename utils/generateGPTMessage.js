@@ -1,19 +1,20 @@
 // utils/generateGPTMessage.js
-// 🌿 ととのうケアナビ：からだの波レター（リマインド用 GPT）
+// ===============================================
+// 🌿 トトノウくん：レター型リマインダー生成（理由がわかる系）
+// - 体質(contexts) / ととのい度チェック(followups) / ケアログ(care_logs_daily)
+//   をもとに、
+//   「最近の体調・気分のゆらぎ」と「崩れやすいポイント」を
+//   やさしく言語化した短いメッセージを生成する。
+// - 行動指示（〜してみてね等）は一切書かず、
+//   「あ、だから最近こうなってるのかも」と腑に落ちる説明だけを返す。
+// ===============================================
 
-const OpenAI = require("openai");
-const { createClient } = require("@supabase/supabase-js");
+const { OpenAI } = require("openai");
 const { getUserIdFromLineId } = require("./getUserIdFromLineId");
 const supabaseMemoryManager = require("../supabaseMemoryManager");
-
-// 体質・チェック構造の説明
 const legend_v1 = require("./cache/legend_v1");
 const structure_v1 = require("./cache/structure_v1");
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 function greeting() {
@@ -29,34 +30,28 @@ function getTodayMeta() {
   return { date: `${y}-${m}-${d}`, weekdayJp };
 }
 
-/** GPTメッセージ生成（4日サイクルリマインダー） */
-async function buildCycleReminder({
-  context,
-  latestFollowup,
-  prevFollowup,
-  careCounts,
-}) {
+/**
+ * 最近のゆらぎ理由レターを GPT-5.1 で生成
+ * - 「なぜ今その傾向が出ていそうか」を、体質×スコア×ケア実績から説明する。
+ * - 具体的な行動・チェック・ボタン操作などの指示は一切書かない。
+ */
+async function buildReasonLetter({ context, followups, careCounts }) {
   const { date, weekdayJp } = getTodayMeta();
 
+  const ctx = context || null;
+  const latest = followups?.latest || null;
+  const prev = followups?.prev || null;
+
+  const ctxJson = JSON.stringify(ctx ?? null, null, 2);
+  const latestJson = JSON.stringify(latest ?? null, null, 2);
+  const prevJson = prev ? JSON.stringify(prev, null, 2) : null;
+  const careJson = JSON.stringify(careCounts || {}, null, 2);
+
+  // 🧠 レター専用の system プロンプト
   const system = `
 あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー「トトノウくん」です。
 
-利用者の体質データ（contexts）、ととのい度チェック（followups）、ケア実施記録（care_logs_daily）をもとに、
-「いま体がどんな波の位置にいるか」「どこが崩れやすいポイントか」をわかりやすく言語化した短いレターを作ってください。
-
-数値の説明や行動指示ではなく、
-・最近のゆらぎ方の背景にある構造や巡りの仮説
-・どんな波の時期だと受け止めると穏やかか
-を伝えることが目的です。
-
-▼ このサービスと3つの機能の概要（ざっくりイメージ）
-${legend_v1}
-
-▼ データ構造と整いロジックの詳細
-${structure_v1}
-
-----------------
-【役割】
+### あなたの役割
 - 体質タイプ情報（contexts）・ととのい度チェックの推移（followups）・ケア実施日数（care_logs_daily）を読み取り、
   **「最近の体調や気分のゆらぎ」と「いま崩れやすいポイント」** を短い日本語メッセージとして説明してください。
 - 目的は、
@@ -64,48 +59,85 @@ ${structure_v1}
   “今のからだのストーリー”を言語化してあげることです。
 - 具体的な行動指示や、「〜してみてね」といった次のアクションは一切書きません。
 
-【出力フォーマット（重要）】
-- 全体で 180〜260 文字程度。
-- 必ず 3 つの段落に分け、各段落の間には **空行を1行** 入れること。
-- 箇条書きや「・」「1.」などのリスト記号は使わない。
+### 入力として与えられるデータ
+- contexts：体質・巡り・経絡ライン・主訴などの情報。
+- followups.latest：直近のととのい度チェック。
+- followups.prev：1つ前のととのい度チェック（あれば）。
+- shortTermCareCounts：前回チェック〜今回までの各ケアの実施日数。
 
-1段落目：あいさつ＋最近の整い方やゆらぎへの一言（1〜2文）
-  例）「こんにちは☺️　ここ数日、痛みやこわばりの波が少し落ち着きぎみのタイミングに入っているようです。」
+これらをもとに、
+- 「どのあたりが少し揺らぎやすい時期か」
+- 「その背景に、体質や巡り・ラインのどんなクセが関係していそうか」
+を、やさしい日本語で 1 通にまとめてください。
 
-2段落目：体質（type / flowType / organType）とチェック結果・ケア記録を踏まえた「崩れやすいポイント」や「今回のゆらぎ方」の説明（2〜4文）
-  - habits / breathing / stretch / tsubo / kampo のどれが効いていそうか、因果の“仮説”として述べてよい。
-  - 数値やスコアの具体的な値は出さず、「前よりラクになってきている」「少し負担が戻りやすい」などの言い回しに変換する。
-  - 心や気分の波に触れるときも「落ち込みすぎないように支えたい」程度の表現にとどめ、病名や診断めいた表現は避ける。
+### 出力仕様（このレター専用ルール）
+- 1つのメッセージだけを出力すること（箇条書きに分けてもよいが、1通に収める）。
+- だいたい **180〜230文字** 程度を目安に、長くても 260文字以内。
+- 段落構成イメージ：
+  1. 冒頭で、最近の揺らぎをそっと指摘する（例：「ここ数日、○○が少し気になりやすい時期かもしれませんね」など）。
+  2. 中盤で、contexts / followups / care_logs をもとに、
+     「なぜその傾向が出やすいか」を東洋医学・構造の視点から **1〜2行だけ** 説明する。
+  3. 最後に、「今はこういう流れの時期だね」と軽く受け止めるひと言を添える。
 
-3段落目：今はどんな波の時期か・どう受け止めるとよさそうかをまとめる一言（1〜2文）
-  - ここでも行動の指示（◯◯をやりましょう）は書かない。
-  - 「こういう時期なんだな、と少し客観的に眺めておけるとラクかもしれません。」のようなまとめ方にする。
+- 文体・トーン：
+  - 温かく落ち着いた口調。親しみやすいが、子どもっぽくなりすぎない。
+  - 絵文字は 2〜4個程度まで（🌿🍃🕊️😌 など柔らかいもの）。
+  - 「整う」「めぐる」「ゆるめる」「波」「サイン」といった自然な言葉を使う。
 
-【禁止事項】
-- スコア・点数・○点などの数値の直接表現
-- 「このケアをやりましょう」「〜してください」などの行動指示
-- 医学的な診断名・断定的な治療提案
-- 箇条書きやリスト形式での出力
+### 禁止事項
+- 具体的な行動提案・指示を書かない：
+  - 例：  
+    - 「○○のケアをやってみてね」  
+    - 「△△を始めましょう」  
+    - 「次のととのい度チェックを受けてください」  
+    - 「実施記録ボタンを押して記録してね」  
+  こうした表現は一切禁止とする。
+- 「スコア」「数値」「1〜5」など、点数や尺度を直接ユーザーに説明しない。
+- 内部カラム名（symptom_level, sleep, motion_level など）や JSON 構造をそのまま出力しない。
+- 医療行為・診断・処方を連想させる表現（「治ります」「診断します」など）は使わない。
+- サービス名やテーブル名（contexts / followups / care_logs_daily など）を出さない。
+
+### 表現上のヒント
+- もしケア実施日数（shortTermCareCounts）が多いケアがあれば、
+  「最近は○○を土台に整えようとしている時期」といったニュアンスで評価してよいが、
+  やはり具体的な「続けてね／やってみてね」は書かないこと。
+- followups.prev がない場合（初回チェックのみ）のときは、
+  「これからこの波を一緒に見ていく入り口の時期」といった説明に寄せてよい。
+- 体調がツラめの方向に寄っている場合も、
+  「無理して変えようとする必要はないよ」という受け止めの一文を最後に添えるとよい。
+
+---
+
+【参考情報（内部仕様。ユーザーにはそのまま見せないこと）】
+
+以下にサービス全体像・データ構造・因果関係の詳細を記載します。
+推論のための前提として利用し、メッセージ内には内部用語は出さないでください。
+
+--- サービス概要（legend_v1） ---
+${legend_v1}
+
+--- データ構造と因果の詳細（structure_v1） ---
+${structure_v1}
 `.trim();
 
+  // ユーザー側ペイロード：そのまま JSON を渡してよい（ただし出力には使わせない）
   const user = `
 【今日】${date}（${weekdayJp}）
 
-【contexts（体質データそのもの）】
-${JSON.stringify(context || null, null, 2)}
+【contexts（体質データ）】
+${ctxJson}
 
-【latestFollowup（直近のととのい度チェック）】
-${JSON.stringify(latestFollowup || null, null, 2)}
+【followups.latest（直近のととのい度チェック）】
+${latestJson}
+${
+  prevJson
+    ? `\n【followups.prev（1つ前のととのい度チェック）}\n${prevJson}\n`
+    : ""
+}
 
-【prevFollowup（1つ前のチェック：あれば比較用）】
-${JSON.stringify(prevFollowup || null, null, 2)}
-
-【careCounts（前回チェック〜今回までのケア実施日数）】
-${JSON.stringify(careCounts || {}, null, 2)}
-
-※ latestFollowup が null の場合は、
-体質（contexts）とケア実施状況だけから「崩れやすいパターン」や最近の波の仮説をまとめてください。
-`.trim();
+【shortTermCareCounts（前回チェック〜今回の各ケア実施日数）】
+${careJson}
+  `.trim();
 
   const rsp = await openai.responses.create({
     model: "gpt-5.1",
@@ -120,73 +152,56 @@ ${JSON.stringify(careCounts || {}, null, 2)}
   const text = rsp.output_text?.trim();
   return (
     text ||
-    `${greeting()} 無理せず、自分のペースで“ととのう数日”を過ごしていきましょうね🌿`
+    `${greeting()} 無理せず、自分のペースで、いまのからだの波をそっと見守っていきましょうね🌿`
   );
 }
 
+/**
+ * 外部呼び出し用：LINEユーザーIDからプッシュ用メッセージを生成
+ */
 async function generateGPTMessage(lineId) {
   try {
     console.log("[reminder] start lineId:", lineId);
+
     const userId = await getUserIdFromLineId(lineId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
-    // context取得
+    // 1. 体質コンテキスト
     const context = await supabaseMemoryManager.getContext(lineId);
 
-    // 最新と1つ前の followup を取得
-    const { data: fuRows, error: fuError } = await supabase
-      .from("followups")
-      .select("symptom_level, sleep, meal, stress, motion_level, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(2);
+    // 2. ととのい度チェック（直近・1つ前）
+    const followups = await supabaseMemoryManager.getLastTwoFollowupsByUserId(
+      userId
+    );
+    const latest = followups?.latest || null;
 
-    if (fuError) {
-      console.warn("⚠️ followups取得エラー:", fuError);
-    }
-
-    const latestFollowup = fuRows?.[0] || null;
-    const prevFollowup = fuRows?.[1] || null;
-
-    // 直近の care_logs（前回〜今回）
+    // 3. ケア実施日数（前回チェック〜今回）
     const careCounts =
       await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
         lineId
       );
 
-    // 日数経過チェック（「チェック空きすぎ」メッセージ判定用）
-    const lastDate = latestFollowup?.created_at
-      ? new Date(latestFollowup.created_at)
-      : context?.created_at
-      ? new Date(context.created_at)
-      : null;
-
-    const diffDays = lastDate
-      ? Math.floor(
-          (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-        )
-      : null;
-
-    let msg;
-    if (diffDays && diffDays >= 14) {
-      // 2週間以上チェックが空いているときの軽い声かけ（ここはシンプルテキスト）
-      msg =
-        `${greeting()} 少し間が空きましたね🌱 最近の整い、どんな感じですか？\n\n` +
-        "ゆっくりでも大丈夫なので、また気が向いたタイミングで「ととのい度チェック」をしてみると、今の波が見えやすくなりますよ😌";
-    } else {
-      // 通常の「からだの波だより」
-      msg = await buildCycleReminder({
-        context,
-        latestFollowup,
-        prevFollowup,
-        careCounts,
-      });
+    // データが何もない場合は素朴なフォールバック
+    if (!context && !latest) {
+      return (
+        `${greeting()} まだ体質タイプ分析やととのい度チェックのデータが見当たりませんでした😌\n` +
+        "まずはメニューから体質分析を受けておくと、からだの波が追いかけやすくなりますよ🌿"
+      );
     }
+
+    // GPT による「理由がわかるレター」を生成
+    const msg = await buildReasonLetter({
+      context,
+      followups,
+      careCounts,
+    });
 
     return msg;
   } catch (err) {
     console.error("⚠️ generateGPTMessage error:", err);
-    return `${greeting()} [fallback] 無理せず、自分のペースで“ととのう数日”を過ごしていきましょうね🌿`;
+    return (
+      `${greeting()} [fallback] 無理せず、自分のペースで“ととのう”時間をまた思い出してもらえたらうれしいです🌿`
+    );
   }
 }
 
