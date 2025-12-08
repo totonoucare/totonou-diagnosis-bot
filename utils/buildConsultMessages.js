@@ -1,14 +1,20 @@
 // utils/buildConsultMessages.js
 // ===========================================
-// AI相談用プロンプト生成：contexts / followups / careLogs / 直近チャット3件を参照
-// 「ととのい度チェック」は体調スコア、「ケアログ」は日々の実践記録として扱う。
+// AI相談用プロンプト生成
+// - contexts（体質情報）
+// - followups（ととのい度チェック：直近＋1つ前）
+// - careLogs（日々のケア実施記録：短期＆長期）
+// - recentChats（直近チャット3件）
+// をまとめて GPT に渡す。
 // ===========================================
 
-const legend_v1 = require("./cache/legend_v1");
-const rule_v1 = require("./cache/rule_v1");
-const structure_v1 = require("./cache/structure_v1");
+const legend_v1 = require("./cache/legend_v1");      // サービス3機能のコンセプト説明
+const rule_v1 = require("./cache/rule_v1");          // 応答ルール・文体・モード
+const structure_v1 = require("./cache/structure_v1");// データ構造・スコアの読み方・因果構造
 
-// ======== ラベル定義（symptom を日本語ラベルに変換） ========
+// ===========================================
+// symptom を日本語ラベルに変換
+// ===========================================
 const symptomLabelMap = {
   stomach: "胃腸の調子",
   sleep: "睡眠・集中力",
@@ -22,12 +28,14 @@ const symptomLabelMap = {
 };
 
 // ===========================================
-// advice 正規化：カルーセル配列 → {habits, breathing, stretch, tsubo, kampo}
+// advice 正規化：
+// - 既に {habits, breathing, stretch, tsubo, kampo} 形式ならそのまま
+// - 旧カルーセル形式 [{header, body, link}, ...] を pillar ごとに割り振る
 // ===========================================
 function normalizeAdvice(advice) {
   if (!advice) return null;
 
-  // 既に {habits, breathing, stretch, tsubo, kampo} 形式ならそのまま返す
+  // すでにオブジェクト形式ならそのまま
   const looksLikeObject =
     typeof advice === "object" &&
     (advice.habits ||
@@ -37,7 +45,7 @@ function normalizeAdvice(advice) {
       advice.kampo);
   if (looksLikeObject) return advice;
 
-  // カルーセル配列 [{header, body, link}, ...] を分類
+  // カルーセル配列 → {habits, breathing, stretch, tsubo, kampo}
   const r = {
     habits: null,
     breathing: null,
@@ -65,7 +73,7 @@ function normalizeAdvice(advice) {
 
 // ===========================================
 // contexts から GPT に渡すサマリを抽出
-// - symptomLabel / motion も含める
+// - symptomLabel / motion も含めて渡す
 // ===========================================
 function pickContext(context) {
   if (!context) {
@@ -93,23 +101,25 @@ function pickContext(context) {
     created_at = null,
   } = context;
 
-  // symptom の日本語ラベル
   const symptomLabel =
     symptomLabelMap[symptom] || symptom || "からだの不調";
 
   return {
-    symptom,              // コード例: "stomach"
-    symptomLabel,         // 人間向けラベル例: "胃腸の調子"
+    symptom,          // 例: "stomach"
+    symptomLabel,     // 例: "胃腸の調子"
     type,
     trait,
     flowType,
     organType,
-    motion,               // 伸展テスト動作（日本語テキストが入っている想定）
+    motion,           // 伸展テスト動作（日本語テキスト想定）
     advice: normalizeAdvice(advice),
     created_at,
   };
 }
 
+// ===========================================
+// JSON stringify（壊れてても最低限返す）
+// ===========================================
 function toJSON(obj) {
   try {
     return JSON.stringify(obj ?? null, null, 2);
@@ -119,9 +129,9 @@ function toJSON(obj) {
 }
 
 /**
- * careCounts（日次記録）をそのまま「日数」として扱う
+ * careCounts（日次記録）をそのまま「実施日数」として扱う
  * - 未定義は 0 に丸める
- * - 1日1カウント前提なので、値は「実施日数」を表す
+ * - 1日1カウント前提なので、「そのケアを行えた日数」のイメージ
  */
 function normalizeCareCountsPerDay(rawCounts = {}) {
   const normalized = {};
@@ -142,22 +152,22 @@ module.exports = function buildConsultMessages({
   careCounts = {},
   extraCareCounts = null,
 }) {
-  // 体質・所見
+  // 1) 体質・所見（contexts）
   const ctx = pickContext(context);
 
-  // ととのい度チェック（直近・1つ前）
+  // 2) ととのい度チェック（直近・1つ前）
   const latest = followups?.latest ?? null;
-  const prev = followups?.prev ?? null;
+  const prev   = followups?.prev   ?? null;
 
-  // ケア実施日数（短期）
+  // 3) ケア実施日数（短期：前回〜今回）
   const normalizedCareCounts = normalizeCareCountsPerDay(careCounts);
 
-  // ケア実施日数（長期・オプション）
+  // 4) ケア実施日数（長期：体質分析〜現在）※存在する場合のみ
   const longTermCareJson = extraCareCounts?.longTermCareCounts
     ? JSON.stringify(extraCareCounts.longTermCareCounts, null, 2)
     : null;
 
-  // 直近のチャット履歴（3件まで）
+  // 5) 直近チャット履歴（最大3件・各300文字まで）
   const chatHistory = (recentChats || [])
     .slice(-3)
     .map((c) => ({
@@ -166,15 +176,18 @@ module.exports = function buildConsultMessages({
     }))
     .filter((c) => c.content);
 
-  // ===== system メッセージ組み立て =====
+  // 6) system メッセージ組み立て
   const systemHeader = [
     "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー『トトノウくん』です。",
     "以下の情報（体質・ととのい度チェックの推移・ケア実施状況・過去の相談内容）を踏まえ、ユーザーに寄り添って答えてください。",
     "",
+    // サービス3機能のコンセプト（地図/現在地/足あと）
+    legend_v1,
+    "",
     "▼ 体質・所見（contexts）",
     toJSON(ctx),
     "",
-    "▼ 直近のケア実施記録（日数ベース）",
+    "▼ 直近のケア実施記録（日数ベース：前回チェック〜今回）",
     toJSON(normalizedCareCounts),
     "",
     longTermCareJson
@@ -192,16 +205,16 @@ module.exports = function buildConsultMessages({
     "▼ ととのい度チェック（直近のチェック結果）",
     toJSON(latest),
     "",
+    // データ構造・数値の読み方・優先ケアロジック・因果
     structure_v1,
     "",
+    // 出力フォーマット・文体・ケア効果モードのルール
     rule_v1,
-    "",
-    legend_v1,
   ]
     .filter(Boolean)
     .join("\n");
 
-  // ===== OpenAI Responses API に渡す messages =====
+  // 7) OpenAI Responses API に渡す messages
   return [
     { role: "system", content: systemHeader },
     ...chatHistory,
