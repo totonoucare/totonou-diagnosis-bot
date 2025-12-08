@@ -808,7 +808,7 @@ function buildTotonouConsultExamplesFlex() {
     altText: "トトノウくん活用ガイド",
     contents: {
       type: "bubble",
-      size: "giga",
+      size: "mega",
       header: {
         type: "box",
         layout: "vertical",
@@ -817,7 +817,7 @@ function buildTotonouConsultExamplesFlex() {
         contents: [
           {
             type: "text",
-            text: "🌱 トトノウくん活用ガイド",
+            text: "🌱 AIトトノウくん活用ガイド",
             weight: "bold",
             size: "md",
             color: "#FFFFFF",
