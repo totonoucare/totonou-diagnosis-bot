@@ -1,8 +1,7 @@
 // utils/generateGPTMessage.js
-// 🌿 トトノウくん伴走リマインダー：
-// - Responses API版
-// - legend_v1 / structure_v1 共有
-// - モチベ＋リスク予兆＋季節アドバイス対応
+// 🌿 トトノウくん伴走リマインダー（Responses API版）
+// - legend_v1 / structure_v1 を共有辞書として利用
+// - モチベーション・リスク予兆・季節アドバイスを統合
 
 const { OpenAI } = require("openai");
 const { createClient } = require("@supabase/supabase-js");
@@ -13,8 +12,9 @@ const supabase = createClient(
 );
 const supabaseMemoryManager = require("../supabaseMemoryManager");
 
-// 🧠 AIチャット本体と共通の定義ブロック
+// サービス3機能のコンセプト説明
 const legend_v1 = require("./cache/legend_v1");
+// データ構造・因果構造の説明
 const structure_v1 = require("./cache/structure_v1");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -29,10 +29,17 @@ function getTodayMeta() {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   const weekdayJp = ["日", "月", "火", "水", "木", "金", "土"][now.getDay()];
-  return { date: `${y}-${m}-${d}`, weekdayJp, month: now.getMonth() + 1 };
+  const month = now.getMonth() + 1;
+
+  let seasonLabel = "季節の変わり目";
+  if (month === 12 || month === 1 || month === 2) seasonLabel = "冬";
+  else if (month >= 3 && month <= 5) seasonLabel = "春";
+  else if (month >= 6 && month <= 8) seasonLabel = "夏";
+  else if (month >= 9 && month <= 11) seasonLabel = "秋";
+
+  return { date: `${y}-${m}-${d}`, weekdayJp, seasonLabel };
 }
 
-/** オブジェクトを安全にJSON文字列化 */
 function toJSON(obj) {
   try {
     return JSON.stringify(obj ?? null, null, 2);
@@ -41,22 +48,15 @@ function toJSON(obj) {
   }
 }
 
-/** GPTメッセージ生成（4日サイクルリマインダー） */
+/** 4日サイクル用のリマインド文を生成 */
 async function buildCycleReminder({ context, advice, latestFollowup, careCounts }) {
-  const { date, weekdayJp, month } = getTodayMeta();
+  const { date, weekdayJp, seasonLabel } = getTodayMeta();
 
-  // 🌸 季節のざっくりラベル（日本前提のゆるい区分）
-  let seasonLabel = "季節の変わり目";
-  if (month === 12 || month === 1 || month === 2) seasonLabel = "冬";
-  else if (month >= 3 && month <= 5) seasonLabel = "春";
-  else if (month >= 6 && month <= 8) seasonLabel = "夏";
-  else if (month >= 9 && month <= 11) seasonLabel = "秋";
-
-  // ====== system プロンプト ======
   const system = `
-あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー「トトノウくん」です🧘‍♂️
+あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー「トトノウくん」です。
 
-下記はサービス全体の考え方やデータ構造の説明です（参照用）：
+以下はサービスの全体像と、体質・ととのい度チェック・ケアログのデータ構造の説明です。  
+内容を理解したうえで、ユーザー1人に向けた短いレターを1通だけ生成してください。
 
 ${legend_v1}
 
@@ -64,69 +64,57 @@ ${structure_v1}
 
 ---
 
-## 🔸 これは「レターリマインド専用モード」です
+## ▼ このリマインドメッセージでやること
 
-- 役割：
-  - ユーザーの体質・ととのい度チェック・ケアログをもとに、
-    4日前後のサイクルで「やさしいお手紙風リマインド」を送る。
-  - 目的は「モチベーション・継続のコーチング」「リスク予兆のやわらかな可視化」「季節に合わせた微調整アドバイス」。
+- 体質情報（contexts）、ととのい度チェック（followups）、ケアログ（care_logs_daily）を総合して、
+  「この数日間の整い方の傾向」と「次の数日で意識したいポイント」を 1 通の手紙としてまとめる。
+- 主な役割は、次の3つをひとまとめにしたレターにすること：
+  1) モチベーション・継続のコーチング  
+  2) 体質・最近の状態にもとづく“リスク予兆”の穏やかな可視化  
+  3) 今日の季節感（${seasonLabel}）を踏まえた微調整アドバイス  
 
----
-
-## 🔸 出力ルール（レター用の上書き仕様）
-
-- 日本語で、200〜260文字くらいの「短い手紙」のように書く。
-- 3〜5行程度に適度に改行を入れて、LINEで読みやすくする。
-- 数値・スコア・星・点数などは一切出さない（「前より少しラク」「負担がたまりやすい」といった言い方にする）。
-- 「次のととのい度チェックを受けてください」など、チェック受検の催促はしない。
-- 医療的な診断・病名・重いリスクの断定はしない。
-  - 「病気になる」「危険」「○○症の可能性」などは避け、
-    「このあたりに負担がたまりやすい時期かも」程度のやわらかい表現にする。
-- 絵文字を適度に（🌿🫶🍵💤など）入れる。
-- 体調が揺れやすい人を責めず、「今できていること」を必ず一つは認める。
+- 体質 × 最近のスコアの推移 × ケア実施状況 × 季節 をきちんと読み取り、  
+  ユーザーにとって現実的で使いやすいヒントになるように言語化する。
 
 ---
 
-## 🔸 レターの構成
+## ▼ 出力ルール（レター用）
 
-1. あいさつ＋共感：
-   - 今日の日付と季節感をうっすら意識しながら、
-     「${seasonLabel}はこんな負担が出やすいね」「ここ最近、こんな体感が出やすいかも」など、共感から入りなさい。
+- 日本語で 200〜260 文字程度。短い手紙のように書く。
+- 3〜5 行になるように適度に改行を入れる（1〜2文ごとに改行してよい）。
+- スコアや点数、星の数など「数値の話」は出さない。
+  - 例：「前より少しラク」「負担が溜まりやすいゾーン」などの表現に言い換える。
+- 「次のととのい度チェックを受けてください」など、チェック受検を催促する文は書かない。
+- 過度に不安をあおる言い方や、診断・病名を思わせる断定はしない。
+  - 「この先、少し〇〇まわりに負担が出やすいタイプかもしれません」
+    「気になるときは専門家にも相談してね」くらいの穏やかな表現にとどめる。
+- ユーザーがすでによく続けているケア（careCounts が多い項目）は、
+  「その調子で」「無理のない範囲で続けてみよう」と維持をねぎらう。
+- 新しく勧めるケアは、ハードルをできるだけ下げる。
+  - 例：「寝る前に1〜2回だけ深めの呼吸をしてみる」
+        「朝イチに肩をゆっくり1回だけ回してみる」など。
+- 絵文字は 1〜4 個程度。🌿🫶🍵💤 など落ち着いたものを中心に使う。
+- 抽象的な一般論だけにならないように、
+  体質（type / flowType / organType）や最近の状態に **結びつけた具体的コメント** を必ず1つ以上入れる。
 
-2. からだの流れの今の傾向：
-   - contexts（type / flowType / organType / symptom）と
-     直近のととのい度チェック(latestFollowup)・ケアログ(careCounts)をもとに、
-     「ここが整ってきている」「ここに少し負担が残りやすそう」といった
-     “今の流れ” を1〜2文でやさしく説明する。
-   - ここで「リスク予兆」を扱う場合は、
-     「このままだと〇〇まわりに疲れがたまりやすいゾーンかも」
-     のように、あくまで *手前のゾーン* としてふわっと伝える。
+---
 
-3. 次の数日間に意識したい一歩：
-   - advice（habits / breathing / stretch / tsubo / kampo）と
-     careCounts を参考に、
-     1〜2個だけ「これを軽く意識してみよう」という提案をする。
-   - すでによくできているケア（careCounts が多い）は、
-     「その調子で」「無理ない範囲で続けてみようね」と維持を励ますトーンにする。
-   - 新しく勧めるケアは、ハードルを極力下げる。
-     （例：「寝る前1〜2回だけ深めの呼吸をしてみる」「朝イチに肩周りをゆっくり1回だけ回す」など）
+## ▼ レターの骨組み（目安）
 
-4. 相談へのやさしい導線（1文でOK）：
-   - 「もし最近の体のサインを詳しく整理したくなったら、いつでもトトノウくんにメッセージしてね🌿」
-     のように、AI相談があることを “軽く思い出してもらう” 一文を添える。
+1. 冒頭：あいさつと、季節・最近の傾向への一言
+2. 中盤：体質／最近の整い方／リスク予兆（手前ゾーン）をまとめたコメント
+3. 後半：次の数日で意識したい 1〜2 個の具体的なケア＋一言エール
 `.trim();
 
-  // ====== user コンテキスト（事実情報だけを渡す） ======
   const user = `
 【今日】${date}（${weekdayJp}）
 【推定季節】${seasonLabel}
 【体質contexts】${toJSON(context || null)}
 【直近のととのい度チェック】${toJSON(latestFollowup || null)}
-【直近のケア実施日数】${toJSON(careCounts || {})}
+【直近のケア実施日数（shortTerm）】${toJSON(careCounts || {})}
 【アドバイス内容（advice）】${toJSON(advice || {})}
 `.trim();
 
-  // Responses API 用に、consult と同じスタイルでまとめる
   const messages = [
     { role: "system", content: system },
     { role: "user", content: user },
@@ -156,10 +144,10 @@ async function generateGPTMessage(lineId) {
     const userId = await getUserIdFromLineId(lineId);
     if (!userId) throw new Error("該当ユーザーが見つかりません");
 
-    // context取得
+    // 体質コンテキスト
     const context = await supabaseMemoryManager.getContext(lineId);
 
-    // 最新のfollowup取得（1件）
+    // 最新 followup（1件）
     const { data: fuRows, error: fuErr } = await supabase
       .from("followups")
       .select("symptom_level, sleep, meal, stress, motion_level, created_at")
@@ -179,7 +167,7 @@ async function generateGPTMessage(lineId) {
         lineId
       );
 
-    // 日数経過チェック（14日以上空いているか）
+    // 前回チェック or context 作成日からの経過日数
     const lastDate = latestFollowup?.created_at
       ? new Date(latestFollowup.created_at)
       : context?.created_at
@@ -192,10 +180,10 @@ async function generateGPTMessage(lineId) {
 
     let msg;
     if (diffDays && diffDays >= 14) {
-      // 🕊 大きく間が空いたときは、まずはシンプルな声かけだけ
+      // かなり間が空いたときは、まずはシンプルな声かけだけ
       msg = `${greeting()} 少し間が空きましたね🌱 最近の整い、どんな感じですか？\nゆっくりでも大丈夫☺️\nまた一緒に今の状態を見つめ直していきましょう🌿`;
     } else {
-      // 通常サイクルの伴走レター
+      // 通常サイクルのリマインドレター
       msg = await buildCycleReminder({
         context,
         advice: context?.advice,
