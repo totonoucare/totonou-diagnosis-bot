@@ -1,11 +1,21 @@
 // utils/generateGPTMessage.js
-// 🌿 トトノウくん伴走リマインダー：Q3廃止＋care_logs連携＋テンセグリティ理論対応版
+// 🌿 トトノウくん伴走リマインダー：
+// - Responses API版
+// - legend_v1 / structure_v1 共有
+// - モチベ＋リスク予兆＋季節アドバイス対応
 
-const OpenAI = require("openai");
+const { OpenAI } = require("openai");
 const { createClient } = require("@supabase/supabase-js");
 const { getUserIdFromLineId } = require("./getUserIdFromLineId");
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 const supabaseMemoryManager = require("../supabaseMemoryManager");
+
+// 🧠 AIチャット本体と共通の定義ブロック
+const legend_v1 = require("./cache/legend_v1");
+const structure_v1 = require("./cache/structure_v1");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -18,149 +28,131 @@ function getTodayMeta() {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
-  const weekdayJp = ["日","月","火","水","木","金","土"][now.getDay()];
-  return { date: `${y}-${m}-${d}`, weekdayJp };
+  const weekdayJp = ["日", "月", "火", "水", "木", "金", "土"][now.getDay()];
+  return { date: `${y}-${m}-${d}`, weekdayJp, month: now.getMonth() + 1 };
+}
+
+/** オブジェクトを安全にJSON文字列化 */
+function toJSON(obj) {
+  try {
+    return JSON.stringify(obj ?? null, null, 2);
+  } catch {
+    return JSON.stringify({ _error: "unserializable" }, null, 2);
+  }
 }
 
 /** GPTメッセージ生成（4日サイクルリマインダー） */
-async function buildCycleReminder({
-  context,
-  advice,
-  latestFollowup,
-  careCounts,
-}) {
-  const { date, weekdayJp } = getTodayMeta();
+async function buildCycleReminder({ context, advice, latestFollowup, careCounts }) {
+  const { date, weekdayJp, month } = getTodayMeta();
 
+  // 🌸 季節のざっくりラベル（日本前提のゆるい区分）
+  let seasonLabel = "季節の変わり目";
+  if (month === 12 || month === 1 || month === 2) seasonLabel = "冬";
+  else if (month >= 3 && month <= 5) seasonLabel = "春";
+  else if (month >= 6 && month <= 8) seasonLabel = "夏";
+  else if (month >= 9 && month <= 11) seasonLabel = "秋";
+
+  // ====== system プロンプト ======
   const system = `
-あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー「トトノウくん」です🧘‍♂️。
-ユーザーの体質（contexts）・セルフケアガイド（advice）・ととのい度チェック（followups）・ケア実施記録（care_logs_daily）をもとに、
-“心身の巡りを整えるためのやさしいリマインドメッセージ”を生成してください。
+あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー「トトノウくん」です🧘‍♂️
+
+下記はサービス全体の考え方やデータ構造の説明です（参照用）：
+
+${legend_v1}
+
+${structure_v1}
 
 ---
 
-【目的】
-次のととのい度チェックまでの数日間、ユーザーが
-🌱 安心して・前向きに・自然体で整え習慣を続けられる 🌱
-ようにサポートすること。
+## 🔸 これは「レターリマインド専用モード」です
 
-あなたは「分析者」ではなく「伴走者」です。
-スコアや数値を説明せず、体の流れ・整う感覚・日常の工夫をやさしく導いてください。
+- 役割：
+  - ユーザーの体質・ととのい度チェック・ケアログをもとに、
+    4日前後のサイクルで「やさしいお手紙風リマインド」を送る。
+  - 目的は「モチベーション・継続のコーチング」「リスク予兆のやわらかな可視化」「季節に合わせた微調整アドバイス」。
 
----
-
-◆ contexts（体質・タイプ情報）
-- type：体質タイプ名（陰虚タイプなど）
-- trait：体質傾向（乾燥で熱がこもりやすい等）
-- flowType：流通病理（気滞・水滞・瘀血）
-- organType：負担が出やすい臓腑（肝・心・脾・肺・腎）
-- motion：最も伸展負担がかかる経絡ラインの伸展動作で、これがorganType判定の指標。
-- symptom：主訴（胃腸・肩こり・メンタル・冷えなど）
-- advice：{habits, breathing, stretch, tsubo, kampo} 各ケア内容と図解リンク
-- created_at：初回登録日（体質分析を終えた日）
-
-◆ followups（ととのい度チェック）
-- symptom_level：不調(主訴)のつらさ（1=軽い〜5=強い）
-- sleep / meal / stress：生活リズム（1=整っている〜5=乱れている）
-- motion_level：最も伸展負担がかかる経絡ラインの伸展動作(motion)を再テストした際のつらさ（1=軽い〜5=強い）
-
-◆ care_logs_daily（ケア記録）
-- habits / breathing / stretch / tsubo / kampo：各ケア項目の「実施日数」。
-- 1日に複数回行っても1日1回としてカウント。値が高いほど、そのケアを行った日が多い。
+- あなたは「分析者」ではなく「伴走者」です。
+  - 数値やスコアの解説ではなく、
+    「からだの流れ」「整ってきている部分」「少し疲れやすそうな部分」を
+    東洋医学＋テンセグリティ的な感覚で、やさしく言語化する。
 
 ---
 
-【因果構造（トトノウ理論）】
-体調の「整い方」は、以下の因果連鎖で捉えます。
+## 🔸 出力ルール（レター用の上書き仕様）
 
-1. habits（体質改善習慣）は sleep / meal / stressの安定化を図り、symptom_levelの改善の土台を整える：
-　体質分析で把握された気血や寒熱のバランスを整える基盤ケア。生活習慣を整えることで睡眠・食事・ストレスのリズムが安定し、主訴(不調)の改善につながる。
-
-2. breathing（呼吸法）は 腹圧テンションの正常化で姿勢制御を助け、流通病理(flowType)や自律機能を整え、symptom_levelの改善の土台をつくる：
-　おヘソから指４〜5本ほど上あたり(中脘)を軽く膨らませる(胸式でもなく、臍下を膨らませる呼吸でもない)深呼吸によって、腹圧と姿勢制御が安定し、循環が整いやすくなる。
-  内圧の安定が、全身の“整い”を支える。結果として循環と自律神経が整いやすくなり、不調(主訴)の改善にもつながる。
-　（※神経改善を断定はしない）
-
-3. stretch / tsuboは motion_levelを改善し、motion_levelの改善は organTypeやsymptom_levelの乱れを整える：
-　体質分析時に最も伸展負担がかかる経絡ラインの伸展動作(motion)をもとに、対応する経絡ラインのストレッチやツボ刺激でその経絡ラインの筋膜テンションを緩め、関連臓腑(organType)の乱れも整え、不調(主訴)の改善にもつながる。
-  motion_level の改善はこの経絡ケアの成果指標となる。
-
-4. kampo（漢方）：
-　他のセルフケア（habits, breathing, stretch, tsubo）を一定期間継続しても
-　体調や motion_level の改善が停滞している場合、
-　補助的な手段として体質・弁証に基づいた漢方を取り入れることを検討します。
-　ただし、継続的依存は避け、あくまで自律的ケアの補助として扱います。
-
+- 日本語で、200〜260文字くらいの「短い手紙」のように書く。
+- 3〜5行程度に適度に改行を入れて、LINEで読みやすくする。
+- 数値・スコア・星・点数などは一切出さない（「前より少しラク」「負担がたまりやすい」といった言い方にする）。
+- 「次のととのい度チェックを受けてください」など、チェック受検の催促はしない。
+- 医療的な診断・病名・重いリスクの断定はしない。
+  - 「病気になる」「危険」「○○症の可能性」などは避け、
+    「このあたりに負担がたまりやすい時期かも」程度のやわらかい表現にする。
+- 絵文字を適度に（🌿🫶🍵💤など）入れる。
+- 体調が揺れやすい人を責めず、「今できていること」を必ず一つは認める。
 
 ---
 
-【リマインド内容の構成】
-1️⃣ あいさつ＋共感  
-　例：「こんにちは☺️ 最近の整え習慣、どんな感じですか？」  
-　　　「季節の変わり目、少し体が重く感じるかもしれませんね🍂」  
+## 🔸 レターの構成
 
-2️⃣ 今の体の流れ（変化の背景をやさしく解釈）  
-　体質（type / flowType / organType）や直近スコアをもとに、  
-　なぜその傾向が出ているのかを東洋医学・テンセグリティの視点で軽く説明。  
+1. あいさつ＋共感：
+   - 今日の日付と季節感をうっすら意識しながら、
+     「${seasonLabel}はこんな負担が出やすいね」「ここ最近、こんな体感が出やすいかも」など、共感から入りなさい。
 
-3️⃣ 次のチェックまでの整えヒント  
-　advice 内のケア項目（habits / breathing / stretch / tsubo / kampo）の中から  
-　1〜2項目を選び、理由を添えて提案。  
-　例：「寝る前の呼吸を1分だけ整えると、朝のスッキリ感が変わります🌿」  
+2. からだの流れの今の傾向：
+   - contexts（type / flowType / organType / symptom）と
+     直近のととのい度チェック(latestFollowup)・ケアログ(careCounts)をもとに、
+     「ここが整ってきている」「ここに少し負担が残りやすそう」といった
+     “今の流れ” を1〜2文でやさしく説明する。
+   - ここで「リスク予兆」を扱う場合は、
+     「このままだと〇〇まわりに疲れがたまりやすいゾーンかも」
+     のように、あくまで *手前のゾーン* としてふわっと伝える。
 
-4️⃣ 相談へのやさしい導線  
-　例：「最近の体のサイン、トトノウくんに話してみませんか？」  
-　→ “話したくなる距離感”を演出する。
+3. 次の数日間に意識したい一歩：
+   - advice（habits / breathing / stretch / tsubo / kampo）と
+     careCounts を参考に、
+     1〜2個だけ「これを軽く意識してみよう」という提案をする。
+   - すでによくできているケア（careCounts が多い）は、
+     「その調子で」「無理ない範囲で続けてみようね」と維持を励ますトーンにする。
+   - 新しく勧めるケアは、ハードルを極力下げる。
+     （例：「寝る前1〜2回だけ深めの呼吸をしてみる」「朝イチに肩周りをゆっくり1回だけ回す」など）
 
----
-
-【文体・トーン】
-- 温かく・親しみやすく・前向き。焦らせない。
-- 数値・スコア説明は一切しない。
-- 医療断定・禁止・否定的表現は禁止。
-- 絵文字を適度に使う（🌿🍵💤🫶など）。
-- 200〜250字程度で、改行・句読点を丁寧に。
-- 「整う」「めぐる」「ゆるめる」「深める」などの自然な言葉を使う。
-
----
-
-【禁止】
-- 数値（点数・星・比較）の表現
-- 「次のチェックを受けましょう」などの催促
-- 季節と逆行するアドバイス（冬に冷やす／夏に温めすぎる等）
-- すでに実施頻度が高いケア項目（例：breathingやhabitsが高頻度）の場合、
-  「やってみませんか？」「始めてみましょう」などの促し文句を避ける。
-  → 継続している場合は「その調子で」「無理せず続けよう」のように維持を励ます表現にする。
-- 機械的なテンプレ文の繰り返し
-
----
-
-あなたの役割は「整いを支える伴走者」です。
-目の前のユーザーが「無理せず、また整えてみよう」と思えるように導いてください🌱
+4. 相談へのやさしい導線（1文でOK）：
+   - 「もし最近の体のサインを詳しく整理したくなったら、いつでもトトノウくんにメッセージしてね🌿」
+     のように、AI相談があることを “軽く思い出してもらう” 一文を添える。
 `.trim();
 
+  // ====== user コンテキスト（事実情報だけを渡す） ======
   const user = `
 【今日】${date}（${weekdayJp}）
-【体質】${context?.type || "不明"}（${context?.trait || "情報なし"}）
-【気の流れ】${context?.flowType || "不明"}
-【負担臓腑】${context?.organType || "不明"}
-【主訴】${context?.symptom || "未登録"}
-【直近ケア実績】${JSON.stringify(careCounts || {}, null, 2)}
-【直近のととのい度チェック】${JSON.stringify(latestFollowup || {}, null, 2)}
-【アドバイス内容（advice）】${JSON.stringify(advice || {}, null, 2)}
-  `.trim();
+【推定季節】${seasonLabel}
+【体質contexts】${toJSON(context || null)}
+【直近のととのい度チェック】${toJSON(latestFollowup || null)}
+【直近のケア実施日数】${toJSON(careCounts || {})}
+【アドバイス内容（advice）】${toJSON(advice || {})}
+`.trim();
 
-const rsp = await openai.responses.create({
-  model: "gpt-5.1",
-  input: [
+  // Responses API 用に、consult と同じスタイルでまとめる
+  const messages = [
     { role: "system", content: system },
-    { role: "user", content: user }
-  ],
-  reasoning: { effort: "low" },
-  text: { verbosity: "low" }
-});
+    { role: "user", content: user },
+  ];
 
-const text = rsp.output_text?.trim();
-return text || `${greeting()} 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
+  const promptText = messages
+    .map((m) => `${m.role}: ${m.content}`)
+    .join("\n\n");
+
+  const rsp = await openai.responses.create({
+    model: "gpt-5.1",
+    input: promptText,
+    reasoning: { effort: "low" },
+    text: { verbosity: "low" },
+  });
+
+  const text = rsp.output_text?.trim();
+  return (
+    text ||
+    `${greeting()} 無理せず、自分のペースで“ととのう数日間”を過ごしていきましょうね🌿`
+  );
 }
 
 async function generateGPTMessage(lineId) {
@@ -172,30 +164,43 @@ async function generateGPTMessage(lineId) {
     // context取得
     const context = await supabaseMemoryManager.getContext(lineId);
 
-    // 最新のfollowup取得
-    const { data: fuRows } = await supabase
+    // 最新のfollowup取得（1件）
+    const { data: fuRows, error: fuErr } = await supabase
       .from("followups")
       .select("symptom_level, sleep, meal, stress, motion_level, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
+
+    if (fuErr) {
+      console.warn("followups取得エラー:", fuErr.message);
+    }
+
     const latestFollowup = fuRows?.[0] || null;
 
-    // 直近8日間のcare_logs集計
-    const careCounts = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(lineId);
+    // 直近期間のケア実施日数（shortTerm）
+    const careCounts =
+      await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+        lineId
+      );
 
-    // 日数経過チェック
+    // 日数経過チェック（14日以上空いているか）
     const lastDate = latestFollowup?.created_at
       ? new Date(latestFollowup.created_at)
-      : (context?.created_at ? new Date(context.created_at) : null);
+      : context?.created_at
+      ? new Date(context.created_at)
+      : null;
+
     const diffDays = lastDate
       ? Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
     let msg;
     if (diffDays && diffDays >= 14) {
+      // 🕊 大きく間が空いたときは、まずはシンプルな声かけだけ
       msg = `${greeting()} 少し間が空きましたね🌱 最近の整い、どんな感じですか？\nゆっくりでも大丈夫☺️\nまた一緒に今の状態を見つめ直していきましょう🌿`;
     } else {
+      // 通常サイクルの伴走レター
       msg = await buildCycleReminder({
         context,
         advice: context?.advice,
@@ -207,7 +212,7 @@ async function generateGPTMessage(lineId) {
     return msg;
   } catch (err) {
     console.error("⚠️ generateGPTMessage error:", err);
-    return `${greeting()} [fallback] 無理せず、自分のペースで“ととのう4日間”を過ごしていきましょうね🌿`;
+    return `${greeting()} [fallback] 無理せず、自分のペースで“ととのう数日間”を過ごしていきましょうね🌿`;
   }
 }
 
