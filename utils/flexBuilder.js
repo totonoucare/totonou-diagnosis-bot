@@ -1074,7 +1074,7 @@ function buildReminderFlexFromText(letterText) {
   // Flex カードを返す
   return {
     type: "flex",
-    altText: "カラダの巡り通信🌿",
+    altText: "🌿 からだの巡り通信",
     contents: {
       type: "bubble",
       size: "mega",
@@ -1094,7 +1094,7 @@ function buildReminderFlexFromText(letterText) {
         contents: [
           {
             type: "text",
-            text: "カラダの巡り通信🌿",
+            text: "🌿 からだの巡り通信",
             weight: "bold",
             size: "md",
             color: "#5A745C",
