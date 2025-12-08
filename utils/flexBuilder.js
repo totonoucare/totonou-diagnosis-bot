@@ -1035,29 +1035,50 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-function buildReminderFlexFromText(letterText) {
-  const raw = (letterText || "").trim();
-  if (!raw) return null;
+// utils/flexBuilder.js
 
+function buildReminderFlexFromText(letterText) {
+  // GPT からのレター本文を整形
+  const raw = (letterText || "").trim();
+  if (!raw) return null; // 空なら柔らかくテキスト送信にフォールバック
+
+  // 段落を抽出（空行を除外）
   const paragraphs = raw
-    .split(/\n{2,}/) // 空行で段落分割
+    .split(/\n{2,}/)         // 2行以上の改行で区切る
     .map(p => p.trim())
     .filter(p => p.length > 0);
 
-  const paragraphContents = paragraphs.map((p, idx) => ({
-    type: "text",
-    text: p,
-    wrap: true,
-    size: "md",
-    margin: idx === 0 ? "md" : "sm",
-  }));
+  if (paragraphs.length === 0) return null;
 
+  // 本文を Flex の contents 配列に変換
+  const contents = [];
+
+  paragraphs.forEach((p, idx) => {
+    // 先頭以外はセパレーター
+    if (idx !== 0) {
+      contents.push({
+        type: "separator",
+        margin: "md",
+      });
+    }
+
+    contents.push({
+      type: "text",
+      text: p,
+      wrap: true,
+      size: "md",
+      margin: "md",
+    });
+  });
+
+  // Flex カードを返す
   return {
     type: "flex",
-    altText: "からだの巡りレポート🌿",
+    altText: "カラダの巡り通信🌿",
     contents: {
       type: "bubble",
       size: "mega",
+
       hero: {
         type: "image",
         url: "https://totonoucare.com/wp-content/themes/totonoucare/images/flex-hero-autumn.gif",
@@ -1065,6 +1086,7 @@ function buildReminderFlexFromText(letterText) {
         aspectMode: "cover",
         aspectRatio: "16:9",
       },
+
       body: {
         type: "box",
         layout: "vertical",
@@ -1072,15 +1094,16 @@ function buildReminderFlexFromText(letterText) {
         contents: [
           {
             type: "text",
-            text: "🌿 からだの巡りレポート",
+            text: "カラダの巡り通信🌿",
             weight: "bold",
             size: "md",
             color: "#5A745C",
             wrap: true,
           },
-          ...paragraphContents,
+          ...contents,
         ],
       },
+
       footer: {
         type: "box",
         layout: "horizontal",
