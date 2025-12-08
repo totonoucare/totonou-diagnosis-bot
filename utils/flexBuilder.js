@@ -805,55 +805,207 @@ function buildTrialStartFlex() {
 function buildTotonouConsultExamplesFlex() {
   return {
     type: "flex",
-    altText: "トトノウくんに相談してみよう",
+    altText: "トトノウくん活用ガイド",
     contents: {
       type: "bubble",
       size: "mega",
       header: {
         type: "box",
         layout: "vertical",
-        contents: [
-          { type: "text", text: "🌿 トトノウくんに話しかけてみよう", weight: "bold", size: "md", color: "#ffffff" }
-        ],
-        backgroundColor: "#7B9E76",
         paddingAll: "12px",
+        backgroundColor: "#7B9E76",
+        contents: [
+          {
+            type: "text",
+            text: "🌱 トトノウくん活用ガイド",
+            weight: "bold",
+            size: "md",
+            color: "#FFFFFF",
+          },
+          {
+            type: "text",
+            text: "体の“地図”×“現在地”×“足あと”を読んで整え方を案内します",
+            size: "xs",
+            color: "#F0F0F0",
+            wrap: true
+          }
+        ],
       },
+
       body: {
         type: "box",
         layout: "vertical",
         spacing: "md",
         contents: [
-          { type: "text", text: "体質や最近の整い度をもとに、AIトトノウくんが何でも答えます！質問メッセージを送るか、以下の参考テーマのボタンを押すと会話が始まります☺️", wrap: true, size: "sm" },
+
+          // 1
           {
-            type: "button",
-            style: "primary",
-            color: "#7B9E76",
-            action: { type: "message", label: "😣 自分の不調と体質の関係", text: "私の不調(主訴)と体質はどう関係あるの？" }
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "① 不調を言語化したいとき🩺", weight: "bold", size: "sm" },
+              { type: "text", text: "最近の体の変化や“なんとなく不調”を整理して、原因の方向性を一緒に見つけます。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "不調について相談する",
+                  text: "今の不調について相談したいです。原因やケア方針を整理してほしいです。"
+                }
+              }
+            ]
           },
+
+          // 2
           {
-            type: "button",
-            style: "primary",
-            color: "#7B9E76",
-            action: { type: "message", label: "🍴 自分に合う今日の食事", text: "自分に合った今日の食事メニューを考えて！" }
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "② 今はどのケアを優先すべき？⚖️", weight: "bold", size: "sm" },
+              { type: "text", text: "体質＋最近の状態から、優先ケアとサポートケアの使い分けを案内します。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "優先するケアを知りたい",
+                  text: "今の状態での優先ケアとサポートケアの使い分けを相談したいです。"
+                }
+              }
+            ]
           },
+
+          // 3
           {
-            type: "button",
-            style: "primary",
-            color: "#7B9E76",
-            action: { type: "message", label: "💤 眠りが浅いときの整え方", text: "最近眠りが浅いんだけど、考えられる原因と対策は？" }
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "③ ケアのやり方／強度の微調整⚖️", weight: "bold", size: "sm" },
+              { type: "text", text: "やり方が負担になってないか、ちょうど良い強度を一緒に調整します。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "ケアのやり方を見直したい",
+                  text: "セルフケアのやり方や強度が合っているか相談したいです。"
+                }
+              }
+            ]
           },
+
+          // 4
           {
-            type: "button",
-            style: "primary",
-            color: "#7B9E76",
-            action: { type: "message", label: "🌀 私のストレス対策法", text: "私の体質に合うストレス対処法を教えて！" }
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "④ 続かない・サボりがちの立て直し🔁", weight: "bold", size: "sm" },
+              { type: "text", text: "習慣が続かないときの“ハードルの下げ方”や工夫を一緒に考えます。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "続かないときの相談",
+                  text: "セルフケアが続けられません。無理なく続ける工夫を相談したいです。"
+                }
+              }
+            ]
           },
+
+          // 5（効果反映レポート）
           {
-            type: "button",
-            style: "primary",
-            color: "#7B9E76",
-            action: { type: "message", label: "🌿 漢方薬の選び方", text: "最適な漢方薬の選び方を教えてほしい！" }
-          }
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "⑤ ケア効果の反映具合を知りたい✨", weight: "bold", size: "sm" },
+              { type: "text", text: "前回と今回の“ととのい度の差”と、ケアログの積み上がりからレポートします。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "ケア効果の反映具合を聞く",
+                  text: "ケア効果の反映具合を聞く"
+                }
+              }
+            ]
+          },
+
+          // 6（献立）
+          {
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "⑥ 体質に合う献立・食べ方の相談🥗", weight: "bold", size: "sm" },
+              { type: "text", text: "体質タイプに応じて食材やメニューの方向性を提案します。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "献立の相談をする",
+                  text: "体質に合う食べ方や献立の方向性を相談したいです。"
+                }
+              }
+            ]
+          },
+
+          // 7（漢方・サプリ）
+          {
+            type: "box",
+            layout: "vertical",
+            paddingAll: "12px",
+            backgroundColor: "#f6f6f4",
+            cornerRadius: "8px",
+            contents: [
+              { type: "text", text: "⑦ 体質に合う漢方・サプリの方向性🌿", weight: "bold", size: "sm" },
+              { type: "text", text: "あなたの体質や巡りタイプをもとに、漢方を選ぶ方向性をやさしく案内します。", wrap: true, size: "xs" },
+              {
+                type: "button",
+                style: "primary",
+                color: "#7B9E76",
+                margin: "sm",
+                action: {
+                  type: "message",
+                  label: "漢方やサプリの相談",
+                  text: "体質に合う漢方やサプリの方向性について相談したいです。"
+                }
+              }
+            ]
+          },
+
         ],
       },
     },
