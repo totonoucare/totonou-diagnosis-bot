@@ -1035,26 +1035,14 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-// 1文ごとに区切るヘルパー
-function splitToSentences(text) {
-  if (!text) return [];
-
-  // 改行は一旦消してから文として再構成
-  const normalized = String(text)
-    .replace(/\r/g, "")
-    .replace(/\n+/g, "");
-
-  // 「。」「！」「？」「!」「?」で文末判定
-  const matches = normalized.match(/[^。！？!?]+[。！？!?]?/g) || [];
-
-  return matches
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0); // ← 空文字は絶対に送らない
-}
-
 function buildReminderFlex(letterText) {
-  const sentences = splitToSentences(letterText);
+  // ① 段落に分割（空行で区切る想定）
+  const paragraphs = String(letterText || "")
+    .split(/\n{2,}/)           // 空行で段落に分ける
+    .map(p => p.trim())
+    .filter(p => p.length > 0); // 空は捨てる（←重要）
 
+  // ② テキスト + セパレーターを交互に積む
   const bodyContents = [];
 
   // タイトル
@@ -1066,9 +1054,8 @@ function buildReminderFlex(letterText) {
     color: "#5A745C",
   });
 
-  // 文ごとに「セパレーター＋テキスト」
-  sentences.forEach((sentence, idx) => {
-    // 1文目の前にも区切り線を入れたいなら idx >= 0 に変えてもOK
+  paragraphs.forEach((p, idx) => {
+    // 1段落目の前には入れない。2つ目以降の前に区切り線
     bodyContents.push({
       type: "separator",
       margin: "md",
@@ -1077,7 +1064,7 @@ function buildReminderFlex(letterText) {
 
     bodyContents.push({
       type: "text",
-      text: sentence,
+      text: p,
       wrap: true,
       size: "md",
       margin: "md",
