@@ -1035,45 +1035,26 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-function buildReminderFlex(letterText) {
-  // ① 段落に分割（空行で区切る想定）
-  const paragraphs = String(letterText || "")
-    .split(/\n{2,}/)           // 空行で段落に分ける
+function buildReminderFlexFromText(letterText) {
+  const raw = (letterText || "").trim();
+  if (!raw) return null;
+
+  const paragraphs = raw
+    .split(/\n{2,}/) // 空行で段落分割
     .map(p => p.trim())
-    .filter(p => p.length > 0); // 空は捨てる（←重要）
+    .filter(p => p.length > 0);
 
-  // ② テキスト + セパレーターを交互に積む
-  const bodyContents = [];
-
-  // タイトル
-  bodyContents.push({
+  const paragraphContents = paragraphs.map((p, idx) => ({
     type: "text",
-    text: "🌿 今週のととのうケアレター",
-    weight: "bold",
+    text: p,
+    wrap: true,
     size: "md",
-    color: "#5A745C",
-  });
-
-  paragraphs.forEach((p, idx) => {
-    // 1段落目の前には入れない。2つ目以降の前に区切り線
-    bodyContents.push({
-      type: "separator",
-      margin: "md",
-      color: "#E0E0E0",
-    });
-
-    bodyContents.push({
-      type: "text",
-      text: p,
-      wrap: true,
-      size: "md",
-      margin: "md",
-    });
-  });
+    margin: idx === 0 ? "md" : "sm",
+  }));
 
   return {
     type: "flex",
-    altText: "今週のととのうケアレター🌿",
+    altText: "からだの巡りレポート🌿",
     contents: {
       type: "bubble",
       size: "mega",
@@ -1088,7 +1069,17 @@ function buildReminderFlex(letterText) {
         type: "box",
         layout: "vertical",
         spacing: "md",
-        contents: bodyContents,
+        contents: [
+          {
+            type: "text",
+            text: "🌿 からだの巡りレポート",
+            weight: "bold",
+            size: "md",
+            color: "#5A745C",
+            wrap: true,
+          },
+          ...paragraphContents,
+        ],
       },
       footer: {
         type: "box",
