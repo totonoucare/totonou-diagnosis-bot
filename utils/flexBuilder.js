@@ -1035,37 +1035,72 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-/** GPTメッセージをFlexカード化（ととのいリマインド用） */
+// GPTレター文字列 → 今週のととのうケアレター Flex に変換
 function buildReminderFlexFromText(text) {
-  if (!text) return null;
+  const raw = (text || "").trim();
+  if (!raw) return null; // 中身なければテキスト送信 fallback
 
-  const parts = text.split(/\n+/).map(p => p.trim()).filter(Boolean);
-  const [intro, learning, hint, outro] = parts;
+  // 段落に分割（空行で区切る想定）＋空行は削除
+  const paragraphs = raw
+    .split(/\n{2,}/)          // 2行以上の改行で段落区切り
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  const bodyContents = [];
+
+  // タイトル
+  bodyContents.push({
+    type: "text",
+    text: "🌿 今週のととのうケアレター",
+    weight: "bold",
+    size: "md",
+    color: "#5A745C",
+  });
+
+  // 段落を順番に追加（空文字はそもそも入ってこない）
+  paragraphs.forEach((p, idx) => {
+    if (idx === 0) {
+      // 1つ目の段落
+      bodyContents.push({
+        type: "text",
+        text: p,
+        wrap: true,
+        size: "md",
+        margin: "md",
+      });
+    } else {
+      // 2つ目以降の段落は区切り線を挟んで追加
+      bodyContents.push({ type: "separator", margin: "md" });
+      bodyContents.push({
+        type: "text",
+        text: p,
+        wrap: true,
+        size: "md",
+        margin: "md",
+      });
+    }
+  });
+
+  // ※「次のととのい度チェックに向けて〜」みたいな固定文はここでは入れない
+  //   レター自体を「理由がわかる一通の手紙」に振り切る設計
 
   return {
     type: "flex",
     altText: "今週のととのうケアレター🌿",
     contents: {
       type: "bubble",
+      size: "mega",
       hero: {
         type: "image",
         url: "https://totonoucare.com/wp-content/themes/totonoucare/images/flex-hero-autumn.gif",
         size: "full",
         aspectMode: "cover",
-        aspectRatio: "16:9"
+        aspectRatio: "16:9",
       },
       body: {
         type: "box",
         layout: "vertical",
-        contents: [
-          { type: "text", text: "🌿 今週のととのうケアレター", weight: "bold", size: "md", color: "#5A745C" },
-          { type: "text", text: intro || "", wrap: true, size: "md", margin: "md" },
-          { type: "separator", margin: "md" },
-          { type: "text", text: learning || "", wrap: true, size: "md", margin: "md" },
-          { type: "text", text: hint || "", wrap: true, size: "md", margin: "md" },
-          { type: "separator", margin: "md" },
-          { type: "text", text: outro || "次のととのい度チェックに向けて、今週も自分のペースで整えていきましょうね🌿", wrap: true, size: "md", margin: "md", color: "#4D5F4A" }
-        ]
+        contents: bodyContents,
       },
       footer: {
         type: "box",
@@ -1078,15 +1113,21 @@ function buildReminderFlexFromText(text) {
             action: {
               type: "message",
               label: "トトノウくんに相談 💬",
-              text: "トトノウくんに相談"
-            }
-          }
-        ]
-      }
-    }
+              text: "トトノウくんに相談",
+            },
+          },
+        ],
+      },
+    },
   };
 }
 
+module.exports = {
+  // 既存のエクスポートにこれを足す or 差し替え
+  buildReminderFlex,
+  buildReminderFlexFromText,
+  // 他の関数たち…
+};
 
 module.exports = {
   MessageBuilder,
