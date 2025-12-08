@@ -1035,16 +1035,25 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-// GPTレター文字列 → 今週のととのうケアレター Flex に変換
-function buildReminderFlexFromText(text) {
-  const raw = (text || "").trim();
-  if (!raw) return null; // 中身なければテキスト送信 fallback
+// 1文ごとに区切るヘルパー
+function splitToSentences(text) {
+  if (!text) return [];
 
-  // 段落に分割（空行で区切る想定）＋空行は削除
-  const paragraphs = raw
-    .split(/\n{2,}/)          // 2行以上の改行で段落区切り
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
+  // 改行は一旦消してから文として再構成
+  const normalized = String(text)
+    .replace(/\r/g, "")
+    .replace(/\n+/g, "");
+
+  // 「。」「！」「？」「!」「?」で文末判定
+  const matches = normalized.match(/[^。！？!?]+[。！？!?]?/g) || [];
+
+  return matches
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0); // ← 空文字は絶対に送らない
+}
+
+function buildReminderFlex(letterText) {
+  const sentences = splitToSentences(letterText);
 
   const bodyContents = [];
 
@@ -1057,32 +1066,23 @@ function buildReminderFlexFromText(text) {
     color: "#5A745C",
   });
 
-  // 段落を順番に追加（1段落目とそれ以降で少しスタイルを変える）
-  paragraphs.forEach((p, idx) => {
-    if (idx === 0) {
-      // ① 状態のざっくりまとめブロック
-      bodyContents.push({
-        type: "text",
-        text: p,
-        wrap: true,
-        size: "md",
-        margin: "md",
-      });
-    } else {
-      // ②以降はブロックごとに区切り線＋テキスト
-      bodyContents.push({ type: "separator", margin: "md" });
-      bodyContents.push({
-        type: "text",
-        text: p,
-        wrap: true,
-        size: "md",
-        margin: "md",
-      });
-    }
-  });
+  // 文ごとに「セパレーター＋テキスト」
+  sentences.forEach((sentence, idx) => {
+    // 1文目の前にも区切り線を入れたいなら idx >= 0 に変えてもOK
+    bodyContents.push({
+      type: "separator",
+      margin: "md",
+      color: "#E0E0E0",
+    });
 
-  // 固定の締め文は入れない。
-  // 「締めの一文」は generateGPTMessage 側でテキストとして書かせる想定。
+    bodyContents.push({
+      type: "text",
+      text: sentence,
+      wrap: true,
+      size: "md",
+      margin: "md",
+    });
+  });
 
   return {
     type: "flex",
@@ -1100,6 +1100,7 @@ function buildReminderFlexFromText(text) {
       body: {
         type: "box",
         layout: "vertical",
+        spacing: "md",
         contents: bodyContents,
       },
       footer: {
