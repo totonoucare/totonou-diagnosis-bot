@@ -1035,26 +1035,24 @@ function buildFollowupCarousel(cards) {
   };
 }
 
-// utils/flexBuilder.js
+// utils/flexBuilder.js の一部として
 
 function buildReminderFlexFromText(letterText) {
-  // GPT からのレター本文を整形
   const raw = (letterText || "").trim();
-  if (!raw) return null; // 空なら柔らかくテキスト送信にフォールバック
+  if (!raw) return null; // 空ならテキストfallbackに任せる
 
-  // 段落を抽出（空行を除外）
+  // 🔹 段落単位に分割（空行で区切る）
   const paragraphs = raw
-    .split(/\n{2,}/)         // 2行以上の改行で区切る
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
+    .split(/\n{2,}/)        // 2行以上の連続改行で分割
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0); // 完全な空文字は捨てる
 
   if (paragraphs.length === 0) return null;
 
-  // 本文を Flex の contents 配列に変換
   const contents = [];
 
   paragraphs.forEach((p, idx) => {
-    // 先頭以外はセパレーター
+    // 先頭以外の段落の前にセパレーターを挿入
     if (idx !== 0) {
       contents.push({
         type: "separator",
@@ -1071,14 +1069,12 @@ function buildReminderFlexFromText(letterText) {
     });
   });
 
-  // Flex カードを返す
   return {
     type: "flex",
-    altText: "🌿 からだの巡り通信",
+    altText: "今のからだの波だより🌿",
     contents: {
       type: "bubble",
       size: "mega",
-
       hero: {
         type: "image",
         url: "https://totonoucare.com/wp-content/themes/totonoucare/images/flex-hero-autumn.gif",
@@ -1086,7 +1082,6 @@ function buildReminderFlexFromText(letterText) {
         aspectMode: "cover",
         aspectRatio: "16:9",
       },
-
       body: {
         type: "box",
         layout: "vertical",
@@ -1094,7 +1089,7 @@ function buildReminderFlexFromText(letterText) {
         contents: [
           {
             type: "text",
-            text: "🌿 からだの巡り通信",
+            text: "🌿 今のからだの波だより",
             weight: "bold",
             size: "md",
             color: "#5A745C",
@@ -1103,7 +1098,6 @@ function buildReminderFlexFromText(letterText) {
           ...contents,
         ],
       },
-
       footer: {
         type: "box",
         layout: "horizontal",
@@ -1123,6 +1117,12 @@ function buildReminderFlexFromText(letterText) {
     },
   };
 }
+
+module.exports = {
+  // 既存のエクスポートと一緒に
+  buildReminderFlexFromText,
+  // buildReminderFlex など他の関数もここに並べる
+};
 
 module.exports = {
   MessageBuilder,
