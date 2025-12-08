@@ -886,30 +886,6 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 3
-          {
-            type: "box",
-            layout: "vertical",
-            paddingAll: "12px",
-            backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
-            contents: [
-              { type: "text", text: "③ ケアのやり方／強度の微調整⚖️", weight: "bold", size: "sm" },
-              { type: "text", text: "やり方が負担になってないか、ちょうど良い強度を一緒に調整します。", wrap: true, size: "xs" },
-              {
-                type: "button",
-                style: "primary",
-                color: "#7B9E76",
-                margin: "sm",
-                action: {
-                  type: "message",
-                  label: "ケアのやり方を見直したい",
-                  text: "セルフケアのやり方や強度が合っているか相談したいです。"
-                }
-              }
-            ]
-          },
-
           // 4
           {
             type: "box",
@@ -918,7 +894,7 @@ function buildTotonouConsultExamplesFlex() {
             backgroundColor: "#f6f6f4",
             cornerRadius: "8px",
             contents: [
-              { type: "text", text: "④ 続かない・サボりがちの立て直し🔁", weight: "bold", size: "sm" },
+              { type: "text", text: "③ 続かない・サボりがちの立て直し🔁", weight: "bold", size: "sm" },
               { type: "text", text: "習慣が続かないときの“ハードルの下げ方”や工夫を一緒に考えます。", wrap: true, size: "xs" },
               {
                 type: "button",
@@ -934,7 +910,7 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 5（効果反映レポート）
+          // 5
           {
             type: "box",
             layout: "vertical",
@@ -942,7 +918,7 @@ function buildTotonouConsultExamplesFlex() {
             backgroundColor: "#f6f6f4",
             cornerRadius: "8px",
             contents: [
-              { type: "text", text: "⑤ ケア効果の反映具合を知りたい✨", weight: "bold", size: "sm" },
+              { type: "text", text: "④ ケア効果の反映具合を知りたい✨", weight: "bold", size: "sm" },
               { type: "text", text: "前回と今回の“ととのい度の差”と、ケアログの積み上がりからレポートします。", wrap: true, size: "xs" },
               {
                 type: "button",
@@ -958,7 +934,7 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 6（献立）
+          // 6
           {
             type: "box",
             layout: "vertical",
@@ -966,7 +942,7 @@ function buildTotonouConsultExamplesFlex() {
             backgroundColor: "#f6f6f4",
             cornerRadius: "8px",
             contents: [
-              { type: "text", text: "⑥ 体質に合う献立・食べ方の相談🥗", weight: "bold", size: "sm" },
+              { type: "text", text: "⑤ 体質に合う献立・食べ方の相談🥗", weight: "bold", size: "sm" },
               { type: "text", text: "体質タイプに応じて食材やメニューの方向性を提案します。", wrap: true, size: "xs" },
               {
                 type: "button",
@@ -982,7 +958,7 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 7（漢方・サプリ）
+          // 7
           {
             type: "box",
             layout: "vertical",
@@ -990,7 +966,7 @@ function buildTotonouConsultExamplesFlex() {
             backgroundColor: "#f6f6f4",
             cornerRadius: "8px",
             contents: [
-              { type: "text", text: "⑦ リスク予兆の可視化👁️", weight: "bold", size: "sm" },
+              { type: "text", text: "⑥ リスク予兆の可視化👁️", weight: "bold", size: "sm" },
               { type: "text", text: "最近の体調や気分の“ちょっとした違和感”を、体質データと照らし合わせて整理し、崩れやすいポイントを一緒に見つけます。", wrap: true, size: "xs" },
               {
                 type: "button",
@@ -1000,7 +976,7 @@ function buildTotonouConsultExamplesFlex() {
                 action: {
                   type: "message",
                   label: "リスク予兆を知りたい",
-                  text: "最近の体や気分の変化から、崩れやすいポイントやリスクの予兆があるか相談したいです。どこに気をつけると良さそうですか？"
+                  text: "最近の体や気分のゆらぎから、崩れやすいポイントやリスクの予兆があるか相談したいです。どこに気をつけると良さそうですか？"
                 }
               }
             ]
