@@ -1057,10 +1057,10 @@ function buildReminderFlexFromText(text) {
     color: "#5A745C",
   });
 
-  // 段落を順番に追加（空文字はそもそも入ってこない）
+  // 段落を順番に追加（1段落目とそれ以降で少しスタイルを変える）
   paragraphs.forEach((p, idx) => {
     if (idx === 0) {
-      // 1つ目の段落
+      // ① 状態のざっくりまとめブロック
       bodyContents.push({
         type: "text",
         text: p,
@@ -1069,7 +1069,7 @@ function buildReminderFlexFromText(text) {
         margin: "md",
       });
     } else {
-      // 2つ目以降の段落は区切り線を挟んで追加
+      // ②以降はブロックごとに区切り線＋テキスト
       bodyContents.push({ type: "separator", margin: "md" });
       bodyContents.push({
         type: "text",
@@ -1081,8 +1081,8 @@ function buildReminderFlexFromText(text) {
     }
   });
 
-  // ※「次のととのい度チェックに向けて〜」みたいな固定文はここでは入れない
-  //   レター自体を「理由がわかる一通の手紙」に振り切る設計
+  // 固定の締め文は入れない。
+  // 「締めの一文」は generateGPTMessage 側でテキストとして書かせる想定。
 
   return {
     type: "flex",
@@ -1121,13 +1121,6 @@ function buildReminderFlexFromText(text) {
     },
   };
 }
-
-module.exports = {
-  // 既存のエクスポートにこれを足す or 差し替え
-  buildReminderFlex,
-  buildReminderFlexFromText,
-  // 他の関数たち…
-};
 
 module.exports = {
   MessageBuilder,
