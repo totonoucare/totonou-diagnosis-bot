@@ -990,8 +990,8 @@ function buildTotonouConsultExamplesFlex() {
             backgroundColor: "#f6f6f4",
             cornerRadius: "8px",
             contents: [
-              { type: "text", text: "⑦ 体質に合う漢方・サプリの方向性🌿", weight: "bold", size: "sm" },
-              { type: "text", text: "あなたの体質や巡りタイプをもとに、漢方を選ぶ方向性をやさしく案内します。", wrap: true, size: "xs" },
+              { type: "text", text: "⑦ リスク予兆の可視化👁️", weight: "bold", size: "sm" },
+              { type: "text", text: "最近の体調や気分の“ちょっとした違和感”を、体質データと照らし合わせて整理し、崩れやすいポイントを一緒に見つけます。", wrap: true, size: "xs" },
               {
                 type: "button",
                 style: "primary",
@@ -999,8 +999,8 @@ function buildTotonouConsultExamplesFlex() {
                 margin: "sm",
                 action: {
                   type: "message",
-                  label: "漢方やサプリの相談",
-                  text: "体質に合う漢方やサプリの方向性について相談したいです。"
+                  label: "リスク予兆を知りたい",
+                  text: "最近の体や気分の変化から、崩れやすいポイントやリスクの予兆があるか相談したいです。どこに気をつけると良さそうですか？"
                 }
               }
             ]
