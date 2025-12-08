@@ -1071,7 +1071,7 @@ function buildReminderFlexFromText(letterText) {
 
   return {
     type: "flex",
-    altText: "今のからだの波だより🌿",
+    altText: "からだの巡り通信🌿",
     contents: {
       type: "bubble",
       size: "mega",
@@ -1089,7 +1089,7 @@ function buildReminderFlexFromText(letterText) {
         contents: [
           {
             type: "text",
-            text: "🌿 今のからだの波だより",
+            text: "🌿 からだの巡り通信",
             weight: "bold",
             size: "md",
             color: "#5A745C",
