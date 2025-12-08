@@ -243,7 +243,7 @@ function buildResultBubbles({
         // --- 全体のととのい度 ---
         {
           type: "text",
-          text: `🌡 全体のととのい度（「${symptomName}」を含む体調）`,
+          text: `🌡 主なお悩み（「${symptomName}」）のととのい度の変化`,
           weight: "bold",
           size: "md",
           wrap: true,
