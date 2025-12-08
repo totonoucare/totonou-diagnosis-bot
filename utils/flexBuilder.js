@@ -812,7 +812,7 @@ function buildTotonouConsultExamplesFlex() {
       header: {
         type: "box",
         layout: "vertical",
-        paddingAll: "12px",
+        paddingAll: "10px",
         backgroundColor: "#7B9E76",
         contents: [
           {
@@ -842,9 +842,9 @@ function buildTotonouConsultExamplesFlex() {
           {
             type: "box",
             layout: "vertical",
-            paddingAll: "12px",
+            paddingAll: "8px",
             backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
+            cornerRadius: "6px",
             contents: [
               { type: "text", text: "① 不調を言語化したいとき🩺", weight: "bold", size: "sm" },
               { type: "text", text: "最近の体の変化や“なんとなく不調”を整理して、原因の方向性を一緒に見つけます。", wrap: true, size: "xs" },
@@ -866,9 +866,9 @@ function buildTotonouConsultExamplesFlex() {
           {
             type: "box",
             layout: "vertical",
-            paddingAll: "12px",
+            paddingAll: "8px",
             backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
+            cornerRadius: "6px",
             contents: [
               { type: "text", text: "② 今はどのケアを優先すべき？⚖️", weight: "bold", size: "sm" },
               { type: "text", text: "体質＋最近の状態から、優先ケアとサポートケアの使い分けを案内します。", wrap: true, size: "xs" },
@@ -886,13 +886,13 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 4
+          // 3
           {
             type: "box",
             layout: "vertical",
-            paddingAll: "12px",
+            paddingAll: "8px",
             backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
+            cornerRadius: "6px",
             contents: [
               { type: "text", text: "③ 続かない・サボりがちの立て直し🔁", weight: "bold", size: "sm" },
               { type: "text", text: "習慣が続かないときの“ハードルの下げ方”や工夫を一緒に考えます。", wrap: true, size: "xs" },
@@ -910,13 +910,13 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 5
+          // 4
           {
             type: "box",
             layout: "vertical",
-            paddingAll: "12px",
+            paddingAll: "8px",
             backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
+            cornerRadius: "6px",
             contents: [
               { type: "text", text: "④ ケア効果の反映具合を知りたい✨", weight: "bold", size: "sm" },
               { type: "text", text: "前回と今回の“ととのい度の差”と、ケアログの積み上がりからレポートします。", wrap: true, size: "xs" },
@@ -934,13 +934,13 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 6
+          // 5
           {
             type: "box",
             layout: "vertical",
-            paddingAll: "12px",
+            paddingAll: "8px",
             backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
+            cornerRadius: "6px",
             contents: [
               { type: "text", text: "⑤ 体質に合う献立・食べ方の相談🥗", weight: "bold", size: "sm" },
               { type: "text", text: "体質タイプに応じて食材やメニューの方向性を提案します。", wrap: true, size: "xs" },
@@ -958,13 +958,13 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 7
+          // 6
           {
             type: "box",
             layout: "vertical",
-            paddingAll: "12px",
+            paddingAll: "8px",
             backgroundColor: "#f6f6f4",
-            cornerRadius: "8px",
+            cornerRadius: "6px",
             contents: [
               { type: "text", text: "⑥ リスク予兆の可視化👁️", weight: "bold", size: "sm" },
               { type: "text", text: "最近の体調や気分の“ちょっとした違和感”を、体質データと照らし合わせて整理し、崩れやすいポイントを一緒に見つけます。", wrap: true, size: "xs" },
