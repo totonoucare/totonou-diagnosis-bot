@@ -45,7 +45,7 @@ module.exports = `
 ・これらを総合して、「どんなパターンで不調が出やすいか」を整理している。
 
 ・ここで決まった体質情報と、優先ケア／サポートケアの方針をもとに、
-  habits / breathing / stretch / tsubo / kampo の各ケアが提案されます。
+  advice である habits / breathing / stretch / tsubo / kampo の各ケアが提案されます。(ユーザーにはadviceの総称を『ととのうケアガイド』と伝えています。
 ・この結果は contexts テーブルに保存され、AI相談のときも常に参照されます。
 
 ---
