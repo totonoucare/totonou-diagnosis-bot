@@ -1047,7 +1047,6 @@ function buildReminderFlexFromText(text) {
     altText: "今週のととのうケアレター🌿",
     contents: {
       type: "bubble",
-      size: "giga",
       hero: {
         type: "image",
         url: "https://totonoucare.com/wp-content/themes/totonoucare/images/flex-hero-autumn.gif",
