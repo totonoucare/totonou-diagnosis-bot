@@ -808,7 +808,7 @@ function buildTotonouConsultExamplesFlex() {
     altText: "トトノウくん活用ガイド",
     contents: {
       type: "bubble",
-      size: "mega",
+      size: "giga",
       header: {
         type: "box",
         layout: "vertical",
