@@ -769,32 +769,22 @@ const curScores = {
 // ✅ 「前回のスコア」は latest（直近の記録）を使う
 const prevScores = latest ? normalizeFollowupRow(latest) : null;
 
+
 // 3. ケア実施日数（前回チェック〜今回）
+//    → AIチャットと同じく、ヘルパー関数のデフォルト挙動に任せる
 let careCounts = {};
 try {
-  let raw;
-
-  if (latest) {
-    // 🩵 前回チェック(latest) から「今回（今）」まで
-    raw = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
-      lineId,
-      { sinceFollowupId: latest.id }  // ← ここがポイント
+  const raw =
+    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+      lineId
     );
-  } else {
-    // 🩵 まだ followup が無い初回チェックは、
-    //     体質分析(context)作成日〜今 で集計
-    raw = await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
-      lineId,
-      { includeContext: true }
-    );
-  }
 
   careCounts = {
-    habits: raw.habits ?? 0,
-    breathing: raw.breathing ?? 0,
-    stretch: raw.stretch ?? 0,
-    tsubo: raw.tsubo ?? 0,
-    kampo: raw.kampo ?? 0,
+    habits: raw?.habits ?? 0,
+    breathing: raw?.breathing ?? 0,
+    stretch: raw?.stretch ?? 0,
+    tsubo: raw?.tsubo ?? 0,
+    kampo: raw?.kampo ?? 0,
   };
 } catch (e) {
   console.warn("⚠️ care_logs_daily 取得失敗:", e.message);
@@ -806,7 +796,7 @@ try {
     kampo: 0,
   };
 }
-
+      
 // 4. 評価対象日数（前回〜今回 or context開始〜今回）
 const now = Date.now();
 const lastCheckDate = latest?.created_at
