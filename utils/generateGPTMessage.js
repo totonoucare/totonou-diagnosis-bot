@@ -137,8 +137,8 @@ ${careJson}
       { role: "system", content: system },
       { role: "user", content: user },
     ],
-    reasoning: { effort: "medium" },
-    text: { verbosity: "medium" },
+    reasoning: { effort: "low" },
+    text: { verbosity: "low" },
   });
 
   const text = rsp.output_text?.trim();
