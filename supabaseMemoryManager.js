@@ -96,22 +96,32 @@ async function markGuideReceived(lineId) {
   if (error) throw error;
 }
 
-// ✅ context保存（再分析時：古いキャッシュを削除 → 最新に差し替え）
+// ✅ context保存（再分析時：保存と同時にキャッシュも最新に差し替え）
 async function saveContext(
   lineId,
-  score1, score2, score3,
-  flowType, organType, type, traits,
-  adviceCards, symptom, motion, code
+  score1,
+  score2,
+  score3,
+  flowType,
+  organType,
+  type,
+  traits,
+  adviceCards,
+  symptom,
+  motion,
+  code
 ) {
   const cleanId = lineId.trim();
 
+  // users.id と guide_received を取得
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
-    .select('id, guide_received')   // ★ guide_received も取る
-    .eq('line_id', cleanId)
+    .select("id, guide_received")
+    .eq("line_id", cleanId)
     .maybeSingle();
-  if (userError || !userRow)
-    throw userError || new Error('ユーザーが見つかりません');
+  if (userError || !userRow) {
+    throw userError || new Error("ユーザーが見つかりません");
+  }
 
   const payload = {
     user_id: userRow.id,
@@ -120,21 +130,21 @@ async function saveContext(
     scores: [score1, score2, score3],
     flowType,
     organType,
-    symptom: symptom || '不明な不調',
-    motion: motion || '特定の動作',
+    symptom: symptom || "不明な不調",
+    motion: motion || "特定の動作",
     advice: adviceCards,
-    code: code || null
+    code: code || null,
   };
 
-  // ★ 挿入と同時に新レコードを返してもらう
+  // ⭐ 挿入と同時に挿入されたレコードを1件返す
   const { data: inserted, error } = await supabase
     .from(CONTEXT_TABLE)
     .insert(payload)
-    .select('*')
+    .select("*")
     .single();
   if (error) throw error;
 
-  // 🧩 キャッシュ更新：古いものを消すだけでなく「最新」をその場で入れ直す
+  // 🧩 キャッシュ更新（古いのを消すのではなく「最新で上書き」）
   if (ctxCache) {
     try {
       const fullContext = {
@@ -142,26 +152,10 @@ async function saveContext(
         start_date: inserted?.created_at || null,
         guide_received: userRow.guide_received || false,
       };
-      ctxCache.set(cleanId, fullContext);   // ← 最新版で上書き
+      ctxCache.set(cleanId, fullContext);
       console.log(`🧩 Context cache refreshed for lineId=${cleanId}`);
     } catch (e) {
-      console.warn('ctxCache更新失敗:', e);
-    }
-  }
-}
-
-  const { error } = await supabase
-    .from(CONTEXT_TABLE)
-    .insert(payload);
-  if (error) throw error;
-
-  // 🧩 再分析時など、新しいcontext保存後はキャッシュを削除
-  if (ctxCache) {
-    try {
-      ctxCache.del(cleanId);
-      console.log(`🧩 Context cache invalidated for lineId=${cleanId}`);
-    } catch (e) {
-      console.warn("ctxCache削除失敗:", e);
+      console.warn("ctxCache更新失敗:", e);
     }
   }
 }
@@ -170,26 +164,27 @@ async function saveContext(
 async function getContext(lineId) {
   const cleanId = lineId.trim();
 
-  // 🧩 キャッシュにあれば即返す（Supabaseアクセス回避）
+  // キャッシュヒットなら即返す
   if (ctxCache && ctxCache.has(cleanId)) {
     console.log(`⚡ Context cache hit for ${cleanId}`);
     return ctxCache.get(cleanId);
   }
 
-  // Supabaseから取得（キャッシュにない場合のみ）
+  // Supabaseから取得
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
-    .select('id, guide_received')
-    .eq('line_id', cleanId)
+    .select("id, guide_received")
+    .eq("line_id", cleanId)
     .maybeSingle();
-  if (userError || !userRow)
-    throw userError || new Error('ユーザーが見つかりません');
+  if (userError || !userRow) {
+    throw userError || new Error("ユーザーが見つかりません");
+  }
 
   const { data: context, error: contextError } = await supabase
     .from(CONTEXT_TABLE)
-    .select('*')
-    .eq('user_id', String(userRow.id))
-    .order('created_at', { ascending: false })
+    .select("*")
+    .eq("user_id", String(userRow.id))
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (contextError) throw contextError;
@@ -200,7 +195,7 @@ async function getContext(lineId) {
     guide_received: userRow.guide_received || false,
   };
 
-  // 🧩 キャッシュに保存（次回以降の高速化）
+  // キャッシュに保存
   if (ctxCache) {
     try {
       ctxCache.set(cleanId, fullContext);
