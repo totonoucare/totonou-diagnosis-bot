@@ -96,7 +96,7 @@ async function markGuideReceived(lineId) {
   if (error) throw error;
 }
 
-// ✅ context保存（再分析時：古いキャッシュを削除）
+// ✅ context保存（再分析時：古いキャッシュを削除 → 最新に差し替え）
 async function saveContext(
   lineId,
   score1, score2, score3,
@@ -107,7 +107,7 @@ async function saveContext(
 
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
-    .select('id')
+    .select('id, guide_received')   // ★ guide_received も取る
     .eq('line_id', cleanId)
     .maybeSingle();
   if (userError || !userRow)
@@ -125,6 +125,30 @@ async function saveContext(
     advice: adviceCards,
     code: code || null
   };
+
+  // ★ 挿入と同時に新レコードを返してもらう
+  const { data: inserted, error } = await supabase
+    .from(CONTEXT_TABLE)
+    .insert(payload)
+    .select('*')
+    .single();
+  if (error) throw error;
+
+  // 🧩 キャッシュ更新：古いものを消すだけでなく「最新」をその場で入れ直す
+  if (ctxCache) {
+    try {
+      const fullContext = {
+        ...inserted,
+        start_date: inserted?.created_at || null,
+        guide_received: userRow.guide_received || false,
+      };
+      ctxCache.set(cleanId, fullContext);   // ← 最新版で上書き
+      console.log(`🧩 Context cache refreshed for lineId=${cleanId}`);
+    } catch (e) {
+      console.warn('ctxCache更新失敗:', e);
+    }
+  }
+}
 
   const { error } = await supabase
     .from(CONTEXT_TABLE)
