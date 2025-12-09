@@ -771,20 +771,21 @@ const prevScores = latest ? normalizeFollowupRow(latest) : null;
 
 
 // 3. ケア実施日数（前回チェック〜今回）
-//    → AIチャットと同じく、ヘルパー関数のデフォルト挙動に任せる
 let careCounts = {};
 try {
+  // 🩵 AIチャットと同じ呼び方に揃える
+  //    - 内部で「前回 followup 〜 今」 or 「context 〜 今」を判定してくれる前提
   const raw =
     await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
       lineId
     );
 
   careCounts = {
-    habits: raw?.habits ?? 0,
-    breathing: raw?.breathing ?? 0,
-    stretch: raw?.stretch ?? 0,
-    tsubo: raw?.tsubo ?? 0,
-    kampo: raw?.kampo ?? 0,
+    habits: raw.habits ?? 0,
+    breathing: raw.breathing ?? 0,
+    stretch: raw.stretch ?? 0,
+    tsubo: raw.tsubo ?? 0,
+    kampo: raw.kampo ?? 0,
   };
 } catch (e) {
   console.warn("⚠️ care_logs_daily 取得失敗:", e.message);
