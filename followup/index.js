@@ -746,76 +746,85 @@ async function handleFollowup(event, client, lineId) {
         ]);
       }
 
-// 2. 前回までの followup 履歴を取得（保存より前）
-const { latest, prev } =
-  await supabaseMemoryManager.getLastTwoFollowupsByUserId(
-    userRecord.id
-  );
+      // 2. 今回の回答を先に保存しておく（この時点で「最新のfollowup」が1件増える）
+      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
-const curScores = {
-  symptom_level: normalizeScore(
-    answers.symptom ?? latest?.symptom_level ?? latest?.symptom,
-    null
-  ),
-  sleep: normalizeScore(answers.sleep ?? latest?.sleep, null),
-  meal: normalizeScore(answers.meal ?? latest?.meal, null),
-  stress: normalizeScore(answers.stress ?? latest?.stress, null),
-  motion_level: normalizeScore(
-    answers.motion_level ?? latest?.motion_level,
-    null
-  ),
-};
+      // 3. 保存後の followup 履歴（直近2件）を取得
+      //    latest = 今回のチェック結果 / prev = 前回のチェック結果
+      const { latest, prev } =
+        await supabaseMemoryManager.getLastTwoFollowupsByUserId(
+          userRecord.id
+        );
 
-// ✅ 「前回のスコア」は latest（直近の記録）を使う
-const prevScores = latest ? normalizeFollowupRow(latest) : null;
+      // 4. スコア構造を整形
+      //    curScores は今回回答そのものを使う（DBを再参照しなくてOK）
+      const curScores = {
+        symptom_level: normalizeScore(
+          answers.symptom ?? latest?.symptom_level ?? latest?.symptom,
+          null
+        ),
+        sleep: normalizeScore(answers.sleep ?? latest?.sleep, null),
+        meal: normalizeScore(answers.meal ?? latest?.meal, null),
+        stress: normalizeScore(answers.stress ?? latest?.stress, null),
+        motion_level: normalizeScore(
+          answers.motion_level ?? latest?.motion_level,
+          null
+        ),
+      };
 
+      // 「前回のスコア」は prev（1つ前のfollowup）を使う
+      const prevScores = prev ? normalizeFollowupRow(prev) : null;
 
-// 3. ケア実施日数（前回チェック〜今回）
-let careCounts = {};
-try {
-  // 🩵 AIチャットと同じ呼び方に揃える
-  //    - 内部で「前回 followup 〜 今」 or 「context 〜 今」を判定してくれる前提
-  const raw =
-    await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
-      lineId
-    );
+      // 5. ケア実施日数（前回チェック〜今回）
+      //    → オプション無しで呼び、AIチャット／リマインダーと同じ区間ロジックを使う
+      let careCounts = {};
+      try {
+        const raw =
+          await supabaseMemoryManager.getAllCareCountsSinceLastFollowupByLineId(
+            lineId
+          );
+        careCounts = {
+          habits: raw.habits ?? 0,
+          breathing: raw.breathing ?? 0,
+          stretch: raw.stretch ?? 0,
+          tsubo: raw.tsubo ?? 0,
+          kampo: raw.kampo ?? 0,
+        };
+      } catch (e) {
+        console.warn("⚠️ care_logs_daily 取得失敗:", e.message);
+        careCounts = {
+          habits: 0,
+          breathing: 0,
+          stretch: 0,
+          tsubo: 0,
+          kampo: 0,
+        };
+      }
 
-  careCounts = {
-    habits: raw.habits ?? 0,
-    breathing: raw.breathing ?? 0,
-    stretch: raw.stretch ?? 0,
-    tsubo: raw.tsubo ?? 0,
-    kampo: raw.kampo ?? 0,
-  };
-} catch (e) {
-  console.warn("⚠️ care_logs_daily 取得失敗:", e.message);
-  careCounts = {
-    habits: 0,
-    breathing: 0,
-    stretch: 0,
-    tsubo: 0,
-    kampo: 0,
-  };
-}
-      
-// 4. 評価対象日数（前回〜今回 or context開始〜今回）
-const now = Date.now();
-const lastCheckDate = latest?.created_at
-  ? new Date(latest.created_at).getTime()
-  : null;
-const contextDate = context?.created_at
-  ? new Date(context.created_at).getTime()
-  : null;
+      // 6. 評価対象日数（前回〜今回 or context開始〜今回）
+      //    start = prev.created_at || context.created_at
+      //    end   = latest.created_at（今回のチェック）
+      const now = Date.now();
+      const latestDate = latest?.created_at
+        ? new Date(latest.created_at).getTime()
+        : null;
+      const prevDate = prev?.created_at
+        ? new Date(prev.created_at).getTime()
+        : null;
+      const contextDate = context?.created_at
+        ? new Date(context.created_at).getTime()
+        : null;
 
-const diffDays = lastCheckDate
-  ? Math.ceil((now - lastCheckDate) / (1000 * 60 * 60 * 24))
-  : contextDate
-  ? Math.ceil((now - contextDate) / (1000 * 60 * 60 * 24))
-  : 1;
+      const start = prevDate ?? contextDate ?? latestDate ?? now;
+      const end = latestDate ?? now;
 
-const effectiveDays = Math.max(1, diffDays);
+      const diffDays = Math.max(
+        1,
+        Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+      );
+      const effectiveDays = diffDays;
 
-      // 5. 表示用バブル生成
+      // 7. 表示用バブル生成
       const { bubbles, ctaBubble } = buildResultBubbles({
         context,
         prevScores,
@@ -823,9 +832,6 @@ const effectiveDays = Math.max(1, diffDays);
         careCounts,
         effectiveDays,
       });
-
-      // 6. Supabaseへ保存（prev取得・care集計の「あと」で実施）
-      await supabaseMemoryManager.setFollowupAnswers(lineId, answers);
 
       delete userSession[lineId];
 
