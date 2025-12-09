@@ -208,8 +208,8 @@ const promptText = messages
 const rsp = await openai.responses.create({
   model: "gpt-5.1",
   input: promptText,
-  reasoning: { effort: "medium" },
-  text: { verbosity: "medium" },
+  reasoning: { effort: "low" },
+  text: { verbosity: "low" },
 });
 
 const duration = (Date.now() - start) / 1000;
