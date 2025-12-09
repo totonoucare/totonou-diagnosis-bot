@@ -1089,7 +1089,7 @@ function buildReminderFlexFromText(letterText) {
         contents: [
           {
             type: "text",
-            text: "🌿 からだの巡り通信",
+            text: "📬 からだの巡り通信",
             weight: "bold",
             size: "md",
             color: "#5A745C",
