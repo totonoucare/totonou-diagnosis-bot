@@ -96,7 +96,10 @@ async function markGuideReceived(lineId) {
   if (error) throw error;
 }
 
-// ✅ context保存（再分析時：保存と同時にキャッシュも最新に差し替え）
+// =====================================
+// saveContext（再分析時：保存しつつキャッシュを最新に置き換え）
+// =====================================
+
 async function saveContext(
   lineId,
   score1,
@@ -113,18 +116,22 @@ async function saveContext(
 ) {
   const cleanId = lineId.trim();
 
-  // users.id と guide_received を取得
+  // --- user.id と guide_received を取得
   const { data: userRow, error: userError } = await supabase
     .from(USERS_TABLE)
     .select("id, guide_received")
     .eq("line_id", cleanId)
     .maybeSingle();
+
   if (userError || !userRow) {
     throw userError || new Error("ユーザーが見つかりません");
   }
 
+  const userId = userRow.id;
+
+  // --- INSERT（※ここでは RETURNING を使わない → 速度改善）
   const payload = {
-    user_id: userRow.id,
+    user_id: userId,
     type,
     trait: traits,
     scores: [score1, score2, score3],
@@ -132,26 +139,38 @@ async function saveContext(
     organType,
     symptom: symptom || "不明な不調",
     motion: motion || "特定の動作",
-    advice: adviceCards,
+    advice: adviceCards,   // 大量 JSON → 挿入はOK、返さない
     code: code || null,
   };
 
-  // ⭐ 挿入と同時に挿入されたレコードを1件返す
-  const { data: inserted, error } = await supabase
+  const { error: insertErr } = await supabase
     .from(CONTEXT_TABLE)
-    .insert(payload)
-    .select("*")
-    .single();
-  if (error) throw error;
+    .insert(payload);
 
-  // 🧩 キャッシュ更新（古いのを消すのではなく「最新で上書き」）
-  if (ctxCache) {
+  if (insertErr) throw insertErr;
+
+  // --- 最新 context を再取得（※必要カラムだけに限定）
+  const { data: latest, error: fetchErr } = await supabase
+    .from(CONTEXT_TABLE)
+    .select(
+      "id, created_at, user_id, type, trait, scores, flowType, organType, symptom, motion, code, advice"
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchErr) throw fetchErr;
+
+  // --- キャッシュを最新に反映
+  if (ctxCache && latest) {
     try {
       const fullContext = {
-        ...inserted,
-        start_date: inserted?.created_at || null,
+        ...latest,
+        start_date: latest.created_at || null,
         guide_received: userRow.guide_received || false,
       };
+
       ctxCache.set(cleanId, fullContext);
       console.log(`🧩 Context cache refreshed for lineId=${cleanId}`);
     } catch (e) {
