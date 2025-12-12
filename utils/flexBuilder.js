@@ -169,7 +169,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
 function buildTrialStartFlex() {
   return {
     type: "flex",
-    altText: "🎁 無料体験の使い方",
+    altText: "🎁 無料体験を有効化して、ととのい度チェックを始めよう",
     contents: {
       type: "bubble",
       size: "mega",
@@ -179,7 +179,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: "text",
-            text: "🎁 無料体験で使える機能",
+            text: "🎁 無料体験を有効化する",
             weight: "bold",
             size: "md",
             color: "#ffffff",
@@ -197,26 +197,9 @@ function buildTrialStartFlex() {
           {
             type: "text",
             text:
-              "『ととのうケアガイド』に沿って、あなたの整え方を“続けやすい形”にするための機能が使えます🌿\n\nまずは下のボタンから無料体験を有効化してください。",
-            wrap: true,
-            color: "#333333",
-            size: "sm",
-          },
-
-          { type: "separator", margin: "md" },
-
-          {
-            type: "text",
-            text: "体験中にできること：",
-            size: "sm",
-            weight: "bold",
-            color: "#333333",
-            wrap: true,
-          },
-          {
-            type: "text",
-            text:
-              "✅ 実施記録：やったケアをポチっと記録\n📈 ととのい度チェック：最近の体調や気分のゆらぎをチェックして、AIが要点を整理\n📬 からだの巡り通信：週1回、今の傾向をまとめてお届け\n🧠 トトノウくん相談：体質データを踏まえて質問できる",
+              "『ととのうケアガイド』を“続けやすい形”にするための機能が、16日間だけ無料で使えます🌿\n\n" +
+              "✅ まずは体験を有効化したら、最初に一度だけ「ととのい度チェック」で、最近の体調や気分のゆらぎを記録してみてください。\n" +
+              "→ ここが入ると、AIの整理があなた向けに一気に噛み合いやすくなります。",
             wrap: true,
             color: "#333333",
             size: "sm",
@@ -227,19 +210,35 @@ function buildTrialStartFlex() {
           {
             type: "text",
             text:
-              "✳️ トライアル終了後の自動課金の開始や強制加入はありません。安心して試してみてください🌱",
+              "体験中にできること：\n" +
+              "・📈 ととのい度チェック：最近の状態を整理\n" +
+              "・✅ 実施記録：やったケアを記録\n" +
+              "・📬 からだの巡り通信：週1で傾向をお届け\n" +
+              "・🧠 トトノウくん相談：体質データ前提で質問",
+            wrap: true,
+            color: "#333333",
+            size: "sm",
+          },
+
+          { type: "separator", margin: "md" },
+
+          {
+            type: "text",
+            text:
+              "✳️ トライアル終了後の自動課金や強制加入はありません。安心して試してください🌱",
             size: "xs",
             color: "#888888",
             wrap: true,
+            margin: "md",
           },
 
           {
             type: "button",
             action: {
               type: "postback",
-              label: "無料体験を有効化する",
+              label: "無料体験を有効化して始める",
               data: "trial_intro_done",
-              displayText: "無料体験を有効化する",
+              displayText: "無料体験を有効化！",
             },
             style: "primary",
             color: "#7B9E76",
