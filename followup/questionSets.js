@@ -22,7 +22,7 @@ const followupQuestionSet = [
   },
   {
     id: "Q2",
-    header: "【Q2】Q2：Q2：🔄 心身コンディションのととのい",
+    header: "【Q2】🔄 心身コンディションのととのい",
     body:
       "最近の状態をそれぞれ\n「1＝よく整っている」\n「5＝かなり乱れている」\nで選んでください。",
     isMulti: true,
