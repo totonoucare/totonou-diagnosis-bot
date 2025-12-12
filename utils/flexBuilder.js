@@ -726,124 +726,216 @@ function buildResultFlex(result, imageUrl) {
 }
 
 // ========================================
-// ととのうケアガイド（カルーセル生成）
+// ととのうケアガイド（カルーセル生成） - rich版
 // ========================================
 function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
-  const bubbles = cards.map((card, index) => {
-    const isPriority = index === 0 || index === 1;
+  const safe = (v, fallback = "") => {
+    const s = String(v ?? "").trim();
+    return s.length ? s : fallback;
+  };
+
+  // 空文字だと LINE Flex が 400 になることがあるのでガード
+  const safeText = (v) => safe(v, "　"); // 全角スペースで最低限埋める
+
+  const colors = {
+    priorityHeader: "#B78949", // ゴールド
+    supportHeader: "#7B9E76",  // グリーン
+    bodyBg: "#FFF9F1",         // 薄いゴールド寄り
+    cardBg: "#FFFFFF",
+    border: "#E7D6B8",
+    text: "#0d0d0d",
+    subText: "#666666",
+    noteText: "#888888",
+  };
+
+  const makeBadge = (label, isPriority) => ({
+    type: "box",
+    layout: "vertical",
+    paddingStart: "10px",
+    paddingEnd: "10px",
+    paddingTop: "4px",
+    paddingBottom: "4px",
+    cornerRadius: "999px",
+    backgroundColor: isPriority ? "#F3E7D3" : "#E7F0E6",
+    contents: [
+      {
+        type: "text",
+        text: label,
+        size: "xs",
+        weight: "bold",
+        color: isPriority ? "#8A5E1D" : "#3E6B3A",
+        wrap: true,
+      },
+    ],
+  });
+
+  const makeCallout = (title, text, tone = "gold") => {
+    const bg = tone === "green" ? "#EAF3EA" : "#F8F1E6";
+    const bd = tone === "green" ? "#CFE2CF" : colors.border;
+
+    return {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: bg,
+      borderColor: bd,
+      borderWidth: "1px",
+      cornerRadius: "12px",
+      paddingAll: "12px",
+      spacing: "sm",
+      contents: [
+        title
+          ? {
+              type: "text",
+              text: safeText(title),
+              size: "xs",
+              weight: "bold",
+              color: colors.subText,
+              wrap: true,
+            }
+          : null,
+        {
+          type: "text",
+          text: safeText(text),
+          wrap: true,
+          weight: "bold",
+          size: "sm",
+          color: "#333333",
+        },
+      ].filter(Boolean),
+    };
+  };
+
+  const bubbles = (cards || []).map((card, index) => {
+    const isPriority = Boolean(card?.priority === 1) || index === 0 || index === 1;
+
+    const headerTitle = safeText(card?.header || "ととのうケアガイド");
+    const intro = safe(card?.intro);
+    const explain = safe(card?.explain);
+    const body = safeText(card?.body || "");
+    const link = safe(card?.link);
 
     const bodyContents = [];
 
-    // ---------------------------
-    // 🥇 優先ケア 前置き（box 包み）
-    // ---------------------------
-    if (card.intro) {
-      bodyContents.push({
-        type: "box",
-        layout: "vertical",
-        margin: "none",
-        contents: [
-          {
-            type: "text",
-            text: card.intro,
-            wrap: true,
-            weight: "bold",
-            size: "sm",
-            color: "#333333"
-          }
-        ]
-      });
-
-      bodyContents.push({
-        type: "separator",
-        margin: "md",
-      });
-    }
-
-    // ---------------------------
-    // 📘 ケア固有説明（box 包み）
-    // ---------------------------
-    if (card.explain) {
-      bodyContents.push({
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: card.explain,
-            wrap: true,
-            weight: "bold",
-            size: "sm",
-            color: "#333333",
-          }
-        ]
-      });
-
-      bodyContents.push({
-        type: "separator",
-        margin: "md",
-      });
-    }
-
-    // ---------------------------
-    // 📚 辞書本文（これは直接 text でOK）
-    // ---------------------------
+    // ====== 1) 上部に「優先/サポート」バッジ + ひとこと ======
     bodyContents.push({
-      type: "text",
-      text: card.body,
-      wrap: true,
-      size: "md",
-      color: "#0d0d0d",
+      type: "box",
+      layout: "horizontal",
+      contents: [
+        makeBadge(isPriority ? "🥇 優先ケア" : "🪴 サポート", isPriority),
+        { type: "filler" },
+        {
+          type: "text",
+          text: safeText(isPriority ? "今週はここが軸" : "余裕がある日に"),
+          size: "xs",
+          color: colors.noteText,
+          wrap: true,
+          align: "end",
+        },
+      ],
     });
 
-    // ---------------------------
-    // 📖 図解ボタン
-    // ---------------------------
-    if (card.link) {
-      bodyContents.push({
-        type: "separator",
-        margin: "md",
-      });
-      bodyContents.push({
-        type: "button",
-        action: {
-          type: "uri",
-          label: "📖 図解を見る",
-          uri: card.link,
-        },
-        style: "primary",
-        color: "#7B9E76",
-        height: "sm",
-      });
+    // ====== 2) intro / explain を“枠付きコールアウト”に ======
+    if (intro) {
+      bodyContents.push(makeCallout("まずここから", intro, isPriority ? "gold" : "green"));
     }
 
-    return {
+    if (explain) {
+      bodyContents.push(makeCallout("このケアの意味づけ", explain, "gold"));
+    }
+
+    // ====== 3) 本文は “白カード” にまとめて読みやすく ======
+    bodyContents.push({
+      type: "box",
+      layout: "vertical",
+      backgroundColor: colors.cardBg,
+      cornerRadius: "12px",
+      paddingAll: "12px",
+      borderColor: "#EFEFEF",
+      borderWidth: "1px",
+      contents: [
+        {
+          type: "text",
+          text: body,
+          wrap: true,
+          size: "sm",
+          color: colors.text,
+        },
+        {
+          type: "text",
+          text: "※ 図解はボタンから開けます",
+          wrap: true,
+          size: "xs",
+          color: colors.noteText,
+          margin: "md",
+        },
+      ],
+    });
+
+    // ====== bubble本体 ======
+    const bubble = {
       type: "bubble",
       size: "mega",
+      styles: {
+        header: { backgroundColor: isPriority ? colors.priorityHeader : colors.supportHeader },
+        body: { backgroundColor: colors.bodyBg },
+        footer: { separator: true },
+      },
       header: {
         type: "box",
         layout: "vertical",
+        paddingAll: "12px",
+        spacing: "sm",
         contents: [
           {
             type: "text",
-            text: card.header,
+            text: headerTitle,
             weight: "bold",
             size: "md",
             color: "#ffffff",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: safeText(isPriority ? "優先ケア（短期のてこ）" : "サポートケア（補助）"),
+            size: "xs",
+            color: "#ffffff",
+            wrap: true,
           },
         ],
-        backgroundColor: isPriority ? "#5F7F59" : "#7B9E76",
-        paddingAll: "12px",
       },
       body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#F8F9F7",
         paddingAll: "16px",
         spacing: "md",
         contents: bodyContents,
       },
     };
+
+    // ====== footer：図解ボタンを“下に分離” ======
+    if (link) {
+      bubble.footer = {
+        type: "box",
+        layout: "vertical",
+        paddingAll: "12px",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "📖 図解を見る",
+              uri: link,
+            },
+            style: "primary",
+            color: isPriority ? colors.priorityHeader : colors.supportHeader,
+            height: "sm",
+          },
+        ],
+      };
+    }
+
+    return bubble;
   });
 
   return {
