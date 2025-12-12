@@ -60,35 +60,124 @@ function injectContext(template, context = {}) {
 }
 
 function buildCategorySelectionFlex() {
-  return MessageBuilder({
-    altText: 'ととのえタイプ分析を開始します。どの不調が気になりますか？',
-    header: '🚀 ととのえタイプ分析スタート！',
-    body: 'どんなお悩みをととのえたいですか？1つ選んでください。',
-    buttons: [
-      { label: '胃腸の調子', data: 'stomach', displayText: '胃腸の調子' },
-      { label: '睡眠・集中力', data: 'sleep', displayText: '睡眠・集中力' },
-      { label: '肩こり・腰痛・関節痛', data: 'pain', displayText: '肩こり・腰痛・関節痛' },
-      { label: '不安感やイライラ', data: 'mental', displayText: 'イライラや不安感' },
-      { label: '体温バランス・むくみ', data: 'cold', displayText: '体温バランス・むくみ' },
-      { label: '頭髪や肌の健康', data: 'skin', displayText: '頭髪や肌の健康' },
-      { label: '花粉症・鼻炎', data: 'pollen', displayText: '花粉症・鼻炎' },
-      { label: '女性特有のお悩み', data: 'women', displayText: '女性特有のお悩み' },
-      { label: 'なんとなく不調・不定愁訴', data: 'unknown', displayText: 'なんとなく不調・不定愁訴' },
-    ],
-  });
+  const items = [
+    { label: "胃腸の調子", data: "stomach", displayText: "胃腸の調子", emoji: "🍽️" },
+    { label: "睡眠・集中力", data: "sleep", displayText: "睡眠・集中力", emoji: "🌙" },
+    { label: "肩こり・腰痛・関節痛", data: "pain", displayText: "肩こり・腰痛・関節痛", emoji: "💢" },
+    { label: "イライラ・不安感", data: "mental", displayText: "イライラや不安感", emoji: "🫧" },
+    { label: "体温バランス・むくみ", data: "cold", displayText: "体温バランス・むくみ", emoji: "🧊" },
+    { label: "頭髪や肌の健康", data: "skin", displayText: "頭髪や肌の健康", emoji: "🧴" },
+    { label: "花粉症・鼻炎", data: "pollen", displayText: "花粉症・鼻炎", emoji: "🌿" },
+    { label: "女性特有のお悩み", data: "women", displayText: "女性特有のお悩み", emoji: "🌸" },
+    { label: "なんとなく不調", data: "unknown", displayText: "なんとなく不調・不定愁訴", emoji: "🤔" },
+  ];
+
+  // 2列グリッド（1行に2つずつ）
+  const rows = [];
+  for (let i = 0; i < items.length; i += 2) {
+    const left = items[i];
+    const right = items[i + 1];
+
+    rows.push({
+      type: "box",
+      layout: "horizontal",
+      spacing: "sm",
+      contents: [
+        buildChipButton(left),
+        right ? buildChipButton(right) : { type: "box", layout: "vertical", contents: [] },
+      ],
+    });
+  }
+
+  return {
+    type: "flex",
+    altText: "ととのえタイプ分析：気になる不調を選んでください",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      hero: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#7B9E76",
+        paddingAll: "14px",
+        contents: [
+          { type: "text", text: "🚀 ととのえタイプ分析", weight: "bold", size: "lg", color: "#FFFFFF" },
+          { type: "text", text: "まずは「いちばん気になる不調」を1つ選択", size: "sm", color: "#FFFFFF", margin: "sm", wrap: true },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "16px",
+        spacing: "md",
+        contents: [
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            contents: [
+              {
+                type: "text",
+                text: "🧭 どこを整える地図を作る？",
+                weight: "bold",
+                size: "md",
+                color: "#0d0d0d",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "今いちばん気になるテーマを選ぶと、その不調に合わせて体質の質問が始まります。",
+                size: "sm",
+                color: "#333333",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "※ あとで変更・再分析もできます",
+                size: "xs",
+                color: "#888888",
+                wrap: true,
+              },
+            ],
+          },
+
+          { type: "separator", margin: "md" },
+
+          ...rows,
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "text",
+            text: "迷ったら「なんとなく不調」でもOK。",
+            size: "xs",
+            color: "#666666",
+            wrap: true,
+          },
+        ],
+      },
+    },
+  };
 }
 
-async function buildQuestionFlex(questionFunction) {
-  try {
-    const flex = await questionFunction();
-    return flex;
-  } catch (error) {
-    console.error('❌ 質問関数の実行エラー', error);
-    return {
-      type: 'text',
-      text: 'ごめんなさい、質問の取得に失敗しました。もう一度試してください。',
-    };
-  }
+// 角丸チップ風のpostbackボタン（2列表示用）
+function buildChipButton(item) {
+  return {
+    type: "button",
+    style: "secondary",
+    height: "sm",
+    action: {
+      type: "postback",
+      label: `${item.emoji} ${item.label}`,
+      data: item.data,              // ← ここが questionSets のキーと一致
+      displayText: item.displayText, // ← 表示テキスト
+    },
+  };
 }
 
 function buildMultiQuestionFlex({ altText, header, body, questions }) {
