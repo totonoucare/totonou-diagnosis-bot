@@ -12,6 +12,7 @@ const diagnosis = require("./diagnosis/index");
 const handleFollowup = require("./followup/index");
 const supabase = require("./supabaseClient");
 const {
+  buildTrialOnboardingCarouselFlex,
   buildChatConsultOptionsFlex,
   buildCategorySelectionFlex,
   buildDiagnosisConfirmFlex,
@@ -182,31 +183,45 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
         return;
       }
 
-      // トライアル開始完了（postback）
-      if (event.type === "postback" && userMessage === "trial_intro_done") {
-        try {
-          const { error } = await supabase
-            .from("users")
-            .update({
-              trial_intro_done: true,
-              trial_intro_at: new Date().toISOString(),
-            })
-            .eq("line_id", lineId);
-          if (error) throw error;
+// トライアル開始完了（postback）
+if (event.type === "postback" && userMessage === "trial_intro_done") {
+  try {
+    // すでに trial が true なら更新しない（任意：二重押し対策）
+    const { data: u, error: uErr } = await supabase
+      .from("users")
+      .select("trial_intro_done")
+      .eq("line_id", lineId)
+      .single();
+    if (uErr) throw uErr;
 
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: "🎁ありがとうございます！16日間の無料体験期間がスタートしました！\n\n☑️完了したケアがあればいつでもメニュー内ボタンでトトノウくんに報告してくださいね😎 \nまた、体調変化をチェックする『ととのい度チェック』のご利用タイミングはリマインドメッセージでこちらからもお知らせします！🕊️(メニューボタンでも開始可能です)\n\nトトノウくんへの質問はトークからお気軽にどうぞ！🧠\nメニューにも「トトノウくんに質問」ボタンにおすすめ質問集をご用意！さっそく質問してみてくださいね！(応答に少し時間がかかることがあります。）",
-          });
-        } catch (err) {
-          console.error("❌ trial_intro_done 登録エラー:", err);
-          await client.replyMessage(event.replyToken, {
-            type: "text",
-            text: "トライアル登録時にエラーが発生しました。もう一度お試しください。",
-          });
-        }
-        return;
-      }
+    if (!u?.trial_intro_done) {
+      // JSTで保存（getDaysSince がJST前提ならここ重要）
+      const now = new Date();
+      const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+
+      const { error } = await supabase
+        .from("users")
+        .update({
+          trial_intro_done: true,
+          trial_intro_at: jst.toISOString(),
+        })
+        .eq("line_id", lineId);
+
+      if (error) throw error;
+    }
+
+    // ✅ ここが「テキスト → Flexカルーセル」置き換え本体
+    const flex = buildTrialOnboardingCarouselFlex(); // ←下で定義するやつ
+    await client.replyMessage(event.replyToken, flex);
+  } catch (err) {
+    console.error("❌ trial_intro_done 登録エラー:", err);
+    await client.replyMessage(event.replyToken, {
+      type: "text",
+      text: "トライアル登録時にエラーが発生しました。もう一度お試しください。",
+    });
+  }
+  return;
+}
 
       // サブスク希望
       if (userMessage === "サブスク希望") {
