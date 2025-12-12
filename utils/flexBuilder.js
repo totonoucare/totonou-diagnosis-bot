@@ -314,7 +314,7 @@ function buildTrialOnboardingCarouselFlex() {
       layout: "vertical",
       spacing: "md",
       contents: [
-        { type: "text", text: "まずは“現在地”を取るのがいちばん早いです🌿", wrap: true, size: "sm" },
+        { type: "text", text: "さっそく「今の現在地」の1分チェックで、整いの変化を追える状態にしましょう🌿", wrap: true, size: "sm" },
         { type: "separator", margin: "md" },
         {
           type: "button",
@@ -322,7 +322,7 @@ function buildTrialOnboardingCarouselFlex() {
           color: "#7B9E76",
           action: {
             type: "message",
-            label: "ととのい度チェックをする",
+            label: "ととのい度チェック開始",
             text: "ととのい度チェック開始",
           },
         },
