@@ -90,7 +90,11 @@ function MessageBuilder({ altText, header, body, buttons }) {
 }
 
 function injectContext(template, context = {}) {
-  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => context[key] ?? `{{${key}}}`);
+  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => {
+    const k = String(key).trim();
+    const v = context?.[k];
+    return (v !== undefined && v !== null) ? String(v) : `{{${k}}}`;
+  });
 }
 
 function MessageBuilder({ altText, header, body, buttons }) {
