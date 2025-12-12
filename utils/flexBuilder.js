@@ -1,54 +1,88 @@
 function MessageBuilder({ altText, header, body, buttons }) {
   return {
-    type: 'flex',
+    type: "flex",
     altText,
     contents: {
-      type: 'bubble',
-      size: 'mega',
+      type: "bubble",
+      size: "mega",
       header: {
-        type: 'box',
-        layout: 'vertical',
+        type: "box",
+        layout: "vertical",
+        paddingAll: "14px",
+        backgroundColor: "#7B9E76",
         contents: [
           {
-            type: 'text',
+            type: "text",
             text: header,
-            weight: 'bold',
-            size: 'md',
-            color: '#ffffff',
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff",
+            wrap: true,
           },
         ],
-        backgroundColor: '#7B9E76',
-        paddingAll: '12px',
       },
+
       body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'md',
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#F8F9F7",
+        paddingAll: "16px",
+        spacing: "md",
         contents: [
+          // 本文（カード風）
           {
-            type: 'text',
-            text: body,
-            wrap: true,
-            color: '#0d0d0d',
-            size: 'md',
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#FFFFFF",
+            paddingAll: "14px",
+            cornerRadius: "12px",
+            spacing: "sm",
+            contents: [
+              {
+                type: "text",
+                text: body,
+                wrap: true,
+                color: "#0d0d0d",
+                size: "md",
+              },
+            ],
           },
+
+          { type: "separator", margin: "md" },
+
+          // 選択肢ボタン（2カラムにしてリッチ感）
           {
-            type: 'separator',
-            margin: 'md',
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            contents: (buttons || []).reduce((rows, btn, idx) => {
+              const isFirstInRow = idx % 2 === 0;
+              if (isFirstInRow) {
+                rows.push({
+                  type: "box",
+                  layout: "horizontal",
+                  spacing: "sm",
+                  contents: [],
+                });
+              }
+
+              const row = rows[rows.length - 1];
+              row.contents.push({
+                type: "button",
+                style: "primary",
+                height: "sm",
+                color: "#7B9E76",
+                action: {
+                  type: "postback",
+                  label: btn.label,                 // ✅ そのまま
+                  data: btn.data,                   // ✅ そのまま
+                  displayText: btn.displayText ?? btn.label, // ✅ そのまま
+                },
+              });
+
+              return rows;
+            }, []),
           },
-          ...(buttons || []).map((btn) => ({
-            type: 'button',
-            action: {
-              type: 'postback',
-              label: btn.label,
-              data: btn.data,
-              displayText: btn.displayText ?? btn.label,
-            },
-            style: 'primary',
-            height: 'sm',
-            margin: 'sm',
-            color: '#7B9E76',
-          })),
         ],
       },
     },
