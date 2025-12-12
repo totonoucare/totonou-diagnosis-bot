@@ -857,23 +857,34 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       margin: "none",
     });
 
-    // intro / explain を “まとめカード” として表示
-    const introText = String(card?.intro || "").trim();
-    const explainText = String(card?.explain || "").trim();
-    const lead = [introText, explainText].filter(Boolean).join("\n\n");
+// intro / explain を “まとめカード” として表示
+const introText = String(card?.intro || "").trim();
+const explainText = String(card?.explain || "").trim();
+const leadParts = [introText, explainText].filter(Boolean);
 
-    if (lead) {
-      bodyContents.push({
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#FFFFFF",
-        cornerRadius: "12px",
-        paddingAll: "12px",
-        margin: "md",
-        spacing: "sm",
-        contents: toTextBlocks(lead, { size: "sm", color: "#222222" }),
-      });
-    }
+if (leadParts.length) {
+  bodyContents.push({
+    type: "box",
+    layout: "vertical",
+    backgroundColor: "#FFFFFF",
+    cornerRadius: "12px",
+    paddingAll: "12px",
+    margin: "md",
+    spacing: "sm",
+    contents: leadParts.flatMap((t, i) => ([
+      {
+        type: "text",
+        text: t,
+        wrap: true,
+        size: "xs",          // ← 小さく
+        weight: "bold",      // ← 太字
+        color: "#222222",
+        lineSpacing: "4px",
+      },
+      ...(i < leadParts.length - 1 ? [{ type: "separator", margin: "md" }] : []),
+    ])),
+  });
+}
 
     // --- 本文：セクション化（【やり方】【効果】【目安】など）
     const sections = splitSections(card?.body);
