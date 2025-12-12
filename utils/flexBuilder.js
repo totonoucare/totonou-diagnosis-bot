@@ -166,6 +166,108 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
   };
 }
 
+function buildTrialOnboardingCarouselFlex() {
+  const bubble1 = {
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        { type: "text", text: "🎁 無料体験が開始されました", weight: "bold", size: "md", color: "#ffffff" }
+      ],
+      backgroundColor: "#7B9E76",
+      paddingAll: "12px",
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "md",
+      contents: [
+        { type: "text", text: "まずは“現在地”を取るのがいちばん早いです🌿", wrap: true, size: "sm" },
+        { type: "separator", margin: "md" },
+        {
+          type: "button",
+          style: "primary",
+          color: "#7B9E76",
+          action: {
+            type: "message",
+            label: "ととのい度チェックをする",
+            text: "ととのい度チェック開始",
+          },
+        },
+        { type: "text", text: "※メニューの【ととのい度チェック】からもできます", wrap: true, size: "xs", color: "#888888" },
+      ],
+    },
+  };
+
+  const bubble2 = {
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        { type: "text", text: "🪴 実施記録（ケアログ）", weight: "bold", size: "md", color: "#ffffff" }
+      ],
+      backgroundColor: "#C6A047",
+      paddingAll: "12px",
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "md",
+      contents: [
+        { type: "text", text: "やった日は“1日1回”でOK。続けた日数が見える化されます。", wrap: true, size: "sm" },
+        { type: "separator", margin: "md" },
+        { type: "text", text: "記録はメニューの【実施記録】からいつでも📌", wrap: true, size: "sm" },
+      ],
+    },
+  };
+
+  const bubble3 = {
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        { type: "text", text: "💬 トトノウくんに相談", weight: "bold", size: "md", color: "#ffffff" }
+      ],
+      backgroundColor: "#4D6A72",
+      paddingAll: "12px",
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "md",
+      contents: [
+        { type: "text", text: "体質データと最近の記録を踏まえて、相談に答えます🧠", wrap: true, size: "sm" },
+        { type: "separator", margin: "md" },
+        {
+          type: "button",
+          style: "primary",
+          color: "#4D6A72",
+          action: {
+            type: "message",
+            label: "おすすめ質問を見る",
+            text: "トトノウくんに相談",
+          },
+        },
+      ],
+    },
+  };
+
+  return {
+    type: "flex",
+    altText: "無料体験の使い方",
+    contents: {
+      type: "carousel",
+      contents: [bubble1, bubble2, bubble3],
+    },
+  };
+}
+
 function buildDiagnosisConfirmFlex() {
   return {
     type: "flex",
@@ -1128,6 +1230,7 @@ module.exports = {
   MessageBuilder,
   buildCategorySelectionFlex,
   buildQuestionFlex,
+  buildTrialOnboardingCarouselFlex,
   buildDiagnosisConfirmFlex,
   buildFollowupConfirmFlex,
   buildMultiQuestionFlex,
