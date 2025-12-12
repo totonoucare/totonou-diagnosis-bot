@@ -174,21 +174,21 @@ function buildTrialStartFlex() {
       type: "bubble",
       size: "mega",
       header: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: "🎁 無料体験を有効化する",
-            weight: "bold",
-            size: "md",
-            color: "#ffffff",
-            wrap: true,
-          },
-        ],
-        backgroundColor: "#7B9E76",
-        paddingAll: "12px",
-      },
+  type: "box",
+  layout: "vertical",
+  contents: [
+    {
+      type: "text",
+      text: "無料体験を有効化して、\nととのい度チェックを始めよう",
+      weight: "bold",
+      size: "md",
+      color: "#ffffff",
+      wrap: true
+    }
+  ],
+  backgroundColor: "#7B9E76",
+  paddingAll: "12px"
+},
       body: {
         type: "box",
         layout: "vertical",
