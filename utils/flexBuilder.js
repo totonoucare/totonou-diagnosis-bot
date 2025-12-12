@@ -174,35 +174,89 @@ function buildTrialStartFlex() {
       type: "bubble",
       size: "mega",
       header: {
-  type: "box",
-  layout: "vertical",
-  contents: [
-    {
-      type: "text",
-      text: "無料体験を有効化して、\nととのい度チェックを始めよう",
-      weight: "bold",
-      size: "md",
-      color: "#ffffff",
-      wrap: true
-    }
-  ],
-  backgroundColor: "#7B9E76",
-  paddingAll: "12px"
-},
+        type: "box",
+        layout: "vertical",
+        paddingAll: "14px",
+        backgroundColor: "#C6A047", // gold
+        contents: [
+          {
+            type: "text",
+            text: "🎁 無料体験を有効化して、\nととのい度チェックを始めよう",
+            weight: "bold",
+            size: "md",
+            color: "#FFFFFF",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: "（16日間・自動課金なし）",
+            size: "xs",
+            color: "#FFFFFF",
+            margin: "sm",
+            wrap: true,
+          },
+        ],
+      },
       body: {
         type: "box",
         layout: "vertical",
         spacing: "md",
+        paddingAll: "16px",
+        backgroundColor: "#FDFBF7", // cream
         contents: [
           {
             type: "text",
             text:
-              "『ととのうケアガイド』を“続けやすい形”にするための機能が、16日間だけ無料で使えます🌿\n\n" +
-              "✅ まずは体験を有効化したら、最初に一度だけ「ととのい度チェック」で、最近の体調や気分のゆらぎを記録してみてください。\n" +
-              "→ ここが入ると、AIの整理があなた向けに一気に噛み合いやすくなります。",
-            wrap: true,
-            color: "#333333",
+              "無料体験を有効化すると、あなたの体質データをもとにした有料機能が使えるようになります。\nまずは「今の状態」を1分でチェックして、整いの変化を追える状態にしましょう🌿",
             size: "sm",
+            color: "#333333",
+            wrap: true,
+          },
+
+          { type: "separator", margin: "md" },
+
+          {
+            type: "text",
+            text: "使える機能：",
+            size: "sm",
+            weight: "bold",
+            color: "#5A4A2A",
+            wrap: true,
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            contents: [
+              {
+                type: "text",
+                text: "📈 ととのい度チェック：最近の体調・生活・動きの負担を記録して、変化を見える化",
+                size: "sm",
+                color: "#333333",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "🪴 実施記録：やれた日を残して、ケアの反映具合を読み取りやすくする",
+                size: "sm",
+                color: "#333333",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "📬 からだの巡り通信：チェックや記録をもとに、最近のゆらぎ・崩れやすいポイントを短く通知",
+                size: "sm",
+                color: "#333333",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "🧠 トトノウくん相談：体質データ込みで、気になることをいつでも相談",
+                size: "sm",
+                color: "#333333",
+                wrap: true,
+              },
+            ],
           },
 
           { type: "separator", margin: "md" },
@@ -210,38 +264,31 @@ function buildTrialStartFlex() {
           {
             type: "text",
             text:
-              "体験中にできること：\n" +
-              "・📈 ととのい度チェック：最近の状態を整理\n" +
-              "・✅ 実施記録：やったケアを記録\n" +
-              "・📬 からだの巡り通信：週1で傾向をお届け\n" +
-              "・🧠 トトノウくん相談：体質データ前提で質問",
-            wrap: true,
-            color: "#333333",
-            size: "sm",
-          },
-
-          { type: "separator", margin: "md" },
-
-          {
-            type: "text",
-            text:
-              "✳️ トライアル終了後の自動課金や強制加入はありません。安心して試してください🌱",
+              "✳️ 無料体験の終了後に自動課金や強制加入はありません。安心して試してくださいね🌱",
             size: "xs",
             color: "#888888",
             wrap: true,
-            margin: "md",
           },
 
           {
             type: "button",
+            style: "primary",
+            color: "#B78949", // deep gold
             action: {
               type: "postback",
-              label: "無料体験を有効化して始める",
+              label: "ととのい度チェックをする",
               data: "trial_intro_done",
-              displayText: "無料体験を有効化！",
+              displayText: "ととのい度チェックをする",
             },
-            style: "primary",
-            color: "#7B9E76",
+          },
+
+          {
+            type: "text",
+            text:
+              "※ ボタンを押すと無料体験が有効化され、そのままチェックに進めます。",
+            size: "xs",
+            color: "#888888",
+            wrap: true,
           },
         ],
       },
