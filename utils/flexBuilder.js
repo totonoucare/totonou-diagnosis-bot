@@ -726,178 +726,154 @@ function buildResultFlex(result, imageUrl) {
 }
 
 // ========================================
-// ととのうケアガイド（カルーセル生成） - rich版
+// ととのうケアガイド（カルーセル生成）
+// - テキストは一切改変しない（削除/置換なし）
+// - 図解ボタンを最上段へ
+// - 本文をセクション分割して“塊感”を軽減
 // ========================================
 function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
-  const safe = (v, fallback = "") => {
-    const s = String(v ?? "").trim();
-    return s.length ? s : fallback;
-  };
+  // 【やり方】【効果】【目安】などの見出しで “分割だけ” する（文言はそのまま保持）
+  function splitBodyToSections(bodyText) {
+    const text = String(bodyText || "").trim();
+    if (!text) return [];
 
-  // 空文字だと LINE Flex が 400 になることがあるのでガード
-  const safeText = (v) => safe(v, "　"); // 全角スペースで最低限埋める
+    // 見出しパターン（必要なら追加してOK）
+    const headingRe = /(【[^】]+】)/g;
 
-  const colors = {
-    priorityHeader: "#B78949", // ゴールド
-    supportHeader: "#7B9E76",  // グリーン
-    bodyBg: "#FFF9F1",         // 薄いゴールド寄り
-    cardBg: "#FFFFFF",
-    border: "#E7D6B8",
-    text: "#0d0d0d",
-    subText: "#666666",
-    noteText: "#888888",
-  };
+    // 見出しを保持したまま分割
+    const parts = text.split(headingRe);
 
-  const makeBadge = (label, isPriority) => ({
-    type: "box",
-    layout: "vertical",
-    paddingStart: "10px",
-    paddingEnd: "10px",
-    paddingTop: "4px",
-    paddingBottom: "4px",
-    cornerRadius: "999px",
-    backgroundColor: isPriority ? "#F3E7D3" : "#E7F0E6",
-    contents: [
-      {
-        type: "text",
-        text: label,
-        size: "xs",
-        weight: "bold",
-        color: isPriority ? "#8A5E1D" : "#3E6B3A",
-        wrap: true,
-      },
-    ],
-  });
+    // parts 例: ["前置き...", "【やり方】", "内容...", "【効果】", "内容..."]
+    const sections = [];
+    for (let i = 0; i < parts.length; i++) {
+      const chunk = parts[i];
+      if (!chunk) continue;
 
-  const makeCallout = (title, text, tone = "gold") => {
-    const bg = tone === "green" ? "#EAF3EA" : "#F8F1E6";
-    const bd = tone === "green" ? "#CFE2CF" : colors.border;
+      // 見出し + 次の本文 を1セクションにまとめる
+      if (headingRe.test(chunk)) {
+        const heading = chunk;
+        const next = parts[i + 1] ?? "";
+        const combined = (heading + next).trim();
+        if (combined) sections.push(combined);
+        i++; // 次の本文を消費したのでスキップ
+      } else {
+        // 見出しが無い通常テキスト（冒頭の説明など）
+        const plain = chunk.trim();
+        if (plain) sections.push(plain);
+      }
+    }
 
-    return {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: bg,
-      borderColor: bd,
-      borderWidth: "1px",
-      cornerRadius: "12px",
-      paddingAll: "12px",
-      spacing: "sm",
-      contents: [
-        title
-          ? {
-              type: "text",
-              text: safeText(title),
-              size: "xs",
-              weight: "bold",
-              color: colors.subText,
-              wrap: true,
-            }
-          : null,
-        {
-          type: "text",
-          text: safeText(text),
-          wrap: true,
-          weight: "bold",
-          size: "sm",
-          color: "#333333",
-        },
-      ].filter(Boolean),
-    };
-  };
+    return sections;
+  }
 
   const bubbles = (cards || []).map((card, index) => {
-    const isPriority = Boolean(card?.priority === 1) || index === 0 || index === 1;
+    const isPriority = index === 0 || index === 1;
 
-    const headerTitle = safeText(card?.header || "ととのうケアガイド");
-    const intro = safe(card?.intro);
-    const explain = safe(card?.explain);
-    const body = safeText(card?.body || "");
-    const link = safe(card?.link);
+    const headerColor = isPriority ? "#B78949" : "#7B9E76"; // 優先=ゴールド、他=グリーン
+    const bodyBg = "#F8F9F7";
 
     const bodyContents = [];
 
-    // ====== 1) 上部に「優先/サポート」バッジ + ひとこと ======
-    bodyContents.push({
-      type: "box",
-      layout: "horizontal",
-      contents: [
-        makeBadge(isPriority ? "🥇 優先ケア" : "🪴 サポート", isPriority),
-        { type: "filler" },
-        {
-          type: "text",
-          text: safeText(isPriority ? "今週はここが軸" : "余裕がある日に"),
-          size: "xs",
-          color: colors.noteText,
-          wrap: true,
-          align: "end",
-        },
-      ],
-    });
-
-    // ====== 2) intro / explain を“枠付きコールアウト”に ======
-    if (intro) {
-      bodyContents.push(makeCallout("まずここから", intro, isPriority ? "gold" : "green"));
+    // ✅ ① 図解ボタンを最上段へ（intro/explainより前）
+    if (card.link) {
+      bodyContents.push({
+        type: "button",
+        style: "primary",
+        color: headerColor,
+        height: "sm",
+        action: { type: "uri", label: "📖 図解を見る", uri: card.link },
+      });
+      bodyContents.push({ type: "separator", margin: "md" });
     }
 
-    if (explain) {
-      bodyContents.push(makeCallout("このケアの意味づけ", explain, "gold"));
-    }
-
-    // ====== 3) 本文は “白カード” にまとめて読みやすく ======
-    bodyContents.push({
-      type: "box",
-      layout: "vertical",
-      backgroundColor: colors.cardBg,
-      cornerRadius: "12px",
-      paddingAll: "12px",
-      borderColor: "#EFEFEF",
-      borderWidth: "1px",
-      contents: [
-        {
-          type: "text",
-          text: body,
-          wrap: true,
-          size: "sm",
-          color: colors.text,
-        },
-        {
-          type: "text",
-          text: "※ 図解はボタンから開けます",
-          wrap: true,
-          size: "xs",
-          color: colors.noteText,
-          margin: "md",
-        },
-      ],
-    });
-
-    // ====== bubble本体 ======
-    const bubble = {
-      type: "bubble",
-      size: "mega",
-      styles: {
-        header: { backgroundColor: isPriority ? colors.priorityHeader : colors.supportHeader },
-        body: { backgroundColor: colors.bodyBg },
-        footer: { separator: true },
-      },
-      header: {
+    // ✅ ② intro（文言はそのまま。箱だけ付けて読みやすく）
+    if (card.intro) {
+      bodyContents.push({
         type: "box",
         layout: "vertical",
+        backgroundColor: "#FFFFFF",
+        borderColor: "#E6E6E6",
+        borderWidth: "1px",
+        cornerRadius: "12px",
         paddingAll: "12px",
-        spacing: "sm",
         contents: [
           {
             type: "text",
-            text: headerTitle,
-            weight: "bold",
-            size: "md",
-            color: "#ffffff",
+            text: String(card.intro),
             wrap: true,
+            size: "sm",
+            weight: "bold",
+            color: "#333333",
           },
+        ],
+      });
+      bodyContents.push({ type: "separator", margin: "md" });
+    }
+
+    // ✅ ③ explain（文言はそのまま）
+    if (card.explain) {
+      bodyContents.push({
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#FFFFFF",
+        borderColor: "#E6E6E6",
+        borderWidth: "1px",
+        cornerRadius: "12px",
+        paddingAll: "12px",
+        contents: [
           {
             type: "text",
-            text: safeText(isPriority ? "優先ケア（短期のてこ）" : "サポートケア（補助）"),
-            size: "xs",
+            text: String(card.explain),
+            wrap: true,
+            size: "sm",
+            weight: "bold",
+            color: "#333333",
+          },
+        ],
+      });
+      bodyContents.push({ type: "separator", margin: "md" });
+    }
+
+    // ✅ ④ body（文言はそのまま、分割して“カード化”）
+    const sections = splitBodyToSections(card.body);
+    if (sections.length > 0) {
+      sections.forEach((sec, i) => {
+        bodyContents.push({
+          type: "box",
+          layout: "vertical",
+          backgroundColor: "#FFFFFF",
+          borderColor: "#E6E6E6",
+          borderWidth: "1px",
+          cornerRadius: "12px",
+          paddingAll: "12px",
+          margin: i === 0 ? "none" : "md",
+          contents: [
+            {
+              type: "text",
+              text: sec,          // ← 文言そのまま
+              wrap: true,
+              size: "md",
+              color: "#0d0d0d",
+            },
+          ],
+        });
+      });
+    }
+
+    return {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: headerColor,
+        paddingAll: "12px",
+        contents: [
+          {
+            type: "text",
+            text: String(card.header || ""),
+            weight: "bold",
+            size: "md",
             color: "#ffffff",
             wrap: true,
           },
@@ -906,45 +882,18 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       body: {
         type: "box",
         layout: "vertical",
+        backgroundColor: bodyBg,
         paddingAll: "16px",
         spacing: "md",
         contents: bodyContents,
       },
     };
-
-    // ====== footer：図解ボタンを“下に分離” ======
-    if (link) {
-      bubble.footer = {
-        type: "box",
-        layout: "vertical",
-        paddingAll: "12px",
-        spacing: "sm",
-        contents: [
-          {
-            type: "button",
-            action: {
-              type: "uri",
-              label: "📖 図解を見る",
-              uri: link,
-            },
-            style: "primary",
-            color: isPriority ? colors.priorityHeader : colors.supportHeader,
-            height: "sm",
-          },
-        ],
-      };
-    }
-
-    return bubble;
   });
 
   return {
     type: "flex",
     altText,
-    contents: {
-      type: "carousel",
-      contents: bubbles,
-    },
+    contents: { type: "carousel", contents: bubbles },
   };
 }
 
