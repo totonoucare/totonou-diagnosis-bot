@@ -166,6 +166,90 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
   };
 }
 
+function buildTrialStartFlex() {
+  return {
+    type: "flex",
+    altText: "🎁 無料体験の使い方",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "🎁 無料体験で使える機能",
+            weight: "bold",
+            size: "md",
+            color: "#ffffff",
+            wrap: true,
+          },
+        ],
+        backgroundColor: "#7B9E76",
+        paddingAll: "12px",
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          {
+            type: "text",
+            text:
+              "『ととのうケアガイド』に沿って、あなたの整え方を“続けやすい形”にするための機能が使えます🌿\n\nまずは下のボタンから無料体験を有効化してください。",
+            wrap: true,
+            color: "#333333",
+            size: "sm",
+          },
+
+          { type: "separator", margin: "md" },
+
+          {
+            type: "text",
+            text: "体験中にできること：",
+            size: "sm",
+            weight: "bold",
+            color: "#333333",
+            wrap: true,
+          },
+          {
+            type: "text",
+            text:
+              "✅ 実施記録：やったケアをポチっと記録\n📈 ととのい度チェック：最近の体調や気分のゆらぎをチェックして、AIが要点を整理\n📬 からだの巡り通信：週1回、今の傾向をまとめてお届け\n🧠 トトノウくん相談：体質データを踏まえて質問できる",
+            wrap: true,
+            color: "#333333",
+            size: "sm",
+          },
+
+          { type: "separator", margin: "md" },
+
+          {
+            type: "text",
+            text:
+              "✳️ トライアル終了後の自動課金の開始や強制加入はありません。安心して試してみてください🌱",
+            size: "xs",
+            color: "#888888",
+            wrap: true,
+          },
+
+          {
+            type: "button",
+            action: {
+              type: "postback",
+              label: "無料体験を有効化する",
+              data: "trial_intro_done",
+              displayText: "無料体験を有効化する",
+            },
+            style: "primary",
+            color: "#7B9E76",
+          },
+        ],
+      },
+    },
+  };
+}
+
 function buildTrialOnboardingCarouselFlex() {
   const bubble1 = {
     type: "bubble",
@@ -839,69 +923,6 @@ function buildChatConsultOptionsFlex() {
   };
 }
 
-
-function buildTrialStartFlex() {
-  return {
-    type: 'flex',
-    altText: '🎁 無料体験開始ボタン',
-    contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '🎁 16日間の無料体験を始める',
-            weight: 'bold',
-            size: 'md',
-            color: '#ffffff',
-          },
-        ],
-        backgroundColor: '#7B9E76',
-        paddingAll: '12px',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'md',
-        contents: [
-          {
-            type: 'text',
-            text: '🎁 まずは16日間の無料体験をご利用いただけます！\nご提案した『ととのうケアガイド』の内容を習慣化できるように、AIパートナー『トトノウくん』があなたのケア習慣を手厚くサポート！\n\n✅ 今やったケアをすぐ記録できる『実施記録』機能\n\n📈 毎週の『ととのい度チェック』で、ケア頻度と体調変化を分析し、優先ケアプランを作成\n ⏰ 状態に合わせた『応援レターリマインド』\n 🧠 24時間いつでもトークで質問可能',
-            wrap: true,
-            color: '#333333',
-            size: 'md',
-          },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-            {
-              type: 'text',
-              text: '✳️ トライアル終了後の自動課金や強制加入は一切ありませんので安心してご利用ください 🌱',
-              size: 'sm',
-              color: '#888888',
-              wrap: true,
-              margin: 'md'
-            },
-          {
-            type: 'button',
-            action: {
-              type: 'postback',
-              label: '無料トライアル開始',
-              data: 'trial_intro_done',
-              displayText: '無料トライアルを開始！',
-            },
-            style: 'primary',
-            color: '#7B9E76',
-          },
-        ],
-      },
-    },
-  };
-}
 
 // トトノウ相談（AIへの質問例Flex）
 function buildTotonouConsultExamplesFlex() {
