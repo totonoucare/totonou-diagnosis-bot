@@ -726,139 +726,199 @@ function buildResultFlex(result, imageUrl) {
 }
 
 // ========================================
-// ととのうケアガイド（カルーセル生成）
-// - テキストは一切改変しない（削除/置換なし）
-// - 図解ボタンを最上段へ
-// - 本文をセクション分割して“塊感”を軽減
+// ととのうケアガイド（カルーセル生成）— リッチ版
 // ========================================
 function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
-  // 【やり方】【効果】【目安】などの見出しで “分割だけ” する（文言はそのまま保持）
-  function splitBodyToSections(bodyText) {
-    const text = String(bodyText || "").trim();
-    if (!text) return [];
+  const arr = Array.isArray(cards) ? cards : [];
 
-    // 見出しパターン（必要なら追加してOK）
-    const headingRe = /(【[^】]+】)/g;
+  // 文章を「【やり方】【効果】【目安】」などの見出しで分割
+  function splitSections(text) {
+    const t = String(text || "").trim();
+    if (!t) return [];
 
-    // 見出しを保持したまま分割
-    const parts = text.split(headingRe);
-
-    // parts 例: ["前置き...", "【やり方】", "内容...", "【効果】", "内容..."]
-    const sections = [];
-    for (let i = 0; i < parts.length; i++) {
-      const chunk = parts[i];
-      if (!chunk) continue;
-
-      // 見出し + 次の本文 を1セクションにまとめる
-      if (headingRe.test(chunk)) {
-        const heading = chunk;
-        const next = parts[i + 1] ?? "";
-        const combined = (heading + next).trim();
-        if (combined) sections.push(combined);
-        i++; // 次の本文を消費したのでスキップ
-      } else {
-        // 見出しが無い通常テキスト（冒頭の説明など）
-        const plain = chunk.trim();
-        if (plain) sections.push(plain);
-      }
+    const re = /【([^】]+)】/g;
+    const matches = [...t.matchAll(re)];
+    if (matches.length === 0) {
+      // 見出しが無ければ、そのまま1セクション扱い
+      return [{ title: null, body: t }];
     }
 
-    return sections;
+    const sections = [];
+    for (let i = 0; i < matches.length; i++) {
+      const title = matches[i][1]?.trim() || null;
+      const start = matches[i].index + matches[i][0].length;
+      const end = (i + 1 < matches.length) ? matches[i + 1].index : t.length;
+      const body = t.slice(start, end).trim();
+      if (title || body) sections.push({ title, body });
+    }
+    return sections.length ? sections : [{ title: null, body: t }];
   }
 
-  const bubbles = (cards || []).map((card, index) => {
+  // 長文をFlexの複数textに分割（読みやすく＆折り返し事故減らす）
+  function toTextBlocks(text, { size = "sm", color = "#222222" } = {}) {
+    const t = String(text || "").trim();
+    if (!t) return [];
+    const parts = t.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+
+    return parts.map((p) => ({
+      type: "text",
+      text: p,
+      wrap: true,
+      size,
+      color,
+      lineSpacing: "4px",
+    }));
+  }
+
+  function sectionBlock(title, body, accentColor) {
+    const titleRow = title
+      ? [{
+          type: "box",
+          layout: "baseline",
+          spacing: "sm",
+          contents: [
+            { type: "text", text: "●", size: "sm", color: accentColor, flex: 0 },
+            { type: "text", text: title, size: "sm", weight: "bold", color: "#111111", wrap: true },
+          ],
+        }]
+      : [];
+
+    return {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: "#FFFFFF",
+      cornerRadius: "12px",
+      paddingAll: "12px",
+      spacing: "sm",
+      contents: [
+        ...titleRow,
+        ...toTextBlocks(body, { size: "sm", color: "#222222" }),
+      ],
+    };
+  }
+
+  const bubbles = arr.map((card, index) => {
     const isPriority = index === 0 || index === 1;
 
-    const headerColor = isPriority ? "#B78949" : "#7B9E76"; // 優先=ゴールド、他=グリーン
-    const bodyBg = "#F8F9F7";
+    const theme = isPriority
+      ? {
+          headerBg: "#2F5E3A",   // 濃いめグリーン
+          badgeBg: "#D6B45A",    // ゴールド
+          badgeText: "最優先ケア",
+          accent: "#B78949",     // ゴールド寄りアクセント
+          bodyBg: "#F8F9F7",
+          button: "#2F5E3A",
+        }
+      : {
+          headerBg: "#7B9E76",
+          badgeBg: "#E9E2C8",
+          badgeText: "サポートケア",
+          accent: "#7B9E76",
+          bodyBg: "#F8F9F7",
+          button: "#7B9E76",
+        };
 
     const bodyContents = [];
 
-    // ✅ ① 図解ボタンを最上段へ（intro/explainより前）
-    if (card.link) {
-      bodyContents.push({
-        type: "button",
-        style: "primary",
-        color: headerColor,
-        height: "sm",
-        action: { type: "uri", label: "📖 図解を見る", uri: card.link },
-      });
-      bodyContents.push({ type: "separator", margin: "md" });
-    }
-
-    // ✅ ② intro（文言はそのまま。箱だけ付けて読みやすく）
-    if (card.intro) {
-      bodyContents.push({
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#FFFFFF",
-        borderColor: "#E6E6E6",
-        borderWidth: "1px",
-        cornerRadius: "12px",
-        paddingAll: "12px",
-        contents: [
-          {
-            type: "text",
-            text: String(card.intro),
-            wrap: true,
-            size: "sm",
-            weight: "bold",
-            color: "#333333",
-          },
-        ],
-      });
-      bodyContents.push({ type: "separator", margin: "md" });
-    }
-
-    // ✅ ③ explain（文言はそのまま）
-    if (card.explain) {
-      bodyContents.push({
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#FFFFFF",
-        borderColor: "#E6E6E6",
-        borderWidth: "1px",
-        cornerRadius: "12px",
-        paddingAll: "12px",
-        contents: [
-          {
-            type: "text",
-            text: String(card.explain),
-            wrap: true,
-            size: "sm",
-            weight: "bold",
-            color: "#333333",
-          },
-        ],
-      });
-      bodyContents.push({ type: "separator", margin: "md" });
-    }
-
-    // ✅ ④ body（文言はそのまま、分割して“カード化”）
-    const sections = splitBodyToSections(card.body);
-    if (sections.length > 0) {
-      sections.forEach((sec, i) => {
-        bodyContents.push({
+    // --- 上部：バッジ＋短い説明（intro/explain）を「カード風」にまとめる
+    bodyContents.push({
+      type: "box",
+      layout: "horizontal",
+      contents: [
+        {
           type: "box",
           layout: "vertical",
-          backgroundColor: "#FFFFFF",
-          borderColor: "#E6E6E6",
-          borderWidth: "1px",
-          cornerRadius: "12px",
-          paddingAll: "12px",
-          margin: i === 0 ? "none" : "md",
+          backgroundColor: theme.badgeBg,
+          cornerRadius: "999px",
+          paddingAll: "6px",
+          paddingStart: "10px",
+          paddingEnd: "10px",
           contents: [
             {
               type: "text",
-              text: sec,          // ← 文言そのまま
-              wrap: true,
-              size: "md",
-              color: "#0d0d0d",
+              text: theme.badgeText,
+              size: "xs",
+              weight: "bold",
+              color: "#1F2A1F",
+              wrap: false,
             },
           ],
-        });
+          flex: 0,
+        },
+        { type: "filler" },
+        {
+          type: "text",
+          text: `${index + 1}/${arr.length}`,
+          size: "xs",
+          color: "#888888",
+          align: "end",
+        },
+      ],
+      margin: "none",
+    });
+
+    // intro / explain を “まとめカード” として表示
+    const introText = String(card?.intro || "").trim();
+    const explainText = String(card?.explain || "").trim();
+    const lead = [introText, explainText].filter(Boolean).join("\n\n");
+
+    if (lead) {
+      bodyContents.push({
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#FFFFFF",
+        cornerRadius: "12px",
+        paddingAll: "12px",
+        margin: "md",
+        spacing: "sm",
+        contents: toTextBlocks(lead, { size: "sm", color: "#222222" }),
       });
     }
+
+    // --- 本文：セクション化（【やり方】【効果】【目安】など）
+    const sections = splitSections(card?.body);
+    if (sections.length) {
+      bodyContents.push({ type: "separator", margin: "lg" });
+
+      for (const s of sections) {
+        bodyContents.push(sectionBlock(s.title, s.body, theme.accent));
+        bodyContents.push({ type: "separator", margin: "md" });
+      }
+      // 末尾のseparatorが余るので削除
+      if (bodyContents.length && bodyContents[bodyContents.length - 1]?.type === "separator") {
+        bodyContents.pop();
+      }
+    }
+
+    // --- 図解ボタン（footerに寄せて“リッチ感”）
+    const hasLink = !!String(card?.link || "").trim();
+    const footer = hasLink
+      ? {
+          type: "box",
+          layout: "vertical",
+          spacing: "sm",
+          contents: [
+            {
+              type: "button",
+              action: {
+                type: "uri",
+                label: "📖 図解を見る",
+                uri: card.link,
+              },
+              style: "primary",
+              color: theme.button,
+              height: "sm",
+            },
+            {
+              type: "text",
+              text: "※ 図解はブラウザで開きます",
+              size: "xs",
+              color: "#888888",
+              wrap: true,
+            },
+          ],
+        }
+      : undefined;
 
     return {
       type: "bubble",
@@ -866,15 +926,15 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       header: {
         type: "box",
         layout: "vertical",
-        backgroundColor: headerColor,
-        paddingAll: "12px",
+        backgroundColor: theme.headerBg,
+        paddingAll: "14px",
         contents: [
           {
             type: "text",
-            text: String(card.header || ""),
+            text: String(card?.header || "ととのうケアガイド"),
             weight: "bold",
             size: "md",
-            color: "#ffffff",
+            color: "#FFFFFF",
             wrap: true,
           },
         ],
@@ -882,18 +942,22 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: bodyBg,
+        backgroundColor: theme.bodyBg,
         paddingAll: "16px",
         spacing: "md",
         contents: bodyContents,
       },
+      ...(footer ? { footer } : {}),
     };
   });
 
   return {
     type: "flex",
     altText,
-    contents: { type: "carousel", contents: bubbles },
+    contents: {
+      type: "carousel",
+      contents: bubbles,
+    },
   };
 }
 
