@@ -1,4 +1,68 @@
-function MessageBuilder({ altText, header, body, buttons }) {
+// ========================================
+// ✅ リッチ版 MessageBuilder（質問・選択UI共通）
+// - ボタンは「box + action」でカード化
+// - header にサブタイトル/STEPタグを付けられる
+// ========================================
+function MessageBuilder({
+  altText,
+  header,
+  subHeader = null,
+  stepLabel = null,          // 例: "STEP 1/3"
+  body,
+  note = null,               // 例: "あとから変更できます"
+  buttons = [],              // { label, data, displayText, emoji }
+  theme = {
+    headerBg: "#7B9E76",
+    bodyBg: "#F8F9F7",
+    cardBg: "#FFFFFF",
+    border: "#DDE6DB",
+    accent: "#7B9E76",
+    text: "#0d0d0d",
+    muted: "#777777",
+  },
+}) {
+  const actionRows = (buttons || []).map((btn) => {
+    const label = String(btn.label || "");
+    const emoji = btn.emoji ? String(btn.emoji) : "🌿";
+
+    return {
+      type: "box",
+      layout: "horizontal",
+      spacing: "sm",
+      paddingAll: "12px",
+      backgroundColor: theme.cardBg,
+      cornerRadius: "12px",
+      borderWidth: "1px",
+      borderColor: theme.border,
+      action: {
+        type: "postback",
+        label,
+        data: btn.data,
+        displayText: btn.displayText ?? label,
+      },
+      contents: [
+        { type: "text", text: emoji, size: "md", flex: 0 },
+        {
+          type: "text",
+          text: label,
+          size: "sm",
+          weight: "bold",
+          color: theme.text,
+          wrap: true,
+          flex: 1,
+        },
+        {
+          type: "text",
+          text: "›",
+          size: "xl",
+          color: theme.accent,
+          align: "end",
+          flex: 0,
+        },
+      ],
+    };
+  });
+
   return {
     type: "flex",
     altText,
@@ -8,9 +72,21 @@ function MessageBuilder({ altText, header, body, buttons }) {
       header: {
         type: "box",
         layout: "vertical",
+        spacing: "xs",
+        backgroundColor: theme.headerBg,
         paddingAll: "14px",
-        backgroundColor: "#7B9E76",
         contents: [
+          ...(stepLabel
+            ? [
+                {
+                  type: "text",
+                  text: stepLabel,
+                  size: "xs",
+                  color: "#ffffff",
+                  weight: "bold",
+                },
+              ]
+            : []),
           {
             type: "text",
             text: header,
@@ -19,70 +95,69 @@ function MessageBuilder({ altText, header, body, buttons }) {
             color: "#ffffff",
             wrap: true,
           },
+          ...(subHeader
+            ? [
+                {
+                  type: "text",
+                  text: subHeader,
+                  size: "xs",
+                  color: "#F1F6F1",
+                  wrap: true,
+                },
+              ]
+            : []),
         ],
       },
-
       body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#F8F9F7",
+        backgroundColor: theme.bodyBg,
         paddingAll: "16px",
         spacing: "md",
         contents: [
-          // 本文（カード風）
+          // 本文カード
           {
             type: "box",
             layout: "vertical",
-            backgroundColor: "#FFFFFF",
-            paddingAll: "14px",
+            backgroundColor: theme.cardBg,
             cornerRadius: "12px",
-            spacing: "sm",
+            paddingAll: "12px",
+            borderWidth: "1px",
+            borderColor: theme.border,
             contents: [
               {
                 type: "text",
                 text: body,
                 wrap: true,
-                color: "#0d0d0d",
-                size: "md",
+                color: theme.text,
+                size: "sm",
               },
+              ...(note
+                ? [
+                    {
+                      type: "text",
+                      text: note,
+                      wrap: true,
+                      color: theme.muted,
+                      size: "xs",
+                      margin: "md",
+                    },
+                  ]
+                : []),
             ],
           },
 
           { type: "separator", margin: "md" },
 
-          // 選択肢ボタン（2カラムにしてリッチ感）
+          // 選択肢エリア
           {
-            type: "box",
-            layout: "vertical",
-            spacing: "sm",
-            contents: (buttons || []).reduce((rows, btn, idx) => {
-              const isFirstInRow = idx % 2 === 0;
-              if (isFirstInRow) {
-                rows.push({
-                  type: "box",
-                  layout: "horizontal",
-                  spacing: "sm",
-                  contents: [],
-                });
-              }
-
-              const row = rows[rows.length - 1];
-              row.contents.push({
-                type: "button",
-                style: "primary",
-                height: "sm",
-                color: "#7B9E76",
-                action: {
-                  type: "postback",
-                  label: btn.label,                 // ✅ そのまま
-                  data: btn.data,                   // ✅ そのまま
-                  displayText: btn.displayText ?? btn.label, // ✅ そのまま
-                },
-              });
-
-              return rows;
-            }, []),
+            type: "text",
+            text: "👇 気になるテーマを1つ選んでください",
+            size: "xs",
+            color: theme.muted,
+            wrap: true,
           },
+          ...actionRows,
         ],
       },
     },
@@ -90,74 +165,58 @@ function MessageBuilder({ altText, header, body, buttons }) {
 }
 
 function injectContext(template, context = {}) {
-  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => {
-    const k = String(key).trim();
-    const v = context?.[k];
-    return (v !== undefined && v !== null) ? String(v) : `{{${k}}}`;
+  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => context[key] ?? `{{${key}}}`);
+}
+
+// ========================================
+// ✅ カテゴリ選択：リッチ版
+// ========================================
+function buildCategorySelectionFlex() {
+  const categories = [
+    { label: "胃腸の調子", data: "stomach", displayText: "胃腸の調子", emoji: "🍵" },
+    { label: "睡眠・集中力", data: "sleep", displayText: "睡眠・集中力", emoji: "🌙" },
+    { label: "肩こり・腰痛・関節痛", data: "pain", displayText: "肩こり・腰痛・関節痛", emoji: "🧍‍♀️" },
+    { label: "イライラや不安感", data: "mental", displayText: "イライラや不安感", emoji: "🫧" },
+    { label: "体温バランス・むくみ", data: "cold", displayText: "体温バランス・むくみ", emoji: "🧊" },
+    { label: "頭髪や肌の健康", data: "skin", displayText: "頭髪や肌の健康", emoji: "🧴" },
+    { label: "花粉症・鼻炎", data: "pollen", displayText: "花粉症・鼻炎", emoji: "🌼" },
+    { label: "女性特有のお悩み", data: "women", displayText: "女性特有のお悩み", emoji: "🌙" },
+    { label: "なんとなく不調・不定愁訴", data: "unknown", displayText: "なんとなく不調・不定愁訴", emoji: "🌿" },
+  ];
+
+  return MessageBuilder({
+    altText: "ととのえタイプ分析を開始します。どの不調が気になりますか？",
+    stepLabel: "STEP 1/??",
+    header: "ととのえタイプ分析スタート",
+    subHeader: "いま一番気になるテーマを選ぶところから始めます",
+    body: "どんなお悩みを“ととのえたい”ですか？\nいちばん気になるものを1つ選んでください。",
+    note: "※ 途中で「やっぱり別のテーマで…」もOKです",
+    buttons: categories,
+    theme: {
+      headerBg: "#7B9E76",
+      bodyBg: "#F8F9F7",
+      cardBg: "#FFFFFF",
+      border: "#DDE6DB",
+      accent: "#7B9E76",
+      text: "#0d0d0d",
+      muted: "#777777",
+    },
   });
 }
 
-function MessageBuilder({ altText, header, body, buttons }) {
-  return {
-    type: 'flex',
-    altText,
-    contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: header,
-            weight: 'bold',
-            size: 'md',
-            color: '#ffffff',
-          },
-        ],
-        backgroundColor: '#7B9E76',
-        paddingAll: '12px',
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'md',
-        contents: [
-          {
-            type: 'text',
-            text: body,
-            wrap: true,
-            color: '#0d0d0d',
-            size: 'md',
-          },
-          {
-            type: 'separator',
-            margin: 'md',
-          },
-          ...(buttons || []).map((btn) => ({
-            type: 'button',
-            action: {
-              type: 'postback',
-              label: btn.label,
-              data: btn.data,
-              displayText: btn.displayText ?? btn.label,
-            },
-            style: 'primary',
-            height: 'sm',
-            margin: 'sm',
-            color: '#7B9E76',
-          })),
-        ],
-      },
-    },
-  };
+// 既存の buildQuestionFlex はそのままでOK
+async function buildQuestionFlex(questionFunction) {
+  try {
+    const flex = await questionFunction();
+    return flex;
+  } catch (error) {
+    console.error("❌ 質問関数の実行エラー", error);
+    return {
+      type: "text",
+      text: "ごめんなさい、質問の取得に失敗しました。もう一度試してください。",
+    };
+  }
 }
-
-function injectContext(template, context = {}) {
-  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => context[key] ?? {{${key}}});
-}
-
 
 function buildMultiQuestionFlex({ altText, header, body, questions }) {
   const questionContents = questions.flatMap((q) => [
