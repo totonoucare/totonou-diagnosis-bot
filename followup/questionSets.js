@@ -10,7 +10,7 @@ const followupQuestionSet = [
     id: "Q1",
     header: "【Q1】🌡 主なお悩みのととのい",
     body:
-      "いま一番気になるお悩み\n「{{symptom}}」\n\nのツラさを、\n「1＝気にならない／かなりラク」\n「5＝かなりツラい」\nで選んでください。",
+      "いま一番気になるお悩み\n「{{symptom}}」のツラさを、\n「1＝気にならない／かなりラク」\n「5＝かなりツラい」\nで選んでください。",
     isMulti: true,
     options: [
       {
