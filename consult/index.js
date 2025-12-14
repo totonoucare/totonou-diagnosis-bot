@@ -201,15 +201,12 @@ module.exports = async function consult(event, client) {
 // ✅ GPT呼び出し＋思考時間計測
 const start = Date.now();
 
-const promptText = messages
-  .map((m) => `${m.role}: ${m.content}`)
-  .join("\n");
-
 const rsp = await openai.responses.create({
   model: "gpt-5.2",
-  input: promptText,
+  input: messages,                 // ← ここだけ変更（文字列結合をやめる）
   reasoning: { effort: "low" },
   text: { verbosity: "low" },
+  // max_output_tokens: 300,        // ← 速くしたいなら任意で追加（Flex向け）
 });
 
 const duration = (Date.now() - start) / 1000;
