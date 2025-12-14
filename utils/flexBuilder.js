@@ -11,7 +11,7 @@ function MessageBuilder({
   body,
   note = null,
   buttons = [],              // { label, data, displayText, emoji }
-  hintText = "👇 気になるテーマを1つ選んでください",
+  hintText = "👇 当てはまるものを1つ選んでください",
   theme = {
     headerBg: "#7B9E76",
     bodyBg: "#F8F9F7",
