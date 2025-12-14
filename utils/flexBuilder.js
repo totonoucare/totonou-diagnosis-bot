@@ -279,19 +279,17 @@ async function buildQuestionFlex(questionFunction) {
 }
 
 // ========================================
-// ✅ リッチ版 buildMultiQuestionFlex（ととのい度チェック含むマルチ質問UI）
-// - 本文/質問ラベルは読みやすく md
-// - 質問ごとに「カード化」して視認性UP
-// - 選択肢が 4〜5 個のときは自動で2段に分割（5→3+2 / 4→2+2）
+// ✅ リッチ版 buildMultiQuestionFlex
+// - 選択肢は「縦1列」
+// - ヒント文は questions数で自動切替
+// - 質問・本文は md（smは使わない）
 // ========================================
 function buildMultiQuestionFlex({
   altText,
   header,
   body,
-  questions,
-  stepLabel = null, // 例: "0/5" や "2/5"
-  subHeader = null,
-  hintText = "👇 それぞれ選んでください",
+  questions = [],
+  hintText = null, // 明示したい場合だけ渡す（普段は不要）
   theme = {
     headerBg: "#7B9E76",
     bodyBg: "#F8F9F7",
@@ -302,73 +300,91 @@ function buildMultiQuestionFlex({
     muted: "#777777",
   },
 }) {
-  const chunk = (arr, size) => {
-    const out = [];
-    for (let i = 0; i < (arr || []).length; i += size) out.push(arr.slice(i, i + size));
-    return out;
-  };
+  const autoHint =
+    hintText ??
+    (questions.length <= 1 ? "👇 1つ選んでください" : "👇 それぞれ選んでください");
 
-  const decideRowSize = (n) => {
-    // 5段階 → 3 + 2（押しやすさ優先）
-    if (n === 5) return 3;
-    // 4段階 → 2 + 2
-    if (n === 4) return 2;
-    // 3以下は1段
-    return n || 1;
-  };
-
-  const questionCards = (questions || []).map((q) => {
+  const questionCards = (questions || []).map((q, idx) => {
+    const title = String(q.title || "");
     const items = Array.isArray(q.items) ? q.items : [];
-    const rowSize = decideRowSize(items.length);
-    const rows = chunk(items, rowSize);
 
-    const buttonRowBoxes = rows.map((row, idx) => ({
-      type: "box",
-      layout: "horizontal",
-      spacing: "sm",
-      margin: idx === 0 ? "md" : "sm",
-      contents: row.map((choice) => ({
-        type: "button",
+    // 選択肢：縦1列（1〜5が並ぶ）
+    const choiceRows = items.map((choice) => {
+      const label = String(choice);
+
+      return {
+        type: "box",
+        layout: "horizontal",
+        spacing: "sm",
+        paddingAll: "12px",
+        margin: "sm",
+        backgroundColor: theme.cardBg,
+        cornerRadius: "12px",
+        borderWidth: "1px",
+        borderColor: theme.border,
         action: {
           type: "postback",
-          label: String(choice),
-          data: `${q.key}:${choice}`,
-          displayText: `${q.title} → ${choice}`,
+          label: label,
+          data: `${q.key}:${label}`,
+          displayText: `${title} → ${label}`,
         },
-        height: "sm",
-        style: "primary",
-        color: theme.accent,
-        flex: 1,
-      })),
-    }));
+        contents: [
+          {
+            type: "text",
+            text: label,
+            size: "md",
+            weight: "bold",
+            color: theme.text,
+            flex: 0,
+          },
+          {
+            type: "text",
+            text: "を選ぶ",
+            size: "md",
+            color: theme.muted,
+            wrap: true,
+            flex: 1,
+          },
+          {
+            type: "text",
+            text: "›",
+            size: "xl",
+            color: theme.accent,
+            align: "end",
+            flex: 0,
+          },
+        ],
+      };
+    });
 
     return {
       type: "box",
       layout: "vertical",
+      margin: idx === 0 ? "none" : "lg",
+      spacing: "sm",
       backgroundColor: theme.cardBg,
-      cornerRadius: "12px",
+      cornerRadius: "14px",
+      paddingAll: "14px",
       borderWidth: "1px",
       borderColor: theme.border,
-      paddingAll: "12px",
-      spacing: "sm",
-      margin: "md",
       contents: [
         {
           type: "text",
-          text: `🔸 ${q.title}`,
+          text: `🔸 ${title}`,
           weight: "bold",
           size: "md",
           color: theme.text,
           wrap: true,
         },
-        ...buttonRowBoxes,
+        { type: "separator", margin: "md" },
+        ...choiceRows,
       ],
     };
   });
 
   return {
     type: "flex",
-    altText,
+    altText: altText || header,
     contents: {
       type: "bubble",
       size: "mega",
@@ -379,17 +395,6 @@ function buildMultiQuestionFlex({
         backgroundColor: theme.headerBg,
         paddingAll: "14px",
         contents: [
-          ...(stepLabel
-            ? [
-                {
-                  type: "text",
-                  text: stepLabel,
-                  size: "xs",
-                  color: "#ffffff",
-                  weight: "bold",
-                },
-              ]
-            : []),
           {
             type: "text",
             text: header,
@@ -398,25 +403,14 @@ function buildMultiQuestionFlex({
             color: "#ffffff",
             wrap: true,
           },
-          ...(subHeader
-            ? [
-                {
-                  type: "text",
-                  text: subHeader,
-                  size: "sm",
-                  color: "#F1F6F1",
-                  wrap: true,
-                },
-              ]
-            : []),
         ],
       },
       body: {
         type: "box",
         layout: "vertical",
+        spacing: "md",
         backgroundColor: theme.bodyBg,
         paddingAll: "16px",
-        spacing: "md",
         contents: [
           {
             type: "text",
@@ -428,8 +422,8 @@ function buildMultiQuestionFlex({
           { type: "separator", margin: "md" },
           {
             type: "text",
-            text: hintText,
-            size: "sm",
+            text: autoHint,
+            size: "md",
             color: theme.muted,
             wrap: true,
           },
