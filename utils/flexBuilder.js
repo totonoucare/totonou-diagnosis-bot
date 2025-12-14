@@ -304,64 +304,74 @@ function buildMultiQuestionFlex({
     hintText ??
     (questions.length <= 1 ? "👇 1つ選んでください" : "👇 それぞれ選んでください");
 
-  const buildChoicesRow = (q) => {
+  const buildChoiceRow = (q) => {
     const title = String(q.title || "");
     const items = Array.isArray(q.items) ? q.items : [];
 
-    // 1〜5 を横一列に固定（折り返しさせない）
-    const buttonsRow = {
+    // ✅ 横一列固定：固定幅チップ（box + action）で5つ並べる
+    // 目安：幅 52px ×5 + spacing ≒ 収まる
+    return {
       type: "box",
       layout: "horizontal",
       spacing: "sm",
       margin: "md",
-      contents: items.map((choice) => ({
-        type: "button",
-        action: {
-          type: "postback",
-          label: String(choice),
-          data: `${q.key}:${choice}`,
-          displayText: `${title} → ${choice}`,
-        },
-        style: "primary",
-        color: theme.accent,
-        height: "sm",
-        // ⭐ 横一列固定のために幅固定（これが重要）
-        width: "52px",
-        flex: 0,
-      })),
-    };
+      contents: items.map((choice) => {
+        const label = String(choice);
 
-    return {
-      type: "box",
-      layout: "vertical",
-      margin: "lg",
-      spacing: "sm",
-      backgroundColor: theme.cardBg,
-      cornerRadius: "14px",
-      paddingAll: "14px",
-      borderWidth: "1px",
-      borderColor: theme.border,
-      contents: [
-        {
-          type: "text",
-          text: `🔸 ${title}`,
-          weight: "bold",
-          size: "md",
-          color: theme.text,
-          wrap: true,
-        },
-        { type: "separator", margin: "md" },
-        buttonsRow,
-      ],
+        return {
+          type: "box",
+          layout: "vertical",
+          width: "52px",          // ★ここで折り返し防止
+          height: "44px",
+          backgroundColor: theme.accent,
+          cornerRadius: "12px",
+          justifyContent: "center",
+          alignItems: "center",
+          action: {
+            type: "postback",
+            label,
+            data: `${q.key}:${label}`,
+            displayText: `${title} → ${label}`,
+          },
+          contents: [
+            {
+              type: "text",
+              text: label,
+              size: "md",
+              weight: "bold",
+              color: "#ffffff",
+              align: "center",
+              gravity: "center",
+            },
+          ],
+        };
+      }),
     };
   };
 
-  const questionCards = (questions || []).map((q, idx) => {
-    const card = buildChoicesRow(q);
-    // 1つ目だけ margin none
-    if (idx === 0) card.margin = "none";
-    return card;
-  });
+  const questionCards = (questions || []).map((q, idx) => ({
+    type: "box",
+    layout: "vertical",
+    margin: idx === 0 ? "none" : "lg",
+    spacing: "sm",
+    backgroundColor: theme.cardBg,
+    cornerRadius: "14px",
+    paddingAll: "14px",
+    borderWidth: "1px",
+    borderColor: theme.border,
+    contents: [
+      {
+        type: "text",
+        text: `🔸 ${String(q.title || "")}`,
+        weight: "bold",
+        size: "md",
+        color: theme.text,
+        wrap: true,
+      },
+      { type: "separator", margin: "md" },
+      buildChoiceRow(q),
+    ],
+  }));
 
   return {
     type: "flex",
