@@ -280,17 +280,12 @@ async function buildQuestionFlex(questionFunction) {
 
 // ========================================
 // ✅ リッチ版 buildMultiQuestionFlex
-// - 選択肢は「横1列」
-// - ヒント文は questions数で自動切替
-// - 質問・本文は md（smは使わない）
+// - 各設問を「カード化」
+// - 1〜5は横一列（flex均等割り）で見切れ防止
+// - ヒント文は questions の数で自動切替
 // ========================================
-function buildMultiQuestionFlex({
-  altText,
-  header,
-  body,
-  questions = [],
-  hintText = null,
-  theme = {
+function buildMultiQuestionFlex({ altText, header, body, questions }) {
+  const theme = {
     headerBg: "#7B9E76",
     bodyBg: "#F8F9F7",
     cardBg: "#FFFFFF",
@@ -298,30 +293,29 @@ function buildMultiQuestionFlex({
     accent: "#7B9E76",
     text: "#0d0d0d",
     muted: "#777777",
-  },
-}) {
-  const autoHint =
-    hintText ??
-    (questions.length <= 1 ? "👇 1つ選んでください" : "👇 それぞれ選んでください");
+  };
 
+  const qs = Array.isArray(questions) ? questions : [];
+  const hintText =
+    qs.length >= 2 ? "👇 それぞれ選んでください" : "👇 選んでください";
+
+  // 1行スケール（折り返しなし・見切れ防止）
   const buildChoiceRow = (q) => {
     const title = String(q.title || "");
     const items = Array.isArray(q.items) ? q.items : [];
 
-    // ✅ 横一列固定：固定幅チップ（box + action）で5つ並べる
-    // 目安：幅 52px ×5 + spacing ≒ 収まる
     return {
       type: "box",
       layout: "horizontal",
-      spacing: "sm",
-      margin: "md",
+      spacing: "xs", // 余白を詰めて横幅を確保
+      margin: "sm",
       contents: items.map((choice) => {
         const label = String(choice);
 
         return {
           type: "box",
           layout: "vertical",
-          width: "52px",          // ★ここで折り返し防止
+          flex: 1,                 // ★固定幅をやめて均等割り（見切れない）
           height: "44px",
           backgroundColor: theme.accent,
           cornerRadius: "12px",
@@ -341,7 +335,6 @@ function buildMultiQuestionFlex({
               weight: "bold",
               color: "#ffffff",
               align: "center",
-              gravity: "center",
             },
           ],
         };
@@ -349,46 +342,56 @@ function buildMultiQuestionFlex({
     };
   };
 
-  const questionCards = (questions || []).map((q, idx) => ({
-    type: "box",
-    layout: "vertical",
-    margin: idx === 0 ? "none" : "lg",
-    spacing: "sm",
-    backgroundColor: theme.cardBg,
-    cornerRadius: "14px",
-    paddingAll: "14px",
-    borderWidth: "1px",
-    borderColor: theme.border,
-    contents: [
-      {
-        type: "text",
-        text: `🔸 ${String(q.title || "")}`,
-        weight: "bold",
-        size: "md",
-        color: theme.text,
-        wrap: true,
-      },
-      { type: "separator", margin: "md" },
-      buildChoiceRow(q),
-    ],
-  }));
+  const buildQuestionCard = (q) => {
+    const title = String(q.title || "");
+
+    return {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: theme.cardBg,
+      cornerRadius: "14px",
+      paddingAll: "12px",
+      borderWidth: "1px",
+      borderColor: theme.border,
+      margin: "md",
+      contents: [
+        {
+          type: "box",
+          layout: "horizontal",
+          spacing: "sm",
+          contents: [
+            { type: "text", text: "◆", size: "md", color: "#C6A047", flex: 0 },
+            {
+              type: "text",
+              text: title,
+              size: "md",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+              flex: 1,
+            },
+          ],
+        },
+        buildChoiceRow(q),
+      ],
+    };
+  };
 
   return {
     type: "flex",
-    altText: altText || header,
+    altText: altText || header || "質問",
     contents: {
       type: "bubble",
       size: "mega",
       header: {
         type: "box",
         layout: "vertical",
-        spacing: "xs",
         backgroundColor: theme.headerBg,
-        paddingAll: "14px",
+        paddingAll: "12px",
         contents: [
           {
             type: "text",
-            text: header,
+            text: String(header || ""),
             weight: "bold",
             size: "lg",
             color: "#ffffff",
@@ -399,26 +402,43 @@ function buildMultiQuestionFlex({
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
         backgroundColor: theme.bodyBg,
         paddingAll: "16px",
+        spacing: "md",
         contents: [
+          // 本文カード
           {
-            type: "text",
-            text: body,
-            wrap: true,
-            size: "md",
-            color: theme.text,
+            type: "box",
+            layout: "vertical",
+            backgroundColor: theme.cardBg,
+            cornerRadius: "14px",
+            paddingAll: "12px",
+            borderWidth: "1px",
+            borderColor: theme.border,
+            contents: [
+              {
+                type: "text",
+                text: String(body || ""),
+                wrap: true,
+                size: "md",           // ★本文はmd
+                color: theme.text,
+              },
+            ],
           },
+
           { type: "separator", margin: "md" },
+
+          // ヒント（設問数で文言自動切替）
           {
             type: "text",
-            text: autoHint,
-            size: "md",
+            text: hintText,
+            size: "sm",
             color: theme.muted,
             wrap: true,
           },
-          ...questionCards,
+
+          // 設問カード群
+          ...qs.map(buildQuestionCard),
         ],
       },
     },
