@@ -461,14 +461,24 @@ function buildResultBubbles({
 
   const pillars = [
     { key: "breathing", label: "🌬 呼吸法", count: careCounts.breathing ?? 0, adviceKey: "breathing" },
-    { key: "stretch", label: "🤸‍♀️ 経絡ストレッチ", count: careCounts.stretch ?? 0, adviceKey: "stretch" },
-    { key: "tsubo", label: "👉 指先・ツボほぐし", count: careCounts.tsubo ?? 0, adviceKey: "points" },
-    { key: "habits", label: "🌱 体質改善習慣（生活）", count: careCounts.habits ?? 0, adviceKey: "lifestyle" },
-    { key: "kampo", label: "🌿 漢方・サプリ（おまけ）", count: careCounts.kampo ?? 0, adviceKey: "kanpo" },
+    { key: "stretch",   label: "🤸‍♀️ 経絡ストレッチ", count: careCounts.stretch ?? 0, adviceKey: "stretch" },
+    { key: "tsubo",     label: "👉 指先・ツボほぐし", count: careCounts.tsubo ?? 0, adviceKey: "points" },
+    { key: "habits",    label: "🌱 体質改善習慣（生活）", count: careCounts.habits ?? 0, adviceKey: "lifestyle" },
+    { key: "kampo",     label: "🌿 漢方・サプリ（おまけ）", count: careCounts.kampo ?? 0, adviceKey: "kanpo" },
   ];
+
+  // ★ 空状態判定：この期間、記録が1つも無い
+  const hasAnyCare = pillars.some((p) => (p.count || 0) > 0);
+  const isEmptyCareState = !hasAnyCare;
 
   const careItem = (p, borderColor = theme.borderGold) => {
     const gauge = careRatioToGauge(p.count, effDays);
+
+    // 空状態のときだけ文言を自然に
+    const daysLine = isEmptyCareState
+      ? `実施日数：0日（この期間は未記録） / ${effDays}日`
+      : `実施日数：${p.count}日 / ${effDays}日`;
+
     return {
       type: "box",
       layout: "vertical",
@@ -481,37 +491,60 @@ function buildResultBubbles({
       borderColor,
       contents: [
         { type: "text", text: p.label, size: "md", weight: "bold", wrap: true, color: theme.text },
-        {
-          type: "text",
-          text: `実施日数：${p.count}日 / ${effDays}日`,
-          size: "sm",
-          color: theme.text,
-          wrap: true,
-          margin: "xs",
-        },
-        {
-          type: "text",
-          text: `実施ゲージ：［${gauge}］`,
-          size: "sm",
-          color: theme.muted,
-          wrap: true,
-        },
+        { type: "text", text: daysLine, size: "sm", color: theme.text, wrap: true, margin: "xs" },
+        { type: "text", text: `実施ゲージ：［${gauge}］`, size: "sm", color: theme.muted, wrap: true },
       ],
     };
   };
 
   const careLinesPriority = [];
   const careLinesSupport = [];
+  const careLinesAll = [];
 
   pillars.forEach((p) => {
+    const block =
+      p.key === "kampo"
+        ? careItem(p, theme.borderGold)
+        : isPriority(p.adviceKey)
+        ? careItem(p, theme.greenDeep)
+        : careItem(p, theme.borderGold);
+
+    careLinesAll.push(block);
+
     if (p.key === "kampo") {
-      careLinesSupport.push(careItem(p, theme.borderGold));
+      careLinesSupport.push(block);
     } else if (isPriority(p.adviceKey)) {
-      careLinesPriority.push(careItem(p, theme.greenDeep));
+      careLinesPriority.push(block);
     } else {
-      careLinesSupport.push(careItem(p, theme.borderGold));
+      careLinesSupport.push(block);
     }
   });
+
+  // 空状態のときの前置きカード（“今は基準づくり”）
+  const emptyStateIntroCard = isEmptyCareState
+    ? card(
+        [
+          {
+            type: "text",
+            text: "📌 この期間は、まだケアの実施記録が入っていないようです。",
+            size: "md",
+            weight: "bold",
+            color: theme.text,
+            wrap: true,
+          },
+          {
+            type: "text",
+            text:
+              "ここは「これからの基準」として表示しています。次回以降、記録がたまるほどケアの傾向が見えやすくなります。",
+            size: "sm",
+            color: theme.muted,
+            wrap: true,
+            margin: "sm",
+          },
+        ],
+        { margin: "none", borderColor: theme.borderGold }
+      )
+    : null;
 
   const bubble2 = {
     type: "bubble",
@@ -533,7 +566,9 @@ function buildResultBubbles({
         },
         {
           type: "text",
-          text: "■が多いほど、そのケアを実施できた日が多い状態です。",
+          text: isEmptyCareState
+            ? "今回はまだ記録がないため、ベース表示です。"
+            : "■が多いほど、そのケアを実施できた日が多い状態です。",
           size: "xs",
           color: "#FFF7E0",
           wrap: true,
@@ -547,43 +582,65 @@ function buildResultBubbles({
       backgroundColor: theme.goldBg,
       paddingAll: "16px",
       contents: [
-        ...(careLinesPriority.length
-          ? [
-              card(
-                [
-                  {
-                    type: "text",
-                    text: "＜優先ケア＞",
-                    size: "md",
-                    weight: "bold",
-                    color: theme.text,
-                    wrap: true,
-                  },
-                  ...careLinesPriority,
-                ],
-                { margin: "none", borderColor: theme.greenDeep }
-              ),
-            ]
-          : []),
+        ...(emptyStateIntroCard ? [emptyStateIntroCard] : []),
 
-        ...(careLinesSupport.length
+        // ★ 空状態なら「優先/サポート分け」をやめて全部まとめる（違和感を消す）
+        ...(isEmptyCareState
           ? [
               card(
                 [
                   {
                     type: "text",
-                    text: "＜サポートケア・おまけ枠＞",
+                    text: "＜この期間の記録＞",
                     size: "md",
                     weight: "bold",
                     color: theme.text,
                     wrap: true,
                   },
-                  ...careLinesSupport,
+                  ...careLinesAll,
                 ],
                 { margin: "none", borderColor: theme.borderGold }
               ),
             ]
-          : []),
+          : [
+              ...(careLinesPriority.length
+                ? [
+                    card(
+                      [
+                        {
+                          type: "text",
+                          text: "＜優先ケア＞",
+                          size: "md",
+                          weight: "bold",
+                          color: theme.text,
+                          wrap: true,
+                        },
+                        ...careLinesPriority,
+                      ],
+                      { margin: "none", borderColor: theme.greenDeep }
+                    ),
+                  ]
+                : []),
+
+              ...(careLinesSupport.length
+                ? [
+                    card(
+                      [
+                        {
+                          type: "text",
+                          text: "＜サポートケア・おまけ枠＞",
+                          size: "md",
+                          weight: "bold",
+                          color: theme.text,
+                          wrap: true,
+                        },
+                        ...careLinesSupport,
+                      ],
+                      { margin: "none", borderColor: theme.borderGold }
+                    ),
+                  ]
+                : []),
+            ]),
       ],
     },
   };
