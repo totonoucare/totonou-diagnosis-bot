@@ -470,93 +470,170 @@ function buildResultBubbles({
       { margin: "md" }
     );
 
-  // =========================
-  // バブル1：結果（変化）
-  // =========================
-  const bubble1 = {
-    type: "bubble",
-    size: "mega",
-    header: headerBox("📊 今週のととのいチェック結果", theme.green, [
-      periodBadge,
-      compareBadge,
-    ]),
-    body: {
+  // 子カード用（支える要素の“中身”として使う）
+const metricRowLite = (icon, title, prevStars, curStars, comment) => ({
+  type: "box",
+  layout: "vertical",
+  backgroundColor: theme.bodyBg,
+  cornerRadius: "12px",
+  paddingAll: "12px",
+  borderWidth: "1px",
+  borderColor: theme.border,
+  margin: "sm",
+  contents: [
+    {
       type: "box",
-      layout: "vertical",
-      backgroundColor: theme.bodyBg,
-      paddingAll: "16px",
-      spacing: "md",
+      layout: "horizontal",
+      spacing: "sm",
       contents: [
-        // 主訴
-        card(
-          [
-            {
-              type: "text",
-              text: `🌡 主なお悩み（${symptomName}）`,
-              size: "md",
-              weight: "bold",
-              color: theme.text,
-              wrap: true,
-            },
-            {
-              type: "text",
-              text: "★が多いほど「ラクに近い」状態です。",
-              size: "xs",
-              color: theme.subtle,
-              wrap: true,
-              margin: "xs",
-            },
-            ...twoColPrevCur({
-              prevText: prevMainStars,
-              prevSub: prevMainComfort,
-              curText: curMainStars,
-              curSub: curMainComfort,
-            }),
-            { type: "separator", margin: "md" },
-            {
-              type: "text",
-              text: mainTrendComment,
-              size: "md",
-              weight: "bold",
-              color: theme.text,
-              wrap: true,
-              margin: "md",
-            },
-          ],
-          { margin: "none" }
-        ),
-
-        // 支える要素（見出しカード）
-        card(
-          [
-            {
-              type: "text",
-              text: "🧩 ととのいを支える要素",
-              size: "md",
-              weight: "bold",
-              color: theme.text,
-              wrap: true,
-            },
-            {
-              type: "text",
-              text: "生活・こころ・体のラインを分けて見ます。",
-              size: "sm",
-              color: theme.muted,
-              wrap: true,
-              margin: "xs",
-            },
-          ],
-          { margin: "md" }
-        ),
-
-        // 指標
-        metricRow("🌙", "睡眠（リズム／質）", prevSleepStars, curSleepStars, sleepTrendComment),
-        metricRow("🍽", "食事（タイミング／バランス）", prevMealStars, curMealStars, mealTrendComment),
-        metricRow("😮‍💨", "ストレス・気分の安定度", prevStressStars, curStressStars, stressTrendComment),
-        metricRow("🧍‍♀️", `体表ライン（負荷チェック：${motionName}）`, prevMotionStars, curMotionStars, motionTrendComment),
+        { type: "text", text: icon, size: "md", flex: 0 },
+        {
+          type: "text",
+          text: title,
+          size: "md",
+          weight: "bold",
+          color: theme.text,
+          wrap: true,
+          flex: 1,
+        },
       ],
     },
-  };
+    {
+      type: "text",
+      text: hasPrevMain
+        ? `前回：${prevStars}　／　今回：${curStars}`
+        : `今回：${curStars}`,
+      size: "sm",
+      color: theme.text,
+      wrap: true,
+      margin: "sm",
+    },
+    {
+      type: "text",
+      text: comment,
+      size: "sm",
+      color: theme.muted,
+      wrap: true,
+      margin: "xs",
+    },
+  ],
+});
+
+// =========================
+// バブル1：結果（変化）※支える要素を「親カード＋子カード」に統合
+// =========================
+const bubble1 = {
+  type: "bubble",
+  size: "mega",
+  header: headerBox("📊 今週のととのいチェック結果", theme.green, [
+    periodBadge,
+    compareBadge,
+  ]),
+  body: {
+    type: "box",
+    layout: "vertical",
+    backgroundColor: theme.bodyBg,
+    paddingAll: "16px",
+    spacing: "md",
+    contents: [
+      // -------------------------
+      // 主訴（親カード）
+      // -------------------------
+      card(
+        [
+          {
+            type: "text",
+            text: `🌡 主なお悩み（${symptomName}）`,
+            size: "md",
+            weight: "bold",
+            color: theme.text,
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: "★が多いほど「ラクに近い」状態です。",
+            size: "xs",
+            color: theme.subtle,
+            wrap: true,
+            margin: "xs",
+          },
+          ...twoColPrevCur({
+            prevText: prevMainStars,
+            prevSub: prevMainComfort,
+            curText: curMainStars,
+            curSub: curMainComfort,
+          }),
+          { type: "separator", margin: "md" },
+          {
+            type: "text",
+            text: mainTrendComment,
+            size: "md",
+            weight: "bold",
+            color: theme.text,
+            wrap: true,
+            margin: "md",
+          },
+        ],
+        { margin: "none" }
+      ),
+
+      // -------------------------
+      // 支える要素（親カードの中に子カードを入れる）
+      // -------------------------
+      card(
+        [
+          {
+            type: "text",
+            text: "🧩 ととのいを支える要素",
+            size: "md",
+            weight: "bold",
+            color: theme.text,
+            wrap: true,
+          },
+          {
+            type: "text",
+            text: "生活・こころ・体のラインを分けて見ます。",
+            size: "sm",
+            color: theme.muted,
+            wrap: true,
+            margin: "xs",
+          },
+
+          // ▼ 子カード群（ここがポイント）
+          metricRowLite(
+            "🌙",
+            "睡眠（リズム／質）",
+            prevSleepStars,
+            curSleepStars,
+            sleepTrendComment
+          ),
+          metricRowLite(
+            "🍽",
+            "食事（タイミング／バランス）",
+            prevMealStars,
+            curMealStars,
+            mealTrendComment
+          ),
+          metricRowLite(
+            "😮‍💨",
+            "ストレス・気分の安定度",
+            prevStressStars,
+            curStressStars,
+            stressTrendComment
+          ),
+          metricRowLite(
+            "🧍‍♀️",
+            `体表ライン（負荷チェック：${motionName}）`,
+            prevMotionStars,
+            curMotionStars,
+            motionTrendComment
+          ),
+        ],
+        { margin: "md" }
+      ),
+    ],
+  },
+};
 
   // =========================
   // バブル2：ケア実施（空状態対応＋優先/サポート＋色つきゲージ）
