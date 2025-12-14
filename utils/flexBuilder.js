@@ -1,16 +1,17 @@
 // ========================================
 // ✅ リッチ版 MessageBuilder（質問・選択UI共通）
-// - ボタンは「box + action」でカード化
-// - header にサブタイトル/STEPタグを付けられる
+// - 進行表示：0/5〜5/5
+// - 本文/ボタンラベル：md（sm禁止）
 // ========================================
 function MessageBuilder({
   altText,
   header,
   subHeader = null,
-  stepLabel = null,          // 例: "STEP 1/3"
+  stepLabel = null,          // 例: "0/5"
   body,
-  note = null,               // 例: "あとから変更できます"
+  note = null,
   buttons = [],              // { label, data, displayText, emoji }
+  hintText = "👇 気になるテーマを1つ選んでください",
   theme = {
     headerBg: "#7B9E76",
     bodyBg: "#F8F9F7",
@@ -45,7 +46,7 @@ function MessageBuilder({
         {
           type: "text",
           text: label,
-          size: "sm",
+          size: "md",            // ✅ md
           weight: "bold",
           color: theme.text,
           wrap: true,
@@ -80,8 +81,8 @@ function MessageBuilder({
             ? [
                 {
                   type: "text",
-                  text: stepLabel,
-                  size: "xs",
+                  text: stepLabel,     // 例: "0/5"
+                  size: "md",          // ✅ md（読みやすく）
                   color: "#ffffff",
                   weight: "bold",
                 },
@@ -100,7 +101,7 @@ function MessageBuilder({
                 {
                   type: "text",
                   text: subHeader,
-                  size: "xs",
+                  size: "md",          // ✅ md
                   color: "#F1F6F1",
                   wrap: true,
                 },
@@ -130,7 +131,7 @@ function MessageBuilder({
                 text: body,
                 wrap: true,
                 color: theme.text,
-                size: "sm",
+                size: "md",          // ✅ md
               },
               ...(note
                 ? [
@@ -139,7 +140,7 @@ function MessageBuilder({
                       text: note,
                       wrap: true,
                       color: theme.muted,
-                      size: "xs",
+                      size: "md",       // ✅ md
                       margin: "md",
                     },
                   ]
@@ -149,11 +150,11 @@ function MessageBuilder({
 
           { type: "separator", margin: "md" },
 
-          // 選択肢エリア
+          // 選択肢エリアの導線文
           {
             type: "text",
-            text: "👇 気になるテーマを1つ選んでください",
-            size: "xs",
+            text: hintText,
+            size: "md",             // ✅ md
             color: theme.muted,
             wrap: true,
           },
@@ -165,11 +166,14 @@ function MessageBuilder({
 }
 
 function injectContext(template, context = {}) {
-  return template.replace(/\{\{(.*?)\}\}/g, (_, key) => context[key] ?? `{{${key}}}`);
+  return String(template || "").replace(
+    /\{\{(.*?)\}\}/g,
+    (_, key) => context[key] ?? `{{${key}}}`
+  );
 }
 
 // ========================================
-// ✅ カテゴリ選択：リッチ版
+// ✅ カテゴリ選択：0/5
 // ========================================
 function buildCategorySelectionFlex() {
   const categories = [
@@ -186,11 +190,11 @@ function buildCategorySelectionFlex() {
 
   return MessageBuilder({
     altText: "ととのえタイプ分析を開始します。どの不調が気になりますか？",
-    stepLabel: "STEP 1/??",
+    stepLabel: "0/5",
     header: "ととのえタイプ分析スタート",
-    subHeader: "いま一番気になるテーマを選ぶところから始めます",
+    subHeader: "いま一番気になるお悩みを選ぶところから始めます",
     body: "どんなお悩みを“ととのえたい”ですか？\nいちばん気になるものを1つ選んでください。",
-    note: "※ 途中で「やっぱり別のテーマで…」もOKです",
+    note: "※別のテーマで分析をやり直したい場合は、分析完了後にもう一度『ととのえタイプ再分析』からやり直せます",
     buttons: categories,
     theme: {
       headerBg: "#7B9E76",
@@ -204,11 +208,67 @@ function buildCategorySelectionFlex() {
   });
 }
 
-// 既存の buildQuestionFlex はそのままでOK
+// ========================================
+// ✅ 質問本体：questionFunction側が返すflexを「1/5〜5/5」に上書き可能にする
+// - questionFunctionが MessageBuilder を使っていない場合でも安全に通す
+// ========================================
+function extractStepFromHeaderText(headerText) {
+  // "【Q1】..." / "Q1" / "1" などを雑に拾う
+  const s = String(headerText || "");
+  const m1 = s.match(/Q(\d+)/);
+  if (m1) return Number(m1[1]);
+  const m2 = s.match(/【(\d+)】/);
+  if (m2) return Number(m2[1]);
+  return null;
+}
+
+function applyProgressLabelToFlex(flex, total = 5) {
+  try {
+    const headerBox = flex?.contents?.header;
+    if (!headerBox?.contents?.length) return flex;
+
+    // headerの先頭textを見てQ番号を推定
+    const firstText = headerBox.contents.find((c) => c?.type === "text" && typeof c.text === "string");
+    const step = extractStepFromHeaderText(firstText?.text);
+
+    // 1〜5以外は触らない
+    if (!step || step < 1 || step > total) return flex;
+
+    // すでに stepLabel 行がある想定ならその行を書き換え、無ければ先頭に挿入
+    // stepLabel行は「md/白/太字」で "1/5" の形式にする
+    const progressText = `${step}/${total}`;
+
+    const maybeProgress = headerBox.contents[0];
+    const looksLikeProgress =
+      maybeProgress?.type === "text" &&
+      typeof maybeProgress.text === "string" &&
+      maybeProgress.text.includes("/");
+
+    if (looksLikeProgress) {
+      headerBox.contents[0].text = progressText;
+      headerBox.contents[0].size = "md";
+      headerBox.contents[0].weight = "bold";
+      headerBox.contents[0].color = "#ffffff";
+    } else {
+      headerBox.contents.unshift({
+        type: "text",
+        text: progressText,
+        size: "md",
+        color: "#ffffff",
+        weight: "bold",
+      });
+    }
+  } catch (_) {}
+
+  return flex;
+}
+
+// 既存の buildQuestionFlex を差し替え（progress適用）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
-    return flex;
+    // ✅ ここで 1/5〜5/5 を付与
+    return applyProgressLabelToFlex(flex, 5);
   } catch (error) {
     console.error("❌ 質問関数の実行エラー", error);
     return {
