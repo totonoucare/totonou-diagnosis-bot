@@ -203,10 +203,11 @@ function buildResultBubbles({
   const hasPrevMain = !!(prevScores && prevScores.symptom_level != null);
   const effDays = Math.max(1, Number(effectiveDays) || 1);
 
-  // ======== Theme ========
+  // ======== Theme（rgba禁止：全部HEX） ========
   const theme = {
     green: "#7B9E76",
     greenDeep: "#5F7F59",
+
     gold: "#C6A047",
     goldDeep: "#B68E2B",
 
@@ -224,6 +225,10 @@ function buildResultBubbles({
 
     grayPill: "#8F8F8F",
     grayLight: "#BDBDBD",
+
+    // バッジ用の「薄色」（透過の代わり）
+    badgeGreen: "#8FB08A",
+    badgeGold: "#D9C58F",
   };
 
   // ======== Helpers ========
@@ -232,7 +237,7 @@ function buildResultBubbles({
     layout: "vertical",
     flex: 0,
     paddingAll: "6px",
-    cornerRadius: "999px",
+    cornerRadius: "20px",
     backgroundColor: bg,
     contents: [
       {
@@ -277,7 +282,12 @@ function buildResultBubbles({
 
   const card = (
     contents,
-    { bg = theme.cardBg, margin = "md", borderColor = theme.border, paddingAll = "12px" } = {}
+    {
+      bg = theme.cardBg,
+      margin = "md",
+      borderColor = theme.border,
+      paddingAll = "12px",
+    } = {}
   ) => ({
     type: "box",
     layout: "vertical",
@@ -290,13 +300,13 @@ function buildResultBubbles({
     contents,
   });
 
-  // 期間バッジ（ヘッダーで見せたい）
-  const periodBadge = pill(`期間：${effDays}日`, "rgba(255,255,255,0.22)", theme.white);
+  // 期間バッジ（rgba→HEXへ置換）
+  const periodBadge = pill(`期間：${effDays}日`, theme.badgeGreen, theme.white);
   const compareBadge = hasPrevMain
-    ? pill("前回→今回の比較", "rgba(255,255,255,0.22)", theme.white)
-    : pill("初回（基準づくり）", "rgba(255,255,255,0.22)", theme.white);
+    ? pill("前回→今回の比較", theme.badgeGreen, theme.white)
+    : pill("初回（基準づくり）", theme.badgeGreen, theme.white);
 
-  // ケア用：比率→色（“色づけ”の核）
+  // ケア用：比率→色（色づけ）
   const gaugeColorByRatio = (ratio) => {
     if (ratio >= 0.8) return theme.greenDeep;
     if (ratio >= 0.4) return theme.goldDeep;
@@ -344,7 +354,11 @@ function buildResultBubbles({
 
     const left = card(
       [
-        { type: "box", layout: "horizontal", contents: [pill("前回", theme.greenDeep), { type: "filler" }] },
+        {
+          type: "box",
+          layout: "horizontal",
+          contents: [pill("前回", theme.greenDeep), { type: "filler" }],
+        },
         {
           type: "text",
           text: prevText,
@@ -355,7 +369,16 @@ function buildResultBubbles({
           margin: "sm",
         },
         ...(prevSub
-          ? [{ type: "text", text: prevSub, size: "xs", color: theme.muted, wrap: true, margin: "xs" }]
+          ? [
+              {
+                type: "text",
+                text: prevSub,
+                size: "xs",
+                color: theme.muted,
+                wrap: true,
+                margin: "xs",
+              },
+            ]
           : []),
       ],
       { margin: "none" }
@@ -363,7 +386,11 @@ function buildResultBubbles({
 
     const right = card(
       [
-        { type: "box", layout: "horizontal", contents: [pill("今回", theme.green), { type: "filler" }] },
+        {
+          type: "box",
+          layout: "horizontal",
+          contents: [pill("今回", theme.green), { type: "filler" }],
+        },
         {
           type: "text",
           text: curText,
@@ -374,7 +401,16 @@ function buildResultBubbles({
           margin: "sm",
         },
         ...(curSub
-          ? [{ type: "text", text: curSub, size: "xs", color: theme.muted, wrap: true, margin: "xs" }]
+          ? [
+              {
+                type: "text",
+                text: curSub,
+                size: "xs",
+                color: theme.muted,
+                wrap: true,
+                margin: "xs",
+              },
+            ]
           : []),
       ],
       { margin: "none" }
@@ -401,7 +437,15 @@ function buildResultBubbles({
           spacing: "sm",
           contents: [
             { type: "text", text: icon, size: "md", flex: 0 },
-            { type: "text", text: title, size: "md", weight: "bold", color: theme.text, wrap: true, flex: 1 },
+            {
+              type: "text",
+              text: title,
+              size: "md",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+              flex: 1,
+            },
           ],
         },
         {
@@ -432,7 +476,10 @@ function buildResultBubbles({
   const bubble1 = {
     type: "bubble",
     size: "mega",
-    header: headerBox("📊 今週のととのいチェック結果", theme.green, [periodBadge, compareBadge]),
+    header: headerBox("📊 今週のととのいチェック結果", theme.green, [
+      periodBadge,
+      compareBadge,
+    ]),
     body: {
       type: "box",
       layout: "vertical",
@@ -482,8 +529,22 @@ function buildResultBubbles({
         // 支える要素（見出しカード）
         card(
           [
-            { type: "text", text: "🧩 ととのいを支える要素", size: "md", weight: "bold", color: theme.text, wrap: true },
-            { type: "text", text: "生活・こころ・体のラインを分けて見ます。", size: "sm", color: theme.muted, wrap: true, margin: "xs" },
+            {
+              type: "text",
+              text: "🧩 ととのいを支える要素",
+              size: "md",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+            },
+            {
+              type: "text",
+              text: "生活・こころ・体のラインを分けて見ます。",
+              size: "sm",
+              color: theme.muted,
+              wrap: true,
+              margin: "xs",
+            },
           ],
           { margin: "md" }
         ),
@@ -522,13 +583,10 @@ function buildResultBubbles({
     const ratio = (p.count || 0) / effDays;
     const gauge = careRatioToGauge(p.count, effDays);
 
-    // 「色つきゲージバッジ」：視認性の核
     const gaugePill = pill(`［${gauge}］`, gaugeColorByRatio(ratio), theme.white);
 
-    // 優先ケアは枠色で“ちょい強調”（やりすぎない）
     const borderColor = kind === "priority" ? theme.greenDeep : theme.borderGold;
 
-    // 空状態だと「0/○」が責め感になるので文を変える
     const daysText = emptyCare
       ? `実施日数：未記録（この期間はまだ入力がありません）／ 対象：${effDays}日`
       : `実施日数：${p.count}日 / ${effDays}日`;
@@ -587,12 +645,12 @@ function buildResultBubbles({
     }
   }
 
-  // 2枚目ヘッダーにも「期間」バッジを置く（あなたの好み）
+  // 2枚目ヘッダーのバッジ（rgba→HEXへ置換）
   const bubble2Badges = [
-    pill(`対象：${effDays}日`, "rgba(255,255,255,0.22)", theme.white),
+    pill(`対象：${effDays}日`, theme.badgeGold, theme.white),
     emptyCare
-      ? pill("今回は未記録", "rgba(255,255,255,0.22)", theme.white)
-      : pill("記録あり", "rgba(255,255,255,0.22)", theme.white),
+      ? pill("今回は未記録", theme.badgeGold, theme.white)
+      : pill("記録あり", theme.badgeGold, theme.white),
   ];
 
   const bubble2 = {
@@ -606,7 +664,6 @@ function buildResultBubbles({
       paddingAll: "16px",
       spacing: "md",
       contents: [
-        // 説明カード：空状態は“前置き”を変える
         card(
           [
             {
@@ -642,10 +699,7 @@ function buildResultBubbles({
         ),
 
         ...(emptyCare
-          ? [
-              // 空状態は分けない（“優先/サポート”の意味がまだ無いのでノイズになる）
-              ...allList,
-            ]
+          ? [...allList]
           : [
               ...(priorityList.length
                 ? [
@@ -688,7 +742,14 @@ function buildResultBubbles({
       paddingAll: "16px",
       spacing: "md",
       contents: [
-        { type: "text", text: "🧠 ケア効果の反映具合を聞く", weight: "bold", size: "lg", color: theme.text, wrap: true },
+        {
+          type: "text",
+          text: "🧠 ケア効果の反映具合を聞く",
+          weight: "bold",
+          size: "lg",
+          color: theme.text,
+          wrap: true,
+        },
         {
           type: "text",
           text:
@@ -713,9 +774,19 @@ function buildResultBubbles({
           type: "button",
           style: "primary",
           color: theme.green,
-          action: { type: "message", label: "ケア効果の反映具合を聞く", text: "ケア効果の反映具合を聞く" },
+          action: {
+            type: "message",
+            label: "ケア効果の反映具合を聞く",
+            text: "ケア効果の反映具合を聞く",
+          },
         },
-        { type: "text", text: "※ 返信に少し時間がかかることがあります", size: "xs", color: theme.subtle, wrap: true },
+        {
+          type: "text",
+          text: "※ 返信に少し時間がかかることがあります",
+          size: "xs",
+          color: theme.subtle,
+          wrap: true,
+        },
       ],
     },
   };
