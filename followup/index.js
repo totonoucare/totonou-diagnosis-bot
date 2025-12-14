@@ -162,7 +162,7 @@ function buildFlexMessage(question, context = {}) {
   });
 }
 
-// ======== 結果バブル構築（リッチ版：2枚＋CTA） ========
+// ======== 結果バブル構築（最終リッチ版：2枚＋CTA） ========
 function buildResultBubbles({
   context,
   prevScores,
@@ -174,17 +174,18 @@ function buildResultBubbles({
     symptomLabels[context.symptom] || "全身のなんとなくした不調";
   const motionName = context.motion || "指定の動き";
 
-  // ---- トレンド情報・ゲージ用値 ----
+  // ---- トレンド情報 ----
   const mainTrendComment = buildTrendComment(
     prevScores?.symptom_level,
     curScores.symptom_level,
     "main"
   );
-  const sleepTrendComment = buildTrendComment(prevScores?.sleep, curScores.sleep);
-  const mealTrendComment  = buildTrendComment(prevScores?.meal, curScores.meal);
-  const stressTrendComment= buildTrendComment(prevScores?.stress, curScores.stress);
-  const motionTrendComment= buildTrendComment(prevScores?.motion_level, curScores.motion_level);
+  const sleepTrendComment  = buildTrendComment(prevScores?.sleep,        curScores.sleep);
+  const mealTrendComment   = buildTrendComment(prevScores?.meal,         curScores.meal);
+  const stressTrendComment = buildTrendComment(prevScores?.stress,       curScores.stress);
+  const motionTrendComment = buildTrendComment(prevScores?.motion_level, curScores.motion_level);
 
+  // ---- ★ゲージ ----
   const prevMainStars   = scoreToStars(prevScores?.symptom_level);
   const curMainStars    = scoreToStars(curScores.symptom_level);
   const prevSleepStars  = scoreToStars(prevScores?.sleep);
@@ -199,54 +200,34 @@ function buildResultBubbles({
   const prevMainComfort = scoreToComfortLabel(prevScores?.symptom_level);
   const curMainComfort  = scoreToComfortLabel(curScores.symptom_level);
 
-  const hasPrevMain = prevScores && prevScores.symptom_level != null;
+  const hasPrevMain = !!(prevScores && prevScores.symptom_level != null);
+  const effDays = Math.max(1, Number(effectiveDays) || 1);
 
-  // ======== Theme / Helper ========
+  // ======== Theme ========
   const theme = {
     green: "#7B9E76",
     greenDeep: "#5F7F59",
     gold: "#C6A047",
     goldDeep: "#B68E2B",
+
     bodyBg: "#F8F9F7",
     bodyBgGold: "#FDFBF7",
     cardBg: "#FFFFFF",
+
     border: "#DDE6DB",
     borderGold: "#EADFC2",
+
     text: "#0d0d0d",
     muted: "#666666",
     subtle: "#888888",
+    white: "#ffffff",
+
+    grayPill: "#8F8F8F",
+    grayLight: "#BDBDBD",
   };
 
-  const headerBox = (title, bg, subText = null) => ({
-    type: "box",
-    layout: "vertical",
-    backgroundColor: bg,
-    paddingAll: "14px",
-    spacing: "xs",
-    contents: [
-      {
-        type: "text",
-        text: title,
-        weight: "bold",
-        size: "lg",
-        color: "#ffffff",
-        wrap: true,
-      },
-      ...(subText
-        ? [
-            {
-              type: "text",
-              text: subText,
-              size: "xs",
-              color: "#F7F3E6",
-              wrap: true,
-            },
-          ]
-        : []),
-    ],
-  });
-
-  const pill = (text, bg, color = "#ffffff") => ({
+  // ======== Helpers ========
+  const pill = (text, bg, color = theme.white) => ({
     type: "box",
     layout: "vertical",
     flex: 0,
@@ -256,7 +237,7 @@ function buildResultBubbles({
     contents: [
       {
         type: "text",
-        text,
+        text: String(text),
         size: "xs",
         weight: "bold",
         color,
@@ -266,14 +247,37 @@ function buildResultBubbles({
     ],
   });
 
+  const headerBox = (title, bg, badges = []) => ({
+    type: "box",
+    layout: "vertical",
+    backgroundColor: bg,
+    paddingAll: "14px",
+    spacing: "sm",
+    contents: [
+      {
+        type: "text",
+        text: title,
+        weight: "bold",
+        size: "lg",
+        color: theme.white,
+        wrap: true,
+      },
+      ...(badges.length
+        ? [
+            {
+              type: "box",
+              layout: "horizontal",
+              spacing: "sm",
+              contents: [...badges, { type: "filler" }],
+            },
+          ]
+        : []),
+    ],
+  });
+
   const card = (
     contents,
-    {
-      bg = theme.cardBg,
-      margin = "md",
-      borderColor = theme.border,
-      paddingAll = "12px",
-    } = {}
+    { bg = theme.cardBg, margin = "md", borderColor = theme.border, paddingAll = "12px" } = {}
   ) => ({
     type: "box",
     layout: "vertical",
@@ -286,20 +290,73 @@ function buildResultBubbles({
     contents,
   });
 
-  // ゲージ比率→色（カード2用）
+  // 期間バッジ（ヘッダーで見せたい）
+  const periodBadge = pill(`期間：${effDays}日`, "rgba(255,255,255,0.22)", theme.white);
+  const compareBadge = hasPrevMain
+    ? pill("前回→今回の比較", "rgba(255,255,255,0.22)", theme.white)
+    : pill("初回（基準づくり）", "rgba(255,255,255,0.22)", theme.white);
+
+  // ケア用：比率→色（“色づけ”の核）
   const gaugeColorByRatio = (ratio) => {
-    if (ratio >= 0.8) return theme.greenDeep;   // かなり良い
-    if (ratio >= 0.4) return theme.goldDeep;    // まあまあ
-    if (ratio > 0) return "#8A8A8A";            // ちょい
-    return "#BDBDBD";                           // 0
+    if (ratio >= 0.8) return theme.greenDeep;
+    if (ratio >= 0.4) return theme.goldDeep;
+    if (ratio > 0) return theme.grayPill;
+    return theme.grayLight;
   };
 
+  // 「前回/今回」2カラム（主訴）
   const twoColPrevCur = ({ prevText, prevSub, curText, curSub }) => {
+    if (!hasPrevMain) {
+      return [
+        card(
+          [
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [pill("今回", theme.green), { type: "filler" }],
+            },
+            {
+              type: "text",
+              text: curText,
+              size: "lg",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+              margin: "sm",
+            },
+            ...(curSub
+              ? [
+                  {
+                    type: "text",
+                    text: curSub,
+                    size: "sm",
+                    color: theme.muted,
+                    wrap: true,
+                    margin: "xs",
+                  },
+                ]
+              : []),
+          ],
+          { margin: "md" }
+        ),
+      ];
+    }
+
     const left = card(
       [
         { type: "box", layout: "horizontal", contents: [pill("前回", theme.greenDeep), { type: "filler" }] },
-        { type: "text", text: prevText, size: "md", weight: "bold", color: theme.text, wrap: true, margin: "sm" },
-        ...(prevSub ? [{ type: "text", text: prevSub, size: "xs", color: theme.muted, wrap: true, margin: "xs" }] : []),
+        {
+          type: "text",
+          text: prevText,
+          size: "md",
+          weight: "bold",
+          color: theme.text,
+          wrap: true,
+          margin: "sm",
+        },
+        ...(prevSub
+          ? [{ type: "text", text: prevSub, size: "xs", color: theme.muted, wrap: true, margin: "xs" }]
+          : []),
       ],
       { margin: "none" }
     );
@@ -307,31 +364,34 @@ function buildResultBubbles({
     const right = card(
       [
         { type: "box", layout: "horizontal", contents: [pill("今回", theme.green), { type: "filler" }] },
-        { type: "text", text: curText, size: "md", weight: "bold", color: theme.text, wrap: true, margin: "sm" },
-        ...(curSub ? [{ type: "text", text: curSub, size: "xs", color: theme.muted, wrap: true, margin: "xs" }] : []),
+        {
+          type: "text",
+          text: curText,
+          size: "md",
+          weight: "bold",
+          color: theme.text,
+          wrap: true,
+          margin: "sm",
+        },
+        ...(curSub
+          ? [{ type: "text", text: curSub, size: "xs", color: theme.muted, wrap: true, margin: "xs" }]
+          : []),
       ],
       { margin: "none" }
     );
 
-    // 前回が無い場合は「今回」だけ大きく
-    if (!hasPrevMain) {
-      return [
-        card(
-          [
-            { type: "box", layout: "horizontal", contents: [pill("今回", theme.green), { type: "filler" }] },
-            { type: "text", text: curText, size: "lg", weight: "bold", color: theme.text, wrap: true, margin: "sm" },
-            ...(curSub ? [{ type: "text", text: curSub, size: "sm", color: theme.muted, wrap: true, margin: "xs" }] : []),
-          ],
-          { margin: "md" }
-        ),
-      ];
-    }
-
     return [
-      { type: "box", layout: "horizontal", spacing: "sm", margin: "md", contents: [left, right] },
+      {
+        type: "box",
+        layout: "horizontal",
+        spacing: "sm",
+        margin: "md",
+        contents: [left, right],
+      },
     ];
   };
 
+  // 指標カード（睡眠/食事/ストレス/体表ライン）
   const metricRow = (icon, title, prevStars, curStars, comment) =>
     card(
       [
@@ -344,21 +404,35 @@ function buildResultBubbles({
             { type: "text", text: title, size: "md", weight: "bold", color: theme.text, wrap: true, flex: 1 },
           ],
         },
-        { type: "text", text: `前回：${prevStars}　／　今回：${curStars}`, size: "sm", color: theme.text, wrap: true, margin: "sm" },
-        { type: "text", text: comment, size: "sm", color: theme.muted, wrap: true, margin: "xs" },
+        {
+          type: "text",
+          text: hasPrevMain
+            ? `前回：${prevStars}　／　今回：${curStars}`
+            : `今回：${curStars}`,
+          size: "sm",
+          color: theme.text,
+          wrap: true,
+          margin: "sm",
+        },
+        {
+          type: "text",
+          text: comment,
+          size: "sm",
+          color: theme.muted,
+          wrap: true,
+          margin: "xs",
+        },
       ],
       { margin: "md" }
     );
 
-  // 期間ラベル（ヘッダー用）
-  const effDays = effectiveDays || 1;
-  const periodLabel = `期間：前回チェック〜今回（${effDays}日間）`;
-
-  // ---- カード1：変化（リッチ） ----
+  // =========================
+  // バブル1：結果（変化）
+  // =========================
   const bubble1 = {
     type: "bubble",
     size: "mega",
-    header: headerBox("📊 今週のととのいチェック結果", theme.green, periodLabel),
+    header: headerBox("📊 今週のととのいチェック結果", theme.green, [periodBadge, compareBadge]),
     body: {
       type: "box",
       layout: "vertical",
@@ -369,16 +443,43 @@ function buildResultBubbles({
         // 主訴
         card(
           [
-            { type: "text", text: `🌡 主なお悩み（${symptomName}）`, size: "md", weight: "bold", color: theme.text, wrap: true },
-            { type: "text", text: "★が多いほど「ラクに近い」状態です。", size: "xs", color: theme.subtle, wrap: true, margin: "xs" },
-            ...twoColPrevCur({ prevText: prevMainStars, prevSub: prevMainComfort, curText: curMainStars, curSub: curMainComfort }),
+            {
+              type: "text",
+              text: `🌡 主なお悩み（${symptomName}）`,
+              size: "md",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+            },
+            {
+              type: "text",
+              text: "★が多いほど「ラクに近い」状態です。",
+              size: "xs",
+              color: theme.subtle,
+              wrap: true,
+              margin: "xs",
+            },
+            ...twoColPrevCur({
+              prevText: prevMainStars,
+              prevSub: prevMainComfort,
+              curText: curMainStars,
+              curSub: curMainComfort,
+            }),
             { type: "separator", margin: "md" },
-            { type: "text", text: mainTrendComment, size: "md", weight: "bold", color: theme.text, wrap: true, margin: "md" },
+            {
+              type: "text",
+              text: mainTrendComment,
+              size: "md",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+              margin: "md",
+            },
           ],
           { margin: "none" }
         ),
 
-        // 支える要素
+        // 支える要素（見出しカード）
         card(
           [
             { type: "text", text: "🧩 ととのいを支える要素", size: "md", weight: "bold", color: theme.text, wrap: true },
@@ -387,20 +488,23 @@ function buildResultBubbles({
           { margin: "md" }
         ),
 
-        // 生活・こころ
+        // 指標
         metricRow("🌙", "睡眠（リズム／質）", prevSleepStars, curSleepStars, sleepTrendComment),
         metricRow("🍽", "食事（タイミング／バランス）", prevMealStars, curMealStars, mealTrendComment),
         metricRow("😮‍💨", "ストレス・気分の安定度", prevStressStars, curStressStars, stressTrendComment),
-
-        // 体表ライン（負荷チェック）
         metricRow("🧍‍♀️", `体表ライン（負荷チェック：${motionName}）`, prevMotionStars, curMotionStars, motionTrendComment),
       ],
     },
   };
 
-  // ---- カード2：ケア実施状況（空状態対応＋色づけ） ----
+  // =========================
+  // バブル2：ケア実施（空状態対応＋優先/サポート＋色つきゲージ）
+  // =========================
   const adviceCards = Array.isArray(context.advice) ? context.advice : [];
-  const priorityKeys = adviceCards.filter((c) => c.priority === 1 && c.key).map((c) => c.key);
+  const priorityKeys = adviceCards
+    .filter((c) => c && c.priority === 1 && c.key)
+    .map((c) => c.key);
+
   const isPriority = (key) => priorityKeys.includes(key);
 
   const pillars = [
@@ -412,17 +516,21 @@ function buildResultBubbles({
   ];
 
   const hasAnyCare = pillars.some((p) => (p.count || 0) > 0);
-  const isEmptyCareState = !hasAnyCare;
+  const emptyCare = !hasAnyCare;
 
   const lineBlock = (p, kind = "support") => {
-    const ratio = effDays > 0 ? (p.count || 0) / effDays : 0;
+    const ratio = (p.count || 0) / effDays;
     const gauge = careRatioToGauge(p.count, effDays);
 
-    const gaugeBg = gaugeColorByRatio(ratio);
+    // 「色つきゲージバッジ」：視認性の核
+    const gaugePill = pill(`［${gauge}］`, gaugeColorByRatio(ratio), theme.white);
+
+    // 優先ケアは枠色で“ちょい強調”（やりすぎない）
     const borderColor = kind === "priority" ? theme.greenDeep : theme.borderGold;
 
-    const daysLine = isEmptyCareState
-      ? `実施日数：0日（この期間は未記録） / ${effDays}日`
+    // 空状態だと「0/○」が責め感になるので文を変える
+    const daysText = emptyCare
+      ? `実施日数：未記録（この期間はまだ入力がありません）／ 対象：${effDays}日`
       : `実施日数：${p.count}日 / ${effDays}日`;
 
     return card(
@@ -432,12 +540,26 @@ function buildResultBubbles({
           layout: "horizontal",
           spacing: "sm",
           contents: [
-            { type: "text", text: p.label, size: "md", weight: "bold", color: theme.text, wrap: true, flex: 1 },
-            // ゲージを色つきバッジで表示（視認性UP）
-            pill(`［${gauge}］`, gaugeBg, "#ffffff"),
+            {
+              type: "text",
+              text: p.label,
+              size: "md",
+              weight: "bold",
+              color: theme.text,
+              wrap: true,
+              flex: 1,
+            },
+            gaugePill,
           ],
         },
-        { type: "text", text: daysLine, size: "sm", color: theme.muted, wrap: true, margin: "sm" },
+        {
+          type: "text",
+          text: daysText,
+          size: "sm",
+          color: theme.muted,
+          wrap: true,
+          margin: "sm",
+        },
       ],
       { margin: "md", borderColor }
     );
@@ -452,7 +574,9 @@ function buildResultBubbles({
       const b = lineBlock(p, "support");
       supportList.push(b);
       allList.push(b);
-    } else if (isPriority(p.adviceKey)) {
+      continue;
+    }
+    if (isPriority(p.adviceKey)) {
       const b = lineBlock(p, "priority");
       priorityList.push(b);
       allList.push(b);
@@ -463,14 +587,18 @@ function buildResultBubbles({
     }
   }
 
-  const bubble2Sub = isEmptyCareState
-    ? `${periodLabel}／今回は未記録`
-    : periodLabel;
+  // 2枚目ヘッダーにも「期間」バッジを置く（あなたの好み）
+  const bubble2Badges = [
+    pill(`対象：${effDays}日`, "rgba(255,255,255,0.22)", theme.white),
+    emptyCare
+      ? pill("今回は未記録", "rgba(255,255,255,0.22)", theme.white)
+      : pill("記録あり", "rgba(255,255,255,0.22)", theme.white),
+  ];
 
   const bubble2 = {
     type: "bubble",
     size: "mega",
-    header: headerBox("🪴 ケア実施状況（前回〜今回）", theme.gold, bubble2Sub),
+    header: headerBox("🪴 ケア実施状況（前回〜今回）", theme.gold, bubble2Badges),
     body: {
       type: "box",
       layout: "vertical",
@@ -478,34 +606,67 @@ function buildResultBubbles({
       paddingAll: "16px",
       spacing: "md",
       contents: [
-        ...(isEmptyCareState
+        // 説明カード：空状態は“前置き”を変える
+        card(
+          [
+            {
+              type: "text",
+              text: emptyCare
+                ? "📌 ここは「次回から傾向が見える」ゾーンです。"
+                : "■が多いほど、そのケアを実施できた日が多い状態です。",
+              size: "md",
+              weight: emptyCare ? "bold" : "regular",
+              color: theme.text,
+              wrap: true,
+            },
+            {
+              type: "text",
+              text: emptyCare
+                ? "ケアをやった日は、メニューの実施ボタンで記録しておくと、次回の分析が一気に精度アップします。"
+                : "優先ケアは「今期の軸」。サポートは補助やおまけ枠です。",
+              size: "sm",
+              color: theme.muted,
+              wrap: true,
+              margin: "sm",
+            },
+            {
+              type: "text",
+              text: "ゲージは「濃いほど多め」（緑＞金＞灰）です。",
+              size: "xs",
+              color: theme.subtle,
+              wrap: true,
+              margin: "sm",
+            },
+          ],
+          { margin: "none", bg: theme.cardBg, borderColor: theme.borderGold }
+        ),
+
+        ...(emptyCare
           ? [
-              card(
-                [
-                  { type: "text", text: "📌 この期間は、まだケアの実施記録が入っていないようです。", size: "md", weight: "bold", color: theme.text, wrap: true },
-                  { type: "text", text: "ここは“これからの基準”として表示しています。次回以降、記録がたまるほど傾向が見えやすくなります。", size: "sm", color: theme.muted, wrap: true, margin: "sm" },
-                ],
-                { margin: "none", borderColor: theme.borderGold }
-              ),
-              // 空状態は優先/サポート分けしない（違和感を消す）
+              // 空状態は分けない（“優先/サポート”の意味がまだ無いのでノイズになる）
               ...allList,
             ]
           : [
-              card(
-                [{ type: "text", text: "ゲージが濃いほど、そのケアを実施できた日が多い状態です。", size: "sm", color: theme.muted, wrap: true }],
-                { margin: "none", bg: theme.cardBg }
-              ),
-
               ...(priorityList.length
                 ? [
-                    { type: "box", layout: "horizontal", margin: "md", contents: [pill("優先ケア", theme.goldDeep), { type: "filler" }] },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      margin: "md",
+                      contents: [pill("優先ケア", theme.greenDeep), { type: "filler" }],
+                    },
                     ...priorityList,
                   ]
                 : []),
 
               ...(supportList.length
                 ? [
-                    { type: "box", layout: "horizontal", margin: "md", contents: [pill("サポート・おまけ", "#8A8A8A"), { type: "filler" }] },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      margin: "md",
+                      contents: [pill("サポート・おまけ", theme.grayPill), { type: "filler" }],
+                    },
                     ...supportList,
                   ]
                 : []),
@@ -514,7 +675,9 @@ function buildResultBubbles({
     },
   };
 
-  // ---- CTA バブル（リッチ） ----
+  // =========================
+  // CTA：AIへ（巡り通信もここで触れる）
+  // =========================
   const ctaBubble = {
     type: "bubble",
     size: "mega",
@@ -536,9 +699,15 @@ function buildResultBubbles({
         },
         card(
           [
-            { type: "text", text: "📬 からだの巡り通信（週1）でも、ここでの内容を“やさしく要約”してお届けします。", size: "sm", color: theme.muted, wrap: true },
+            {
+              type: "text",
+              text: "📬 からだの巡り通信（週1）でも、ここでの内容を“やさしく要約”してお届けします。",
+              size: "sm",
+              color: theme.muted,
+              wrap: true,
+            },
           ],
-          { bg: theme.bodyBg, borderColor: theme.border, paddingAll: "12px" }
+          { margin: "none", bg: theme.bodyBg, borderColor: theme.border }
         ),
         {
           type: "button",
