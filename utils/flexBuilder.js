@@ -278,75 +278,162 @@ async function buildQuestionFlex(questionFunction) {
   }
 }
 
-function buildMultiQuestionFlex({ altText, header, body, questions }) {
-  const questionContents = questions.flatMap((q) => [
-    {
-      type: 'text',
-      text: `🔸 ${q.title}`,
-      weight: 'bold',
-      size: 'sm',
-      margin: 'md',
-      color: '#444444',
-    },
-    {
-      type: 'box',
-      layout: 'horizontal',
-      spacing: 'sm',
-      margin: 'sm',
-      contents: q.items.map((choice) => ({
-        type: 'button',
+// ========================================
+// ✅ リッチ版 buildMultiQuestionFlex（ととのい度チェック含むマルチ質問UI）
+// - 本文/質問ラベルは読みやすく md
+// - 質問ごとに「カード化」して視認性UP
+// - 選択肢が 4〜5 個のときは自動で2段に分割（5→3+2 / 4→2+2）
+// ========================================
+function buildMultiQuestionFlex({
+  altText,
+  header,
+  body,
+  questions,
+  stepLabel = null, // 例: "0/5" や "2/5"
+  subHeader = null,
+  hintText = "👇 それぞれ選んでください",
+  theme = {
+    headerBg: "#7B9E76",
+    bodyBg: "#F8F9F7",
+    cardBg: "#FFFFFF",
+    border: "#DDE6DB",
+    accent: "#7B9E76",
+    text: "#0d0d0d",
+    muted: "#777777",
+  },
+}) {
+  const chunk = (arr, size) => {
+    const out = [];
+    for (let i = 0; i < (arr || []).length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  };
+
+  const decideRowSize = (n) => {
+    // 5段階 → 3 + 2（押しやすさ優先）
+    if (n === 5) return 3;
+    // 4段階 → 2 + 2
+    if (n === 4) return 2;
+    // 3以下は1段
+    return n || 1;
+  };
+
+  const questionCards = (questions || []).map((q) => {
+    const items = Array.isArray(q.items) ? q.items : [];
+    const rowSize = decideRowSize(items.length);
+    const rows = chunk(items, rowSize);
+
+    const buttonRowBoxes = rows.map((row, idx) => ({
+      type: "box",
+      layout: "horizontal",
+      spacing: "sm",
+      margin: idx === 0 ? "md" : "sm",
+      contents: row.map((choice) => ({
+        type: "button",
         action: {
-          type: 'postback',
-          label: choice,
+          type: "postback",
+          label: String(choice),
           data: `${q.key}:${choice}`,
           displayText: `${q.title} → ${choice}`,
         },
-        height: 'sm',
-        style: 'primary',
-        color: '#7B9E76',
+        height: "sm",
+        style: "primary",
+        color: theme.accent,
         flex: 1,
       })),
-    },
-  ]);
+    }));
+
+    return {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: theme.cardBg,
+      cornerRadius: "12px",
+      borderWidth: "1px",
+      borderColor: theme.border,
+      paddingAll: "12px",
+      spacing: "sm",
+      margin: "md",
+      contents: [
+        {
+          type: "text",
+          text: `🔸 ${q.title}`,
+          weight: "bold",
+          size: "md",
+          color: theme.text,
+          wrap: true,
+        },
+        ...buttonRowBoxes,
+      ],
+    };
+  });
 
   return {
-    type: 'flex',
+    type: "flex",
     altText,
     contents: {
-      type: 'bubble',
-      size: 'mega',
+      type: "bubble",
+      size: "mega",
       header: {
-        type: 'box',
-        layout: 'vertical',
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        backgroundColor: theme.headerBg,
+        paddingAll: "14px",
         contents: [
+          ...(stepLabel
+            ? [
+                {
+                  type: "text",
+                  text: stepLabel,
+                  size: "xs",
+                  color: "#ffffff",
+                  weight: "bold",
+                },
+              ]
+            : []),
           {
-            type: 'text',
+            type: "text",
             text: header,
-            weight: 'bold',
-            size: 'md',
-            color: '#ffffff',
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff",
+            wrap: true,
           },
+          ...(subHeader
+            ? [
+                {
+                  type: "text",
+                  text: subHeader,
+                  size: "sm",
+                  color: "#F1F6F1",
+                  wrap: true,
+                },
+              ]
+            : []),
         ],
-        backgroundColor: '#7B9E76',
-        paddingAll: '12px',
       },
       body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'md',
+        type: "box",
+        layout: "vertical",
+        backgroundColor: theme.bodyBg,
+        paddingAll: "16px",
+        spacing: "md",
         contents: [
           {
-            type: 'text',
+            type: "text",
             text: body,
             wrap: true,
-            size: 'md',
-            color: '#0d0d0d',
+            size: "md",
+            color: theme.text,
           },
+          { type: "separator", margin: "md" },
           {
-            type: 'separator',
-            margin: 'md',
+            type: "text",
+            text: hintText,
+            size: "sm",
+            color: theme.muted,
+            wrap: true,
           },
-          ...questionContents,
+          ...questionCards,
         ],
       },
     },
