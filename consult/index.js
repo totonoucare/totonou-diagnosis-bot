@@ -203,10 +203,10 @@ const start = Date.now();
 
 const rsp = await openai.responses.create({
   model: "gpt-5.2",
-  input: messages,                 // ← ここだけ変更（文字列結合をやめる）
-  reasoning: { effort: "low" },
+  input: messages,                 // ← 文字列結合をやめる（system/user をそのまま渡す）
+  // reasoning は速さ優先なら "none" 推奨（または丸ごと省略）
+  reasoning: { effort: "none" },   // ← ここが効く可能性高い
   text: { verbosity: "low" },
-  // max_output_tokens: 300,        // ← 速くしたいなら任意で追加（Flex向け）
 });
 
 const duration = (Date.now() - start) / 1000;
