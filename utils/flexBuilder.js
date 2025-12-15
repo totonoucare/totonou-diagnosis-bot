@@ -1,9 +1,8 @@
 // ========================================
-// ✅ MessageBuilder（メリハリ版）
+// ✅ リッチ版 MessageBuilder（質問・選択UI共通）
 // - 進行表示：0/5〜5/5
-// - 本文：md（読みやすさ優先）
-// - 周辺情報：sm/xs（圧迫感を減らす）
-// - \n\n を段落として分割し、余白を自然に作る
+// - 本文の改行(\n)を「複数text」に分割して行間調整
+// - 空行(\n\n)は “小さいスペーサー行” に矯正（デカすぎ問題対策）
 // ========================================
 function MessageBuilder({
   altText,
@@ -23,30 +22,77 @@ function MessageBuilder({
     text: "#0d0d0d",
     muted: "#777777",
   },
+  typography = {
+    // ここで全体の“メリハリ”を調整できる
+    bodySize: "md",
+    bodyLineSpacing: "6px",   // だいたい 1.5行っぽい見え方
+    noteSize: "sm",
+    noteLineSpacing: "5px",
+    hintSize: "xs",
+    hintLineSpacing: "4px",
+    optionSize: "md",         // 選択肢の文字は読みやすさ優先で md
+  },
 }) {
-  // 段落（\n\n）で分割して text ブロック化 → “行間/余白”を作る
-  function toParagraphTexts(text, { size = "md", color = theme.text, weight = "regular" } = {}) {
-    const t = String(text || "").trim();
-    if (!t) return [];
+  // ----------------------------
+  // ✅ 改行テキスト → Flex text配列
+  // - "\n" は自然な段落
+  // - 空行は「小さい行」で矯正（"\n\n" がデカくならない）
+  // ----------------------------
+  function toTextBlocks(text, {
+    size = "md",
+    color = theme.text,
+    weight = "regular",
+    lineSpacing = "6px",
+    // 空行の高さ（xsで控えめ）
+    blankSize = "xs",
+    blankColor = theme.cardBg, // 背景と同色で見えない
+  } = {}) {
+    const t = String(text ?? "");
+    if (!t.trim()) return [];
 
-    const paras = t
-      .split(/\n{2,}/)         // \n\n 以上を段落区切りに
-      .map(s => s.trim())
-      .filter(Boolean);
+    // 改行は維持するが、空行連続は “1つの空行” に圧縮
+    const lines = t.split(/\r?\n/);
+    const blocks = [];
 
-    return paras.map((p, i) => ({
-      type: "text",
-      text: p,
-      wrap: true,
-      size,
-      weight,
-      color,
-      lineSpacing: "4px",
-      margin: i === 0 ? "none" : "sm",  // 段落ごとに余白
-    }));
+    let prevWasBlank = false;
+
+    for (const raw of lines) {
+      const line = String(raw ?? "");
+      const isBlank = line.trim() === "";
+
+      if (isBlank) {
+        if (prevWasBlank) continue; // 空行連続は1つに圧縮
+        prevWasBlank = true;
+        blocks.push({
+          type: "text",
+          text: " ",               // スペーサー
+          size: blankSize,
+          color: blankColor,       // 見えない
+          wrap: false,
+          margin: "none",
+        });
+        continue;
+      }
+
+      prevWasBlank = false;
+
+      blocks.push({
+        type: "text",
+        text: line,
+        wrap: true,
+        size,
+        color,
+        weight,
+        lineSpacing,
+      });
+    }
+
+    return blocks;
   }
 
-  // 選択肢（カード型）
+  // ----------------------------
+  // ✅ 選択肢カード（行は1つ、カード化）
+  // ----------------------------
   const actionRows = (buttons || []).map((btn) => {
     const label = String(btn.label || "");
     const emoji = btn.emoji ? String(btn.emoji) : "🌿";
@@ -71,7 +117,7 @@ function MessageBuilder({
         {
           type: "text",
           text: label,
-          size: "md",               // ✅ ラベルは読みやすく md
+          size: typography.optionSize,   // ← md固定でもOK。詰まるなら"sm"にしても良い
           weight: "bold",
           color: theme.text,
           wrap: true,
@@ -90,6 +136,36 @@ function MessageBuilder({
     };
   });
 
+  // ----------------------------
+  // ✅ 本文カードの中身（body / note を分割表示）
+  // ----------------------------
+  const bodyBlocks = toTextBlocks(body, {
+    size: typography.bodySize,
+    color: theme.text,
+    weight: "regular",
+    lineSpacing: typography.bodyLineSpacing,
+  });
+
+  const noteBlocks = note
+    ? toTextBlocks(note, {
+        size: typography.noteSize,
+        color: theme.muted,
+        weight: "regular",
+        lineSpacing: typography.noteLineSpacing,
+        blankColor: theme.cardBg,
+      })
+    : [];
+
+  const hintBlocks = hintText
+    ? toTextBlocks(hintText, {
+        size: typography.hintSize,
+        color: theme.muted,
+        weight: "bold",
+        lineSpacing: typography.hintLineSpacing,
+        blankColor: theme.bodyBg,
+      })
+    : [];
+
   return {
     type: "flex",
     altText,
@@ -107,14 +183,13 @@ function MessageBuilder({
             ? [
                 {
                   type: "text",
-                  text: stepLabel,     // 例: "0/5"
-                  size: "sm",          // ✅ 進行は sm（メリハリ）
+                  text: stepLabel,     // "0/5"
+                  size: "xs",          // ← ここは xs で圧迫感減らす
                   color: "#ffffff",
                   weight: "bold",
                 },
               ]
             : []),
-
           {
             type: "text",
             text: header,
@@ -124,13 +199,12 @@ function MessageBuilder({
             wrap: true,
             lineSpacing: "4px",
           },
-
           ...(subHeader
             ? [
                 {
                   type: "text",
                   text: subHeader,
-                  size: "sm",          // ✅ サブは sm
+                  size: "sm",          // ← mdだと重いので sm
                   color: "#F1F6F1",
                   wrap: true,
                   lineSpacing: "4px",
@@ -158,12 +232,11 @@ function MessageBuilder({
             borderColor: theme.border,
             spacing: "sm",
             contents: [
-              ...toParagraphTexts(body, { size: "md", color: theme.text, weight: "regular" }),
-
-              ...(note
+              ...bodyBlocks,
+              ...(noteBlocks.length
                 ? [
                     { type: "separator", margin: "md" },
-                    ...toParagraphTexts(note, { size: "xs", color: theme.muted, weight: "regular" }),
+                    ...noteBlocks,
                   ]
                 : []),
             ],
@@ -171,19 +244,8 @@ function MessageBuilder({
 
           { type: "separator", margin: "md" },
 
-          // 選択肢エリアの導線文
-          ...(hintText
-            ? [
-                {
-                  type: "text",
-                  text: hintText,
-                  size: "sm",          // ✅ 導線は sm
-                  color: theme.muted,
-                  wrap: true,
-                  lineSpacing: "4px",
-                },
-              ]
-            : []),
+          // 選択肢エリアの導線文（ここは xs/sm で軽く）
+          ...hintBlocks,
 
           ...actionRows,
         ],
@@ -223,28 +285,17 @@ function buildCategorySelectionFlex() {
     body: "どんなお悩みを“ととのえたい”ですか？\nいちばん気になるものを1つ選んでください。",
     note: "※別のテーマで分析をやり直したい場合は、分析完了後にもう一度『ととのえタイプ再分析』からやり直せます",
     buttons: categories,
-    theme: {
-      headerBg: "#7B9E76",
-      bodyBg: "#F8F9F7",
-      cardBg: "#FFFFFF",
-      border: "#DDE6DB",
-      accent: "#7B9E76",
-      text: "#0d0d0d",
-      muted: "#777777",
-    },
   });
 }
 
 // ========================================
-// ✅ 質問本体：questionFunction側が返すflexを「1/5〜5/5」に上書き可能にする
-// - questionFunctionが MessageBuilder を使っていない場合でも安全に通す
+// ✅ 質問本体：1/5〜5/5 の進行表示を付与
 // ========================================
 function extractStepFromHeaderText(headerText) {
-  // "【Q1】..." / "Q1" / "1" などを雑に拾う
   const s = String(headerText || "");
   const m1 = s.match(/Q(\d+)/);
   if (m1) return Number(m1[1]);
-  const m2 = s.match(/【(\d+)】/);
+  const m2 = s.match(/【Q?(\d+)】/);
   if (m2) return Number(m2[1]);
   return null;
 }
@@ -254,33 +305,30 @@ function applyProgressLabelToFlex(flex, total = 5) {
     const headerBox = flex?.contents?.header;
     if (!headerBox?.contents?.length) return flex;
 
-    // headerの先頭textを見てQ番号を推定
-    const firstText = headerBox.contents.find((c) => c?.type === "text" && typeof c.text === "string");
+    const firstText = headerBox.contents.find(
+      (c) => c?.type === "text" && typeof c.text === "string"
+    );
     const step = extractStepFromHeaderText(firstText?.text);
 
-    // 1〜5以外は触らない
     if (!step || step < 1 || step > total) return flex;
 
-    // すでに stepLabel 行がある想定ならその行を書き換え、無ければ先頭に挿入
-    // stepLabel行は「md/白/太字」で "1/5" の形式にする
     const progressText = `${step}/${total}`;
 
-    const maybeProgress = headerBox.contents[0];
+    // 先頭が "x/y" っぽければ上書き。無ければ挿入
+    const head = headerBox.contents[0];
     const looksLikeProgress =
-      maybeProgress?.type === "text" &&
-      typeof maybeProgress.text === "string" &&
-      maybeProgress.text.includes("/");
+      head?.type === "text" && typeof head.text === "string" && head.text.includes("/");
 
     if (looksLikeProgress) {
-      headerBox.contents[0].text = progressText;
-      headerBox.contents[0].size = "md";
-      headerBox.contents[0].weight = "bold";
-      headerBox.contents[0].color = "#ffffff";
+      head.text = progressText;
+      head.size = "xs";
+      head.weight = "bold";
+      head.color = "#ffffff";
     } else {
       headerBox.contents.unshift({
         type: "text",
         text: progressText,
-        size: "md",
+        size: "xs",
         color: "#ffffff",
         weight: "bold",
       });
@@ -290,18 +338,13 @@ function applyProgressLabelToFlex(flex, total = 5) {
   return flex;
 }
 
-// 既存の buildQuestionFlex を差し替え（progress適用）
 async function buildQuestionFlex(questionFunction) {
   try {
     const flex = await questionFunction();
-    // ✅ ここで 1/5〜5/5 を付与
     return applyProgressLabelToFlex(flex, 5);
   } catch (error) {
     console.error("❌ 質問関数の実行エラー", error);
-    return {
-      type: "text",
-      text: "ごめんなさい、質問の取得に失敗しました。もう一度試してください。",
-    };
+    return { type: "text", text: "ごめんなさい、質問の取得に失敗しました。もう一度試してください。" };
   }
 }
 
