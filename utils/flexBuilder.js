@@ -1005,31 +1005,39 @@ function buildResultFlex(result, imageUrl) {
 }
 
 // ========================================
-// ととのうケアガイド（カルーセル生成）— リッチ版
+// ととのうケアガイド（カルーセル生成）— リッチ版（冒頭段落の欠落を修正）
 // ========================================
 function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのうケアガイド") {
   const arr = Array.isArray(cards) ? cards : [];
 
-  // 文章を「【やり方】【効果】【目安】」などの見出しで分割
+  // ✅ 文章を「【やり方】【効果】【目安】」などの見出しで分割
+  // - 見出しがある場合でも「最初の【】より前の段落」を捨てない（←修正点）
   function splitSections(text) {
     const t = String(text || "").trim();
     if (!t) return [];
 
     const re = /【([^】]+)】/g;
     const matches = [...t.matchAll(re)];
-    if (matches.length === 0) {
-      // 見出しが無ければ、そのまま1セクション扱い
-      return [{ title: null, body: t }];
-    }
+
+    // 見出しが無ければ、そのまま1セクション扱い
+    if (matches.length === 0) return [{ title: null, body: t }];
 
     const sections = [];
+
+    // ✅ 先頭（最初の【】より前）を拾う
+    const firstIdx = matches[0]?.index ?? 0;
+    const preface = t.slice(0, firstIdx).trim();
+    if (preface) sections.push({ title: null, body: preface });
+
+    // ✅ 見出し本文を拾う
     for (let i = 0; i < matches.length; i++) {
       const title = matches[i][1]?.trim() || null;
-      const start = matches[i].index + matches[i][0].length;
-      const end = (i + 1 < matches.length) ? matches[i + 1].index : t.length;
+      const start = (matches[i].index ?? 0) + matches[i][0].length;
+      const end = i + 1 < matches.length ? (matches[i + 1].index ?? t.length) : t.length;
       const body = t.slice(start, end).trim();
       if (title || body) sections.push({ title, body });
     }
+
     return sections.length ? sections : [{ title: null, body: t }];
   }
 
@@ -1049,7 +1057,17 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
     }));
   }
 
+  // ✅ セクションカード（冒頭のキャッチ1行を強調できるように）
   function sectionBlock(title, body, accentColor) {
+    const safeBody = String(body || "").trim();
+
+    // 見出しが無いセクション（＝冒頭段落など）だけ、1行目が短ければ“キャッチ”扱いにする
+    const lines = safeBody.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const canPromoteLead = !title && lines.length >= 2 && lines[0].length <= 22;
+
+    const leadLine = canPromoteLead ? lines[0] : null;
+    const restText = canPromoteLead ? lines.slice(1).join("\n") : safeBody;
+
     const titleRow = title
       ? [{
           type: "box",
@@ -1071,7 +1089,22 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
       spacing: "sm",
       contents: [
         ...titleRow,
-        ...toTextBlocks(body, { size: "sm", color: "#222222" }),
+
+        ...(leadLine
+          ? [{
+              type: "text",
+              text: leadLine,
+              wrap: true,
+              size: "md",
+              weight: "bold",
+              color: "#111111",
+              lineSpacing: "4px",
+            },
+            { type: "separator", margin: "md" },
+          ]
+          : []),
+
+        ...toTextBlocks(restText, { size: "sm", color: "#222222" }),
       ],
     };
   }
@@ -1081,10 +1114,10 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
 
     const theme = isPriority
       ? {
-          headerBg: "#2F5E3A",   // 濃いめグリーン
-          badgeBg: "#D6B45A",    // ゴールド
+          headerBg: "#2F5E3A",
+          badgeBg: "#D6B45A",
           badgeText: "最優先ケア",
-          accent: "#B78949",     // ゴールド寄りアクセント
+          accent: "#B78949",
           bodyBg: "#F8F9F7",
           button: "#2F5E3A",
         }
@@ -1099,7 +1132,7 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
 
     const bodyContents = [];
 
-    // --- 上部：バッジ＋短い説明（intro/explain）を「カード風」にまとめる
+    // バッジ＋ページ
     bodyContents.push({
       type: "box",
       layout: "horizontal",
@@ -1112,60 +1145,45 @@ function buildAdviceCarouselFlex(cards, altText = "あなた専用ととのう�
           paddingAll: "6px",
           paddingStart: "10px",
           paddingEnd: "10px",
-          contents: [
-            {
-              type: "text",
-              text: theme.badgeText,
-              size: "xs",
-              weight: "bold",
-              color: "#1F2A1F",
-              wrap: false,
-            },
-          ],
+          contents: [{ type: "text", text: theme.badgeText, size: "xs", weight: "bold", color: "#1F2A1F", wrap: false }],
           flex: 0,
         },
         { type: "filler" },
-        {
-          type: "text",
-          text: `${index + 1}/${arr.length}`,
-          size: "xs",
-          color: "#888888",
-          align: "end",
-        },
+        { type: "text", text: `${index + 1}/${arr.length}`, size: "xs", color: "#888888", align: "end" },
       ],
       margin: "none",
     });
 
-// intro / explain を “まとめカード” として表示
-const introText = String(card?.intro || "").trim();
-const explainText = String(card?.explain || "").trim();
-const leadParts = [introText, explainText].filter(Boolean);
+    // intro / explain
+    const introText = String(card?.intro || "").trim();
+    const explainText = String(card?.explain || "").trim();
+    const leadParts = [introText, explainText].filter(Boolean);
 
-if (leadParts.length) {
-  bodyContents.push({
-    type: "box",
-    layout: "vertical",
-    backgroundColor: "#FFFFFF",
-    cornerRadius: "12px",
-    paddingAll: "12px",
-    margin: "md",
-    spacing: "sm",
-    contents: leadParts.flatMap((t, i) => ([
-      {
-        type: "text",
-        text: t,
-        wrap: true,
-        size: "xs",          // ← 小さく
-        weight: "bold",      // ← 太字
-        color: "#222222",
-        lineSpacing: "4px",
-      },
-      ...(i < leadParts.length - 1 ? [{ type: "separator", margin: "md" }] : []),
-    ])),
-  });
-}
+    if (leadParts.length) {
+      bodyContents.push({
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#FFFFFF",
+        cornerRadius: "12px",
+        paddingAll: "12px",
+        margin: "md",
+        spacing: "sm",
+        contents: leadParts.flatMap((t, i) => ([
+          {
+            type: "text",
+            text: t,
+            wrap: true,
+            size: "xs",
+            weight: "bold",
+            color: "#222222",
+            lineSpacing: "4px",
+          },
+          ...(i < leadParts.length - 1 ? [{ type: "separator", margin: "md" }] : []),
+        ])),
+      });
+    }
 
-    // --- 本文：セクション化（【やり方】【効果】【目安】など）
+    // 本文：セクション化（✅冒頭段落も拾う）
     const sections = splitSections(card?.body);
     if (sections.length) {
       bodyContents.push({ type: "separator", margin: "lg" });
@@ -1174,13 +1192,12 @@ if (leadParts.length) {
         bodyContents.push(sectionBlock(s.title, s.body, theme.accent));
         bodyContents.push({ type: "separator", margin: "md" });
       }
-      // 末尾のseparatorが余るので削除
       if (bodyContents.length && bodyContents[bodyContents.length - 1]?.type === "separator") {
         bodyContents.pop();
       }
     }
 
-    // --- 図解ボタン（footerに寄せて“リッチ感”）
+    // 図解ボタン
     const hasLink = !!String(card?.link || "").trim();
     const footer = hasLink
       ? {
@@ -1190,22 +1207,12 @@ if (leadParts.length) {
           contents: [
             {
               type: "button",
-              action: {
-                type: "uri",
-                label: "📖 図解を見る",
-                uri: card.link,
-              },
+              action: { type: "uri", label: "📖 図解を見る", uri: card.link },
               style: "primary",
               color: theme.button,
               height: "sm",
             },
-            {
-              type: "text",
-              text: "※ 図解はブラウザで開きます",
-              size: "xs",
-              color: "#888888",
-              wrap: true,
-            },
+            { type: "text", text: "※ 図解はブラウザで開きます", size: "xs", color: "#888888", wrap: true },
           ],
         }
       : undefined;
@@ -1244,10 +1251,7 @@ if (leadParts.length) {
   return {
     type: "flex",
     altText,
-    contents: {
-      type: "carousel",
-      contents: bubbles,
-    },
+    contents: { type: "carousel", contents: bubbles },
   };
 }
 
