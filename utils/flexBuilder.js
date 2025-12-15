@@ -1462,7 +1462,7 @@ function buildTotonouConsultExamplesFlex() {
           },
           {
             type: "text",
-            text: "体の“地図”×“現在地”×“足あと”を読んで整え方を案内します",
+            text: "あなたの“体の地図”×“状態の現在地”×“ケアの足あと”を読んで整え方を案内します",
             size: "xs",
             color: "#F0F0F0",
             wrap: true
@@ -1556,30 +1556,6 @@ function buildTotonouConsultExamplesFlex() {
             backgroundColor: "#f6f6f4",
             cornerRadius: "6px",
             contents: [
-              { type: "text", text: "④ ケア効果の反映具合を知りたい✨", weight: "bold", size: "sm" },
-              { type: "text", text: "前回と今回の“ととのい度の差”と、ケアログの積み上がりからレポートします。", wrap: true, size: "xs" },
-              {
-                type: "button",
-                style: "primary",
-                color: "#7B9E76",
-                margin: "sm",
-                action: {
-                  type: "message",
-                  label: "ケア効果の反映具合を聞く",
-                  text: "ケア効果の反映具合を聞く"
-                }
-              }
-            ]
-          },
-
-          // 5
-          {
-            type: "box",
-            layout: "vertical",
-            paddingAll: "8px",
-            backgroundColor: "#f6f6f4",
-            cornerRadius: "6px",
-            contents: [
               { type: "text", text: "⑤ 体質に合う献立・食べ方の相談🥗", weight: "bold", size: "sm" },
               { type: "text", text: "体質タイプに応じて食材やメニューの方向性を提案します。", wrap: true, size: "xs" },
               {
@@ -1596,7 +1572,7 @@ function buildTotonouConsultExamplesFlex() {
             ]
           },
 
-          // 6
+          // 5
           {
             type: "box",
             layout: "vertical",
