@@ -1,7 +1,9 @@
 // ========================================
-// ✅ リッチ版 MessageBuilder（質問・選択UI共通）
+// ✅ MessageBuilder（メリハリ版）
 // - 進行表示：0/5〜5/5
-// - 本文/ボタンラベル：md（sm禁止）
+// - 本文：md（読みやすさ優先）
+// - 周辺情報：sm/xs（圧迫感を減らす）
+// - \n\n を段落として分割し、余白を自然に作る
 // ========================================
 function MessageBuilder({
   altText,
@@ -22,6 +24,29 @@ function MessageBuilder({
     muted: "#777777",
   },
 }) {
+  // 段落（\n\n）で分割して text ブロック化 → “行間/余白”を作る
+  function toParagraphTexts(text, { size = "md", color = theme.text, weight = "regular" } = {}) {
+    const t = String(text || "").trim();
+    if (!t) return [];
+
+    const paras = t
+      .split(/\n{2,}/)         // \n\n 以上を段落区切りに
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    return paras.map((p, i) => ({
+      type: "text",
+      text: p,
+      wrap: true,
+      size,
+      weight,
+      color,
+      lineSpacing: "4px",
+      margin: i === 0 ? "none" : "sm",  // 段落ごとに余白
+    }));
+  }
+
+  // 選択肢（カード型）
   const actionRows = (buttons || []).map((btn) => {
     const label = String(btn.label || "");
     const emoji = btn.emoji ? String(btn.emoji) : "🌿";
@@ -46,11 +71,12 @@ function MessageBuilder({
         {
           type: "text",
           text: label,
-          size: "sm",            // ✅ md
+          size: "md",               // ✅ ラベルは読みやすく md
           weight: "bold",
           color: theme.text,
           wrap: true,
           flex: 1,
+          lineSpacing: "4px",
         },
         {
           type: "text",
@@ -82,12 +108,13 @@ function MessageBuilder({
                 {
                   type: "text",
                   text: stepLabel,     // 例: "0/5"
-                  size: "md",          // ✅ md（読みやすく）
+                  size: "sm",          // ✅ 進行は sm（メリハリ）
                   color: "#ffffff",
                   weight: "bold",
                 },
               ]
             : []),
+
           {
             type: "text",
             text: header,
@@ -95,20 +122,24 @@ function MessageBuilder({
             size: "lg",
             color: "#ffffff",
             wrap: true,
+            lineSpacing: "4px",
           },
+
           ...(subHeader
             ? [
                 {
                   type: "text",
                   text: subHeader,
-                  size: "sm",          // ✅ md
+                  size: "sm",          // ✅ サブは sm
                   color: "#F1F6F1",
                   wrap: true,
+                  lineSpacing: "4px",
                 },
               ]
             : []),
         ],
       },
+
       body: {
         type: "box",
         layout: "vertical",
@@ -125,24 +156,14 @@ function MessageBuilder({
             paddingAll: "12px",
             borderWidth: "1px",
             borderColor: theme.border,
+            spacing: "sm",
             contents: [
-              {
-                type: "text",
-                text: body,
-                wrap: true,
-                color: theme.text,
-                size: "md",          // ✅ md
-              },
+              ...toParagraphTexts(body, { size: "md", color: theme.text, weight: "regular" }),
+
               ...(note
                 ? [
-                    {
-                      type: "text",
-                      text: note,
-                      wrap: true,
-                      color: theme.muted,
-                      size: "sm",       // ✅ md
-                      margin: "md",
-                    },
+                    { type: "separator", margin: "md" },
+                    ...toParagraphTexts(note, { size: "xs", color: theme.muted, weight: "regular" }),
                   ]
                 : []),
             ],
@@ -151,13 +172,19 @@ function MessageBuilder({
           { type: "separator", margin: "md" },
 
           // 選択肢エリアの導線文
-          {
-            type: "text",
-            text: hintText,
-            size: "sm",             // ✅ md
-            color: theme.muted,
-            wrap: true,
-          },
+          ...(hintText
+            ? [
+                {
+                  type: "text",
+                  text: hintText,
+                  size: "sm",          // ✅ 導線は sm
+                  color: theme.muted,
+                  wrap: true,
+                  lineSpacing: "4px",
+                },
+              ]
+            : []),
+
           ...actionRows,
         ],
       },
