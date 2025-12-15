@@ -46,7 +46,7 @@ function MessageBuilder({
         {
           type: "text",
           text: label,
-          size: "md",            // ✅ md
+          size: "sm",            // ✅ md
           weight: "bold",
           color: theme.text,
           wrap: true,
@@ -101,7 +101,7 @@ function MessageBuilder({
                 {
                   type: "text",
                   text: subHeader,
-                  size: "md",          // ✅ md
+                  size: "sm",          // ✅ md
                   color: "#F1F6F1",
                   wrap: true,
                 },
@@ -140,7 +140,7 @@ function MessageBuilder({
                       text: note,
                       wrap: true,
                       color: theme.muted,
-                      size: "md",       // ✅ md
+                      size: "sm",       // ✅ md
                       margin: "md",
                     },
                   ]
@@ -154,7 +154,7 @@ function MessageBuilder({
           {
             type: "text",
             text: hintText,
-            size: "md",             // ✅ md
+            size: "sm",             // ✅ md
             color: theme.muted,
             wrap: true,
           },
