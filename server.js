@@ -126,7 +126,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   action: {
                     type: "uri",
                     label: "対面サービス予約サイト",
-                    uri: subscribeUrl
+                    uri: https://kenkounihari.seirin.jp/clinic/18212/reserve
                   }
                 },
                 {
