@@ -115,7 +115,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#7B9E76",
                   action: {
                     type: "uri",
-                    label: "🔐 サブスク登録 / 解約ページ",
+                    label: "🔐 サブスク登録案内 / 解約",
                     uri: subscribeUrl
                   }
                 },
