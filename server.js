@@ -125,7 +125,7 @@ app.post("/webhook", line.middleware(config), async (req, res) => {
                   color: "#7B9E76",
                   action: {
                     type: "uri",
-                    label: "👥対面サービス予約サイト",
+                    label: "👥 対面サービス予約サイト",
                     uri: "https://kenkounihari.seirin.jp/clinic/18212/reserve"
                   }
                 },
