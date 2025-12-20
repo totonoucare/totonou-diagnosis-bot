@@ -518,7 +518,7 @@ function buildMultiQuestionFlex({ altText, header, body, questions }) {
 function buildTrialStartFlex() {
   return {
     type: "flex",
-    altText: "🎁 無料体験を有効化して、ととのい度チェックを始めよう",
+    altText: "🎁 まずは1分チェックで今のコンディションを見える化",
     contents: {
       type: "bubble",
       size: "mega",
@@ -530,7 +530,7 @@ function buildTrialStartFlex() {
         contents: [
           {
             type: "text",
-            text: "🎁 無料体験を有効化して、\nととのい度チェックを始めよう",
+            text: "🎁 まずは1分チェックで\n今のコンディションを見える化",
             weight: "bold",
             size: "md",
             color: "#FFFFFF",
@@ -556,7 +556,7 @@ function buildTrialStartFlex() {
           {
             type: "text",
             text:
-              "無料体験を有効化すると、あなたの体質データをもとにした有料機能が使えるようになります。\nまずは「今の状態」を1分でチェックして、整いの変化を追える状態にしましょう🌿",
+              "無料体験を有効化すると、あなたの体質データをもとにした有料機能がすぐ使えます。\nまずは1分チェックで“今のコンディション”を見える化して、変化を追える準備をしましょう🌿",
             size: "sm",
             color: "#333333",
             wrap: true,
@@ -566,7 +566,7 @@ function buildTrialStartFlex() {
 
           {
             type: "text",
-            text: "使える機能：",
+            text: "無料体験でできること：",
             size: "sm",
             weight: "bold",
             color: "#5A4A2A",
@@ -613,7 +613,7 @@ function buildTrialStartFlex() {
           {
             type: "text",
             text:
-              "✳️ 無料体験の終了後に自動課金や強制加入はありません。安心して試してくださいね🌱",
+              "✳️ 無料体験の終了後に自動課金や強制加入はありません。安心してお試しください🌱",
             size: "xs",
             color: "#888888",
             wrap: true,
@@ -625,9 +625,9 @@ function buildTrialStartFlex() {
             color: "#B78949", // deep gold
             action: {
               type: "postback",
-              label: "ととのい度チェックをする",
+              label: "1分チェックで始める",
               data: "trial_intro_done",
-              displayText: "ととのい度チェックをする",
+              displayText: "1分チェックで始める",
             },
           },
 
