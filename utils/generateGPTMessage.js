@@ -129,7 +129,7 @@ ${careJson}
   `.trim();
 
   const rsp = await openai.responses.create({
-    model: "gpt-5.1",
+    model: "gpt-5.2",
     input: [
       { role: "system", content: system },
       { role: "user", content: user },
