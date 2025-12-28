@@ -120,9 +120,32 @@ function pickContext(context) {
 // ===========================================
 // JSON stringify（壊れてても最低限返す）
 // ===========================================
+function stableStringify(value, space = 2) {
+  const seen = new WeakSet();
+
+  function sortObject(obj) {
+    if (obj === null || typeof obj !== "object") return obj;
+    if (seen.has(obj)) return "[Circular]";
+    seen.add(obj);
+
+    if (Array.isArray(obj)) {
+      return obj.map(sortObject);
+    }
+
+    return Object.keys(obj)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = sortObject(obj[key]);
+        return acc;
+      }, {});
+  }
+
+  return JSON.stringify(sortObject(value), null, space);
+}
+
 function toJSON(obj) {
   try {
-    return JSON.stringify(obj ?? null, null, 2);
+    return stableStringify(obj ?? null, 2);
   } catch {
     return JSON.stringify({ _error: "unserializable" });
   }
@@ -162,10 +185,12 @@ module.exports = function buildConsultMessages({
   // 3) ケア実施日数（短期：前回〜今回）
   const normalizedCareCounts = normalizeCareCountsPerDay(careCounts);
 
-  // 4) ケア実施日数（長期：体質分析〜現在）※存在する場合のみ
-  const longTermCareJson = extraCareCounts?.longTermCareCounts
-    ? JSON.stringify(extraCareCounts.longTermCareCounts, null, 2)
-    : null;
+  // 4) ケア実施日数（長期：体質分析〜現在）※存在しない場合は null を明示
+  const longTermCareJson = JSON.stringify(
+    extraCareCounts?.longTermCareCounts ?? null,
+    null,
+    2
+  );
 
   // 5) 直近チャット履歴（最大3件・各300文字まで）
   const chatHistory = (recentChats || [])
@@ -176,47 +201,44 @@ module.exports = function buildConsultMessages({
     }))
     .filter((c) => c.content);
 
-  // 6) system メッセージ組み立て
-  const systemHeader = [
+  // 6) system メッセージ組み立て（静的/動的を分離して再利用しやすくする）
+  const staticSystemHeader = [
     "あなたは『ととのうケアナビ』（東洋医学×AIセルフケア支援サービス）のAIパートナー『トトノウくん』です。",
     "以下の情報（体質・ととのい度チェックの推移・ケア実施状況・過去の相談内容）を踏まえ、ユーザーに寄り添って答えてください。",
     "",
     // サービス3機能のコンセプト（地図/現在地/足あと）
     legend_v1,
     "",
+    // データ構造・数値の読み方・優先ケアロジック・因果
+    structure_v1,
+    "",
+    // 出力フォーマット・文体・ケア効果モードのルール
+    rule_v1,
+  ].join("\n");
+
+  const dynamicSystemHeader = [
     "▼ 体質・所見（contexts）",
     toJSON(ctx),
     "",
     "▼ 直近のケア実施記録（日数ベース：前回チェック〜今回）",
     toJSON(normalizedCareCounts),
     "",
-    longTermCareJson
-      ? "▼ サービス開始(体質分析)以降の累計ケア実施日数\n" +
-        longTermCareJson
-      : null,
+    "▼ サービス開始(体質分析)以降の累計ケア実施日数",
+    longTermCareJson,
     "",
     "（各ケア項目は1日1回扱い。短期は「1つ前〜直近のととのい度チェック日」、長期は「体質分析日〜現在」で集計しています）",
     "",
-    prev
-      ? "▼ ととのい度チェック（1つ前のチェック結果・比較用）\n" +
-        toJSON(prev)
-      : null,
+    "▼ ととのい度チェック（1つ前のチェック結果・比較用）",
+    toJSON(prev),
     "",
     "▼ ととのい度チェック（直近のチェック結果）",
-    toJSON(latest),
-    "",
-    // データ構造・数値の読み方・優先ケアロジック・因果
-    structure_v1,
-    "",
-    // 出力フォーマット・文体・ケア効果モードのルール
-    rule_v1,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    toJSON(latest),  
+  ].join("\n");
 
   // 7) OpenAI Responses API に渡す messages
   return [
-    { role: "system", content: systemHeader },
+    { role: "system", content: staticSystemHeader },
+    { role: "system", content: dynamicSystemHeader },
     ...chatHistory,
     { role: "user", content: String(userText || "").trim() },
   ];
