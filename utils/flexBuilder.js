@@ -1722,8 +1722,8 @@ function buildReminderFlexFromText(letterText) {
             color: "#7B9E76",
             action: {
               type: "message",
-              label: "トトノウくんに相談 💬",
-              text: "トトノウくんに相談",
+              label: "ケアを記録する📝",
+              text: "実施記録",
             },
           },
         ],
